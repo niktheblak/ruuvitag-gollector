@@ -79,12 +79,7 @@ func reportMeasurements() {
 	}
 }
 
-func main() {
-	d, err := time.ParseDuration(os.Getenv("RUUVITAG_REPORTING_INTERVAL"))
-	if err == nil {
-		sleepInterval = d
-	}
-	reporters = append(reporters, console.Reporter{})
+func initInfluxdbReporter() {
 	influxEnabled, _ := strconv.ParseBool(os.Getenv("RUUVITAG_USE_INFLUXDB"))
 	if influxEnabled {
 		influx, err := influxdb.New()
@@ -93,6 +88,15 @@ func main() {
 		}
 		reporters = append(reporters, influx)
 	}
+}
+
+func main() {
+	d, err := time.ParseDuration(os.Getenv("RUUVITAG_REPORTING_INTERVAL"))
+	if err == nil {
+		sleepInterval = d
+	}
+	reporters = append(reporters, console.Reporter{})
+	initInfluxdbReporter()
 	device, err := gatt.NewDevice(option.DefaultClientOptions...)
 	if err != nil {
 		log.Fatalf("Failed to open device: %v", err)
