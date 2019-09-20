@@ -66,8 +66,9 @@ func reportMeasurements() {
 		case m := <-measurements:
 			log.Printf("Received measurement: %v", m)
 			for _, r := range reporters {
+				log.Printf("Reporting measurement to %v", r.Name())
 				if err := r.Report(m); err != nil {
-					log.Printf("Failed to report to %v: %v", r.Name(), err)
+					log.Printf("Failed to report measurement: %v", err)
 				}
 			}
 		case <-quit:
@@ -90,6 +91,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to open device: %v", err)
 	}
+	log.Println("Starting ruuvitag-gollector")
 	device.Handle(gatt.PeripheralDiscovered(onPeripheralDiscovered))
 	if err := device.Init(onStateChanged); err != nil {
 		log.Fatalf("Failed to initialize device: %v", err)
@@ -98,5 +100,6 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 	<-interrupt
+	log.Println("Stopping ruuvitag-gollector")
 	quit <- 1
 }
