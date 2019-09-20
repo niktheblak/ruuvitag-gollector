@@ -1,9 +1,11 @@
 package main
 
 import (
+	"github.com/niktheblak/ruuvitag-gollector/pkg/reporter/console"
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"time"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/reporter"
@@ -64,7 +66,7 @@ func reportMeasurements() {
 	for {
 		select {
 		case m := <-measurements:
-			log.Printf("Received measurement: %v", m)
+			log.Printf("Received measurement from sensor %v", m.Name)
 			for _, r := range reporters {
 				log.Printf("Reporting measurement to %v", r.Name())
 				if err := r.Report(m); err != nil {
@@ -82,11 +84,15 @@ func main() {
 	if err == nil {
 		sleepInterval = d
 	}
-	influx, err := influxdb.New()
-	if err != nil {
-		log.Fatalf("Failed to create InfluxDB reporter: %v", err)
+	reporters = append(reporters, console.Reporter{})
+	influxEnabled, _ := strconv.ParseBool(os.Getenv("RUUVITAG_USE_INFLUXDB"))
+	if influxEnabled {
+		influx, err := influxdb.New()
+		if err != nil {
+			log.Fatalf("Failed to create InfluxDB reporter: %v", err)
+		}
+		reporters = append(reporters, influx)
 	}
-	reporters = append(reporters, influx)
 	device, err := gatt.NewDevice(option.DefaultClientOptions...)
 	if err != nil {
 		log.Fatalf("Failed to open device: %v", err)
