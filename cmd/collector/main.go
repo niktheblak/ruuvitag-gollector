@@ -1,14 +1,15 @@
 package main
 
 import (
-	"github.com/niktheblak/ruuvitag-gollector/pkg/reporter/console"
 	"log"
 	"os"
 	"os/signal"
 	"strconv"
 	"time"
 
+	"github.com/niktheblak/ruuvitag-gollector/pkg/config"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/reporter"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/reporter/console"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/reporter/influxdb"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/ruuvitag"
 	"github.com/paypal/gatt"
@@ -91,10 +92,15 @@ func initInfluxdbReporter() {
 }
 
 func main() {
-	d, err := time.ParseDuration(os.Getenv("RUUVITAG_REPORTING_INTERVAL"))
-	if err == nil {
-		sleepInterval = d
+	cfg, err := config.ReadConfig("ruuvitags.toml")
+	if err != nil {
+		log.Fatalf("Failed to decode configuration: %v", err)
 	}
+	err = cfg.Validate()
+	if err != nil {
+		log.Fatal(err)
+	}
+	sleepInterval = cfg.ReportingInterval.Duration
 	reporters = append(reporters, console.Reporter{})
 	initInfluxdbReporter()
 	device, err := gatt.NewDevice(option.DefaultClientOptions...)

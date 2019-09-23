@@ -1,0 +1,13 @@
+reporting_interval = "1m"
+
+[[ruuvitag]]
+mac = "CC:CA:7E:52:CC:34"
+name = "Backyard"
+
+[[ruuvitag]]
+mac = "FB:E1:B7:04:95:EE"
+name = "Upstairs"
+
+[[ruuvitag]]
+mac = "E8:E0:C6:0B:B8:C5"
+name = "Downstairs"
