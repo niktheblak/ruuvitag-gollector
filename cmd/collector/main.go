@@ -88,10 +88,11 @@ func initRuuviTags(cfg config.Config) {
 		// TODO: convert MACs to UUIDs?
 		uid, err := gatt.ParseUUID(rt.MAC)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Failed to parse RuuviTag UUID %s: %v", rt.MAC, err)
 		}
 		ruuviTags = append(ruuviTags, uid)
 	}
+	log.Printf("Reading from RuuviTags %v", ruuviTags)
 }
 
 func initInfluxdbExporter() {
