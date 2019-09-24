@@ -45,14 +45,6 @@ func TestValidateMissingReportingInterval(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestValidateMissingRuuviTags(t *testing.T) {
-	cfg := Config{
-		ReportingInterval: Duration{60 * time.Second},
-	}
-	err := cfg.Validate()
-	assert.Error(t, err)
-}
-
 func TestValidate(t *testing.T) {
 	cfg := Config{
 		ReportingInterval: Duration{60 * time.Second},
