@@ -38,11 +38,20 @@ func (d *Duration) UnmarshalText(text []byte) error {
 }
 
 func ReadConfig(fileName string) (cfg Config, err error) {
+	var blob []byte
+	cfgFile := os.Getenv("RUUVITAG_CONFIG_FILE")
+	if cfgFile != "" {
+		blob, err = ioutil.ReadFile(cfgFile)
+		if err != nil {
+			return
+		}
+		_, err = toml.Decode(string(blob), &cfg)
+		return
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return
 	}
-	var blob []byte
 	filePath := path.Join(home, fileName)
 	blob, err = ioutil.ReadFile(filePath)
 	if err == nil {
