@@ -22,7 +22,8 @@ var sleepInterval = 60 * time.Second
 var quit = make(chan int)
 var stopScan = make(chan int)
 var measurements = make(chan ruuvitag.SensorData, 10)
-var ruuviTags []gatt.UUID
+var ruuviTagDeviceIDs []gatt.UUID
+var ruuviTagNames map[string]string
 var exporters []exporter.Exporter
 
 func beginScan(d gatt.Device) {
@@ -31,7 +32,7 @@ func beginScan(d gatt.Device) {
 	for {
 		select {
 		case <-timer.C:
-			d.Scan(ruuviTags, false)
+			d.Scan(ruuviTagDeviceIDs, false)
 		case <-stopScan:
 			return
 		case <-quit:
@@ -61,6 +62,7 @@ func onPeripheralDiscovered(p gatt.Peripheral, a *gatt.Advertisement, rssi int) 
 		return
 	}
 	data.DeviceID = p.ID()
+	data.Name = ruuviTagNames[p.ID()]
 	data.Timestamp = time.Now()
 	log.Printf("Read sensor data %v from device ID %v", data, p.ID())
 	measurements <- data
@@ -84,15 +86,17 @@ func exportMeasurements(ctx context.Context) {
 }
 
 func initRuuviTags(cfg config.Config) {
+	ruuviTagNames = make(map[string]string)
 	for _, rt := range cfg.RuuviTags {
+		ruuviTagNames[rt.MAC] = rt.Name
 		// TODO: convert MACs to UUIDs?
 		uid, err := gatt.ParseUUID(rt.MAC)
 		if err != nil {
 			log.Fatalf("Failed to parse RuuviTag UUID %s: %v", rt.MAC, err)
 		}
-		ruuviTags = append(ruuviTags, uid)
+		ruuviTagDeviceIDs = append(ruuviTagDeviceIDs, uid)
 	}
-	log.Printf("Reading from RuuviTags %v", ruuviTags)
+	log.Printf("Reading from RuuviTags %v", ruuviTagDeviceIDs)
 }
 
 func initInfluxdbExporter() {
