@@ -24,9 +24,6 @@ func (c Config) Validate() error {
 	if c.ReportingInterval.Duration == 0 {
 		return fmt.Errorf("reporting interval must be set")
 	}
-	if len(c.RuuviTag) == 0 {
-		return fmt.Errorf("at least one RuuviTag address must be specified")
-	}
 	return nil
 }
 

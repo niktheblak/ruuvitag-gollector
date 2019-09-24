@@ -20,6 +20,7 @@ var sleepInterval = 60 * time.Second
 var quit = make(chan int)
 var stopScan = make(chan int)
 var measurements = make(chan ruuvitag.SensorData, 10)
+var ruuviTags []gatt.UUID
 var reporters []reporter.Reporter
 
 func beginScan(d gatt.Device) {
@@ -28,7 +29,7 @@ func beginScan(d gatt.Device) {
 	for {
 		select {
 		case <-timer.C:
-			d.Scan(nil, true)
+			d.Scan(ruuviTags, false)
 		case <-stopScan:
 			return
 		case <-quit:
@@ -91,6 +92,17 @@ func initInfluxdbReporter() {
 	}
 }
 
+func initRuuviTags(cfg config.Config) {
+	for _, rt := range cfg.RuuviTag {
+		// TODO: convert MACs to UUIDs?
+		uid, err := gatt.ParseUUID(rt.MAC)
+		if err != nil {
+			log.Fatal(err)
+		}
+		ruuviTags = append(ruuviTags, uid)
+	}
+}
+
 func main() {
 	cfg, err := config.ReadConfig("ruuvitags.toml")
 	if err != nil {
@@ -101,6 +113,7 @@ func main() {
 		log.Fatal(err)
 	}
 	sleepInterval = cfg.ReportingInterval.Duration
+	initRuuviTags(cfg)
 	reporters = append(reporters, console.Reporter{})
 	initInfluxdbReporter()
 	device, err := gatt.NewDevice(option.DefaultClientOptions...)
