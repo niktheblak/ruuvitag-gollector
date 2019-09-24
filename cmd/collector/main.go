@@ -97,24 +97,42 @@ func initRuuviTags(cfg config.Config) {
 
 func initInfluxdbExporter() {
 	influxEnabled, _ := strconv.ParseBool(os.Getenv("RUUVITAG_USE_INFLUXDB"))
-	if influxEnabled {
-		influx, err := influxdb.New()
-		if err != nil {
-			log.Fatalf("Failed to create InfluxDB reporter: %v", err)
-		}
-		exporters = append(exporters, influx)
+	if !influxEnabled {
+		return
 	}
+	url := os.Getenv("RUUVITAG_INFLUXDB_URL")
+	if url == "" {
+		log.Fatal("RUUVITAG_INFLUXDB_URL must be set")
+	}
+	influx, err := influxdb.New(influxdb.Config{
+		URL:      url,
+		Username: os.Getenv("RUUVITAG_INFLUXDB_USERNAME"),
+		Password: os.Getenv("RUUVITAG_INFLUXDB_PASSWORD"),
+	})
+	if err != nil {
+		log.Fatalf("Failed to create InfluxDB reporter: %v", err)
+	}
+	exporters = append(exporters, influx)
 }
 
 func initGooglePubsubExporter() {
 	pubsubEnabled, _ := strconv.ParseBool(os.Getenv("RUUVITAG_USE_PUBSUB"))
-	if pubsubEnabled {
-		ps, err := pubsub.New()
-		if err != nil {
-			log.Fatalf("Failed to create Google Pub/Sub reporter: %v", err)
-		}
-		exporters = append(exporters, ps)
+	if !pubsubEnabled {
+		return
 	}
+	project := os.Getenv("RUUVITAG_PUBSUB_PROJECT")
+	if project == "" {
+		log.Fatal("RUUVITAG_PUBSUB_PROJECT must be set")
+	}
+	topic := os.Getenv("RUUVITAG_PUBSUB_TOPIC")
+	if topic == "" {
+		log.Fatal("RUUVITAG_PUBSUB_TOPIC must be set")
+	}
+	ps, err := pubsub.New(project, topic)
+	if err != nil {
+		log.Fatalf("Failed to create Google Pub/Sub reporter: %v", err)
+	}
+	exporters = append(exporters, ps)
 }
 
 func main() {

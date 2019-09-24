@@ -3,8 +3,6 @@ package pubsub
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"os"
 
 	"cloud.google.com/go/pubsub"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
@@ -17,26 +15,18 @@ type pubsubExporter struct {
 }
 
 // New creates a new Google Pub/Sub reporter
-func New() (exporter.Exporter, error) {
-	projectName := os.Getenv("RUUVITAG_PUBSUB_PROJECT")
-	if projectName == "" {
-		return nil, fmt.Errorf("RUUVITAG_PUBSUB_PROJECT must be set")
-	}
-	client, err := pubsub.NewClient(context.Background(), projectName)
+func New(project, topic string) (exporter.Exporter, error) {
+	client, err := pubsub.NewClient(context.Background(), project)
 	if err != nil {
 		return nil, err
 	}
-	topicName := os.Getenv("RUUVITAG_PUBSUB_TOPIC")
-	if topicName == "" {
-		return nil, fmt.Errorf("RUUVITAG_PUBSUB_TOPIC must be set")
-	}
-	topic, err := client.CreateTopic(context.Background(), topicName)
+	t, err := client.CreateTopic(context.Background(), topic)
 	if err != nil {
 		return nil, err
 	}
 	return &pubsubExporter{
 		client: client,
-		topic:  topic,
+		topic:  t,
 	}, nil
 }
 

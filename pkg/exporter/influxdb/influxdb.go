@@ -2,7 +2,6 @@ package influxdb
 
 import (
 	"context"
-	"os"
 
 	"github.com/influxdata/influxdb-client-go"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
@@ -13,15 +12,19 @@ type influxdbExporter struct {
 	client *influxdb.Client
 }
 
-func New() (exporter.Exporter, error) {
-	url := os.Getenv("RUUVITAG_INFLUXDB_URL")
-	username := os.Getenv("RUUVITAG_INFLUXDB_USERNAME")
-	password := os.Getenv("RUUVITAG_INFLUXDB_PASSWORD")
+type Config struct {
+	URL      string
+	Token    string
+	Username string
+	Password string
+}
+
+func New(cfg Config) (exporter.Exporter, error) {
 	var opts []influxdb.Option
-	if username != "" && password != "" {
-		opts = append(opts, influxdb.WithUserAndPass(username, password))
+	if cfg.Username != "" && cfg.Password != "" {
+		opts = append(opts, influxdb.WithUserAndPass(cfg.Username, cfg.Password))
 	}
-	client, err := influxdb.New(url, "", opts...)
+	client, err := influxdb.New(cfg.URL, cfg.Token, opts...)
 	if err != nil {
 		return nil, err
 	}
