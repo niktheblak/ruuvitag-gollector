@@ -48,23 +48,23 @@ func ReadConfig(fileName string) (cfg Config, err error) {
 		_, err = toml.Decode(string(blob), &cfg)
 		return
 	}
+	filePath := path.Join("/config", fileName)
+	blob, err = ioutil.ReadFile(filePath)
+	if err == nil {
+		_, err = toml.Decode(string(blob), &cfg)
+		return
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return
 	}
-	filePath := path.Join(home, fileName)
+	filePath = path.Join(home, fileName)
 	blob, err = ioutil.ReadFile(filePath)
 	if err == nil {
 		_, err = toml.Decode(string(blob), &cfg)
 		return
 	}
 	filePath = fileName
-	blob, err = ioutil.ReadFile(filePath)
-	if err == nil {
-		_, err = toml.Decode(string(blob), &cfg)
-		return
-	}
-	filePath = path.Join("configs", fileName)
 	blob, err = ioutil.ReadFile(filePath)
 	if err == nil {
 		_, err = toml.Decode(string(blob), &cfg)
