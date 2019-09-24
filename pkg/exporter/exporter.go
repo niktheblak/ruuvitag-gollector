@@ -1,11 +1,11 @@
-package reporter
+package exporter
 
 import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/ruuvitag"
 )
 
-type Reporter interface {
+type Exporter interface {
 	Name() string
-	Report(data ruuvitag.SensorData) error
+	Export(data ruuvitag.SensorData) error
 	Close() error
 }

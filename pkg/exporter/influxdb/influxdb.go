@@ -5,15 +5,15 @@ import (
 	"os"
 
 	"github.com/influxdata/influxdb-client-go"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/reporter"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/ruuvitag"
 )
 
-type influxdbReporter struct {
+type influxdbExporter struct {
 	client *influxdb.Client
 }
 
-func New() (reporter.Reporter, error) {
+func New() (exporter.Exporter, error) {
 	url := os.Getenv("RUUVITAG_INFLUXDB_URL")
 	username := os.Getenv("RUUVITAG_INFLUXDB_USERNAME")
 	password := os.Getenv("RUUVITAG_INFLUXDB_PASSWORD")
@@ -25,16 +25,16 @@ func New() (reporter.Reporter, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &influxdbReporter{
+	return &influxdbExporter{
 		client: client,
 	}, nil
 }
 
-func (r *influxdbReporter) Name() string {
+func (e *influxdbExporter) Name() string {
 	return "InfluxDB"
 }
 
-func (r *influxdbReporter) Report(data ruuvitag.SensorData) error {
+func (e *influxdbExporter) Export(data ruuvitag.SensorData) error {
 	ctx := context.Background()
 	m := influxdb.NewRowMetric(map[string]interface{}{
 		"temperature": data.Temperature,
@@ -44,10 +44,10 @@ func (r *influxdbReporter) Report(data ruuvitag.SensorData) error {
 		"mac":  data.DeviceID,
 		"name": data.Name,
 	}, data.Timestamp)
-	_, err := r.client.Write(ctx, "", "", m)
+	_, err := e.client.Write(ctx, "", "", m)
 	return err
 }
 
-func (r *influxdbReporter) Close() error {
-	return r.client.Close()
+func (e *influxdbExporter) Close() error {
+	return e.client.Close()
 }

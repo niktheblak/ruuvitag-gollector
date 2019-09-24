@@ -6,18 +6,18 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/ruuvitag"
 )
 
-type Reporter struct {
+type Exporter struct {
 }
 
-func (r Reporter) Name() string {
+func (e Exporter) Name() string {
 	return "Console"
 }
 
-func (r Reporter) Report(data ruuvitag.SensorData) error {
+func (e Exporter) Export(data ruuvitag.SensorData) error {
 	fmt.Println(data)
 	return nil
 }
 
-func (r Reporter) Close() error {
+func (e Exporter) Close() error {
 	return nil
 }
