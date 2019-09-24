@@ -115,7 +115,7 @@ func initInfluxdbExporter() {
 	exporters = append(exporters, influx)
 }
 
-func initGooglePubsubExporter() {
+func initGooglePubsubExporter(ctx context.Context) {
 	pubsubEnabled, _ := strconv.ParseBool(os.Getenv("RUUVITAG_USE_PUBSUB"))
 	if !pubsubEnabled {
 		return
@@ -128,7 +128,7 @@ func initGooglePubsubExporter() {
 	if topic == "" {
 		log.Fatal("RUUVITAG_PUBSUB_TOPIC must be set")
 	}
-	ps, err := pubsub.New(project, topic)
+	ps, err := pubsub.New(ctx, project, topic)
 	if err != nil {
 		log.Fatalf("Failed to create Google Pub/Sub reporter: %v", err)
 	}
@@ -151,8 +151,9 @@ func main() {
 	sleepInterval = cfg.ReportingInterval.Duration
 	initRuuviTags(cfg)
 	exporters = append(exporters, console.Exporter{})
+	ctx := context.Background()
 	initInfluxdbExporter()
-	initGooglePubsubExporter()
+	initGooglePubsubExporter(ctx)
 	device, err := gatt.NewDevice(option.DefaultClientOptions...)
 	if err != nil {
 		log.Fatalf("Failed to open device: %v", err)
@@ -162,7 +163,6 @@ func main() {
 	if err := device.Init(onStateChanged); err != nil {
 		log.Fatalf("Failed to initialize device: %v", err)
 	}
-	ctx := context.Background()
 	go exportMeasurements(ctx)
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)

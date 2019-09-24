@@ -15,12 +15,12 @@ type pubsubExporter struct {
 }
 
 // New creates a new Google Pub/Sub reporter
-func New(project, topic string) (exporter.Exporter, error) {
-	client, err := pubsub.NewClient(context.Background(), project)
+func New(ctx context.Context, project, topic string) (exporter.Exporter, error) {
+	client, err := pubsub.NewClient(ctx, project)
 	if err != nil {
 		return nil, err
 	}
-	t, err := client.CreateTopic(context.Background(), topic)
+	t, err := client.CreateTopic(ctx, topic)
 	if err != nil {
 		return nil, err
 	}
