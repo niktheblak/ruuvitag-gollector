@@ -84,7 +84,7 @@ func exportMeasurements(ctx context.Context) {
 }
 
 func initRuuviTags(cfg config.Config) {
-	for _, rt := range cfg.RuuviTag {
+	for _, rt := range cfg.RuuviTags {
 		// TODO: convert MACs to UUIDs?
 		uid, err := gatt.ParseUUID(rt.MAC)
 		if err != nil {

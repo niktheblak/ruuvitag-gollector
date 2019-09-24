@@ -17,7 +17,7 @@ type RuuviTag struct {
 
 type Config struct {
 	ReportingInterval Duration   `toml:"reporting_interval"`
-	RuuviTag          []RuuviTag `toml:"ruuvitag"`
+	RuuviTags         []RuuviTag `toml:"ruuvitag"`
 }
 
 func (c Config) Validate() error {
