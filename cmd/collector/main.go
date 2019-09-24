@@ -11,6 +11,7 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/reporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/reporter/console"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/reporter/influxdb"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/reporter/pubsub"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/ruuvitag"
 	"github.com/paypal/gatt"
 	"github.com/paypal/gatt/examples/option"
@@ -103,6 +104,17 @@ func initRuuviTags(cfg config.Config) {
 	}
 }
 
+func initGooglePubsubReporter() {
+	pubsubEnabled, _ := strconv.ParseBool(os.Getenv("RUUVITAG_USE_PUBSUB"))
+	if pubsubEnabled {
+		ps, err := pubsub.New()
+		if err != nil {
+			log.Fatalf("Failed to create Google Pub/Sub reporter: %v", err)
+		}
+		reporters = append(reporters, ps)
+	}
+}
+
 func main() {
 	cfg, err := config.ReadConfig("ruuvitags.toml")
 	if err != nil {
@@ -116,6 +128,7 @@ func main() {
 	initRuuviTags(cfg)
 	reporters = append(reporters, console.Reporter{})
 	initInfluxdbReporter()
+	initGooglePubsubReporter()
 	device, err := gatt.NewDevice(option.DefaultClientOptions...)
 	if err != nil {
 		log.Fatalf("Failed to open device: %v", err)
@@ -130,5 +143,8 @@ func main() {
 	signal.Notify(interrupt, os.Interrupt)
 	<-interrupt
 	log.Println("Stopping ruuvitag-gollector")
+	for _, r := range reporters {
+		r.Close()
+	}
 	quit <- 1
 }
