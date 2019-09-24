@@ -136,7 +136,11 @@ func initGooglePubsubExporter() {
 }
 
 func main() {
-	cfg, err := config.ReadConfig("ruuvitags.toml")
+	configFile := os.Getenv("RUUVITAG_CONFIG_FILE")
+	if configFile == "" {
+		configFile = "ruuvitags.toml"
+	}
+	cfg, err := config.ReadConfig(configFile)
 	if err != nil {
 		log.Fatalf("Failed to decode configuration: %v", err)
 	}
@@ -165,7 +169,9 @@ func main() {
 	<-interrupt
 	log.Println("Stopping ruuvitag-gollector")
 	for _, e := range exporters {
-		e.Close()
+		if err := e.Close(); err != nil {
+			log.Println(err)
+		}
 	}
 	quit <- 1
 }

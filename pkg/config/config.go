@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -39,37 +40,42 @@ func (d *Duration) UnmarshalText(text []byte) error {
 
 func ReadConfig(fileName string) (cfg Config, err error) {
 	var blob []byte
-	cfgFile := os.Getenv("RUUVITAG_CONFIG_FILE")
-	if cfgFile != "" {
-		blob, err = ioutil.ReadFile(cfgFile)
+	if filepath.IsAbs(fileName) {
+		blob, err = ioutil.ReadFile(fileName)
 		if err != nil {
 			return
 		}
 		_, err = toml.Decode(string(blob), &cfg)
 		return
 	}
-	filePath := path.Join("/config", fileName)
-	blob, err = ioutil.ReadFile(filePath)
+
+	// Try to read the file from the current directory
+	blob, err = ioutil.ReadFile(fileName)
 	if err == nil {
 		_, err = toml.Decode(string(blob), &cfg)
 		return
 	}
+
+	// Try to read the file from the user's home directory
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return
 	}
-	filePath = path.Join(home, fileName)
+	filePath := path.Join(home, fileName)
 	blob, err = ioutil.ReadFile(filePath)
 	if err == nil {
 		_, err = toml.Decode(string(blob), &cfg)
 		return
 	}
-	filePath = fileName
+
+	// Try to read the file from the /config directory
+	filePath = path.Join("/config", fileName)
 	blob, err = ioutil.ReadFile(filePath)
 	if err == nil {
 		_, err = toml.Decode(string(blob), &cfg)
 		return
 	}
+
 	err = fmt.Errorf("configuration file %s not found", fileName)
 	return
 }
