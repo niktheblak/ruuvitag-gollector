@@ -12,7 +12,7 @@ import (
 )
 
 type RuuviTag struct {
-	MAC  string `toml:"mac"`
+	ID   string `toml:"id"`
 	Name string `toml:"name"`
 }
 

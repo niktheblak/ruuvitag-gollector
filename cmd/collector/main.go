@@ -88,11 +88,10 @@ func exportMeasurements(ctx context.Context) {
 func initRuuviTags(cfg config.Config) {
 	ruuviTagNames = make(map[string]string)
 	for _, rt := range cfg.RuuviTags {
-		ruuviTagNames[rt.MAC] = rt.Name
-		// TODO: convert MACs to UUIDs?
-		uid, err := gatt.ParseUUID(rt.MAC)
+		ruuviTagNames[rt.ID] = rt.Name
+		uid, err := gatt.ParseUUID(rt.ID)
 		if err != nil {
-			log.Fatalf("Failed to parse RuuviTag UUID %s: %v", rt.MAC, err)
+			log.Fatalf("Failed to parse RuuviTag UUID %s: %v", rt.ID, err)
 		}
 		ruuviTagDeviceIDs = append(ruuviTagDeviceIDs, uid)
 	}

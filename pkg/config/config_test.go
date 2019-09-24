@@ -15,20 +15,20 @@ func TestExampleConfig(t *testing.T) {
 		reporting_interval = "1m"
 
 		[[ruuvitag]]
-		mac = "CC:CA:7E:52:CC:34"
+		id = "CC:CA:7E:52:CC:34"
 		name = "Backyard"
 		
 		[[ruuvitag]]
-		mac = "FB:E1:B7:04:95:EE"
+		id = "FB:E1:B7:04:95:EE"
 		name = "Upstairs"
 	`
 	_, err := toml.Decode(blob, &config)
 	require.NoError(t, err)
 	assert.Equal(t, 60*time.Second, config.ReportingInterval.Duration)
 	require.Len(t, config.RuuviTags, 2)
-	assert.Equal(t, "CC:CA:7E:52:CC:34", config.RuuviTags[0].MAC)
+	assert.Equal(t, "CC:CA:7E:52:CC:34", config.RuuviTags[0].ID)
 	assert.Equal(t, "Backyard", config.RuuviTags[0].Name)
-	assert.Equal(t, "FB:E1:B7:04:95:EE", config.RuuviTags[1].MAC)
+	assert.Equal(t, "FB:E1:B7:04:95:EE", config.RuuviTags[1].ID)
 	assert.Equal(t, "Upstairs", config.RuuviTags[1].Name)
 }
 
@@ -36,7 +36,7 @@ func TestValidateMissingReportingInterval(t *testing.T) {
 	cfg := Config{
 		RuuviTags: []RuuviTag{
 			{
-				MAC:  "CC:CA:7E:52:CC:34",
+				ID:   "CC:CA:7E:52:CC:34",
 				Name: "Backyard",
 			},
 		},
@@ -50,7 +50,7 @@ func TestValidate(t *testing.T) {
 		ReportingInterval: Duration{60 * time.Second},
 		RuuviTags: []RuuviTag{
 			{
-				MAC:  "CC:CA:7E:52:CC:34",
+				ID:   "CC:CA:7E:52:CC:34",
 				Name: "Backyard",
 			},
 		},
