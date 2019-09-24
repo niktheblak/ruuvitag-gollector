@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/signal"
@@ -65,14 +66,14 @@ func onPeripheralDiscovered(p gatt.Peripheral, a *gatt.Advertisement, rssi int) 
 	measurements <- data
 }
 
-func exportMeasurements() {
+func exportMeasurements(ctx context.Context) {
 	for {
 		select {
 		case m := <-measurements:
 			log.Printf("Received measurement from sensor %v", m.Name)
 			for _, e := range exporters {
 				log.Printf("Exporting measurement to %v", e.Name())
-				if err := e.Export(m); err != nil {
+				if err := e.Export(ctx, m); err != nil {
 					log.Printf("Failed to report measurement: %v", err)
 				}
 			}
@@ -138,7 +139,8 @@ func main() {
 	if err := device.Init(onStateChanged); err != nil {
 		log.Fatalf("Failed to initialize device: %v", err)
 	}
-	go exportMeasurements()
+	ctx := context.Background()
+	go exportMeasurements(ctx)
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 	<-interrupt

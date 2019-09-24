@@ -34,8 +34,7 @@ func (e *influxdbExporter) Name() string {
 	return "InfluxDB"
 }
 
-func (e *influxdbExporter) Export(data ruuvitag.SensorData) error {
-	ctx := context.Background()
+func (e *influxdbExporter) Export(ctx context.Context, data ruuvitag.SensorData) error {
 	m := influxdb.NewRowMetric(map[string]interface{}{
 		"temperature": data.Temperature,
 		"humidity":    data.Humidity,

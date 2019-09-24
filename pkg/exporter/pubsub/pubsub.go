@@ -44,7 +44,7 @@ func (e *pubsubExporter) Name() string {
 	return "Google Pub/Sub"
 }
 
-func (e *pubsubExporter) Export(data ruuvitag.SensorData) error {
+func (e *pubsubExporter) Export(ctx context.Context, data ruuvitag.SensorData) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -56,7 +56,7 @@ func (e *pubsubExporter) Export(data ruuvitag.SensorData) error {
 			"name": data.Name,
 		},
 	}
-	e.topic.Publish(context.Background(), msg)
+	e.topic.Publish(ctx, msg)
 	return nil
 }
 
