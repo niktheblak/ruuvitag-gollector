@@ -9,5 +9,5 @@ RUN go build -o /go/bin/app cmd/collector/main.go
 
 FROM gcr.io/distroless/base
 COPY --from=build-env /go/bin/app /
-ADD configs/* .
+ADD configs/* /
 CMD ["/app"]
