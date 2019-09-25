@@ -48,6 +48,7 @@ func createGooglePubsubExporter(ctx context.Context) exporter.Exporter {
 }
 
 func main() {
+	log.Println("Starting ruuvitag-gollector")
 	configFile := os.Getenv("RUUVITAG_CONFIG_FILE")
 	if configFile == "" {
 		configFile = "ruuvitags.toml"
@@ -76,6 +77,7 @@ func main() {
 		exporters = append(exporters, createGooglePubsubExporter(ctx))
 	}
 	scn.Exporters = exporters
+	log.Println("Starting scanner")
 	if err := scn.Start(ctx); err != nil {
 		log.Fatalf("Failed to start scanner: %v", err)
 	}
@@ -83,10 +85,10 @@ func main() {
 	signal.Notify(interrupt, os.Interrupt)
 	<-interrupt
 	log.Println("Stopping ruuvitag-gollector")
+	scn.Stop()
 	for _, e := range exporters {
 		if err := e.Close(); err != nil {
-			log.Println(err)
+			log.Printf("Failed to close exporter %s: %v", e.Name(), err)
 		}
 	}
-	scn.Stop()
 }

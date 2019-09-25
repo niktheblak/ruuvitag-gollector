@@ -14,13 +14,13 @@ import (
 )
 
 type Scanner struct {
-	SleepInterval     time.Duration
-	Exporters         []exporter.Exporter
-	quit              chan int
-	stopScan          chan int
-	measurements      chan ruuvitag.SensorData
-	ruuviTagDeviceIDs []gatt.UUID
-	ruuviTagNames     map[string]string
+	SleepInterval time.Duration
+	Exporters     []exporter.Exporter
+	quit          chan int
+	stopScan      chan int
+	measurements  chan ruuvitag.SensorData
+	deviceIDs     []gatt.UUID
+	deviceNames   map[string]string
 }
 
 func New(cfg config.Config) (*Scanner, error) {
@@ -29,18 +29,18 @@ func New(cfg config.Config) (*Scanner, error) {
 		quit:          make(chan int, 1),
 		stopScan:      make(chan int, 1),
 		measurements:  make(chan ruuvitag.SensorData, 10),
-		ruuviTagNames: make(map[string]string),
+		deviceNames:   make(map[string]string),
 	}
 	for _, rt := range cfg.RuuviTags {
-		scn.ruuviTagNames[rt.ID] = rt.Name
 		uid, err := gatt.ParseUUID(rt.ID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse RuuviTag UUID %s: %w", rt.ID, err)
 		}
-		scn.ruuviTagDeviceIDs = append(scn.ruuviTagDeviceIDs, uid)
+		scn.deviceIDs = append(scn.deviceIDs, uid)
+		scn.deviceNames[rt.ID] = rt.Name
 	}
-	if len(scn.ruuviTagDeviceIDs) > 0 {
-		log.Printf("Reading from RuuviTags %v", scn.ruuviTagDeviceIDs)
+	if len(scn.deviceIDs) > 0 {
+		log.Printf("Reading from RuuviTags %v", scn.deviceIDs)
 	} else {
 		log.Println("Reading from all nearby BLE devices")
 	}
@@ -71,8 +71,8 @@ func (s *Scanner) beginScan(d gatt.Device) {
 	for {
 		select {
 		case <-timer.C:
-			log.Printf("Scanner scanning devices %v", s.ruuviTagDeviceIDs)
-			d.Scan(s.ruuviTagDeviceIDs, false)
+			log.Printf("Scanner scanning devices %v", s.deviceIDs)
+			d.Scan(s.deviceIDs, false)
 		case <-s.stopScan:
 			log.Println("Scanner stopping")
 			return
@@ -107,7 +107,7 @@ func (s *Scanner) onPeripheralDiscovered(p gatt.Peripheral, a *gatt.Advertisemen
 		return
 	}
 	data.DeviceID = p.ID()
-	data.Name = s.ruuviTagNames[p.ID()]
+	data.Name = s.deviceNames[p.ID()]
 	data.Timestamp = time.Now()
 	log.Printf("Read sensor data %v from device ID %v", data, p.ID())
 	s.measurements <- data
