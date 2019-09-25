@@ -27,9 +27,9 @@ type Scanner struct {
 func New(cfg config.Config) (*Scanner, error) {
 	scn := &Scanner{
 		SleepInterval:        cfg.ReportingInterval.Duration,
-		quit:                 make(chan int, 1),
-		stopScan:             make(chan int, 1),
-		measurements:         make(chan sensor.Data, 10),
+		quit:                 make(chan int),
+		stopScan:             make(chan int),
+		measurements:         make(chan sensor.Data),
 		deviceNames:          make(map[string]string),
 		deviceCreator:        gattDeviceCreator{},
 		peripheralDiscoverer: gattPeripheralDiscoverer{},
