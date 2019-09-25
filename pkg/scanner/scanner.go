@@ -106,15 +106,15 @@ func (s *Scanner) onStateChanged(d gatt.Device, state gatt.State) {
 }
 
 func (s *Scanner) onPeripheralDiscovered(p gatt.Peripheral, a *gatt.Advertisement, rssi int) {
+	log.Printf("Read sensor data from device %s:%s", p.ID(), p.Name())
 	data, err := sensor.Parse(a.ManufacturerData)
 	if err != nil {
-		log.Printf("Error while parsing RuuviTag data: %v", err)
+		log.Printf("Error while parsing RuuviTag data: %v. Header: %v", err, a.ManufacturerData[:3])
 		return
 	}
 	data.DeviceID = p.ID()
 	data.Name = s.deviceNames[p.ID()]
 	data.Timestamp = time.Now()
-	log.Printf("Read sensor data from device %s:%s", p.ID(), p.Name())
 	s.measurements <- data
 }
 
