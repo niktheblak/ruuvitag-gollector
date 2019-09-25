@@ -109,7 +109,13 @@ func (s *Scanner) onPeripheralDiscovered(p gatt.Peripheral, a *gatt.Advertisemen
 	log.Printf("Read sensor data from device %s:%s", p.ID(), p.Name())
 	data, err := sensor.Parse(a.ManufacturerData)
 	if err != nil {
-		log.Printf("Error while parsing RuuviTag data: %v. Header: %v", err, a.ManufacturerData[:3])
+		var header []byte
+		if len(a.ManufacturerData) >= 3 {
+			header = a.ManufacturerData[:3]
+		} else {
+			header = a.ManufacturerData
+		}
+		log.Printf("Error while parsing RuuviTag data (%d bytes) %v: %v", len(a.ManufacturerData), header, err)
 		return
 	}
 	data.DeviceID = p.ID()
