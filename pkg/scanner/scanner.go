@@ -10,26 +10,29 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/ruuvitag"
 	"github.com/paypal/gatt"
-	"github.com/paypal/gatt/examples/option"
 )
 
 type Scanner struct {
-	SleepInterval time.Duration
-	Exporters     []exporter.Exporter
-	quit          chan int
-	stopScan      chan int
-	measurements  chan ruuvitag.SensorData
-	deviceIDs     []gatt.UUID
-	deviceNames   map[string]string
+	SleepInterval        time.Duration
+	Exporters            []exporter.Exporter
+	quit                 chan int
+	stopScan             chan int
+	measurements         chan ruuvitag.SensorData
+	deviceIDs            []gatt.UUID
+	deviceNames          map[string]string
+	deviceCreator        deviceCreator
+	peripheralDiscoverer peripheralDiscoverer
 }
 
 func New(cfg config.Config) (*Scanner, error) {
 	scn := &Scanner{
-		SleepInterval: cfg.ReportingInterval.Duration,
-		quit:          make(chan int, 1),
-		stopScan:      make(chan int, 1),
-		measurements:  make(chan ruuvitag.SensorData, 10),
-		deviceNames:   make(map[string]string),
+		SleepInterval:        cfg.ReportingInterval.Duration,
+		quit:                 make(chan int, 1),
+		stopScan:             make(chan int, 1),
+		measurements:         make(chan ruuvitag.SensorData, 10),
+		deviceNames:          make(map[string]string),
+		deviceCreator:        gattDeviceCreator{},
+		peripheralDiscoverer: gattPeripheralDiscoverer{},
 	}
 	for _, rt := range cfg.RuuviTags {
 		uid, err := gatt.ParseUUID(rt.ID)
@@ -48,11 +51,11 @@ func New(cfg config.Config) (*Scanner, error) {
 }
 
 func (s *Scanner) Start(ctx context.Context) error {
-	device, err := gatt.NewDevice(option.DefaultClientOptions...)
+	device, err := s.deviceCreator.NewDevice()
 	if err != nil {
 		return fmt.Errorf("failed to open device: %w", err)
 	}
-	device.Handle(gatt.PeripheralDiscovered(s.onPeripheralDiscovered))
+	s.peripheralDiscoverer.HandlePeripheralDiscovered(device, s.onPeripheralDiscovered)
 	if err := device.Init(s.onStateChanged); err != nil {
 		return fmt.Errorf("failed to initialize device: %w", err)
 	}
@@ -66,6 +69,8 @@ func (s *Scanner) Stop() {
 
 func (s *Scanner) beginScan(d gatt.Device) {
 	log.Println("Scanner starting")
+	log.Printf("Scanner scanning devices %v", s.deviceIDs)
+	d.Scan(s.deviceIDs, false)
 	timer := time.NewTimer(s.SleepInterval)
 	defer timer.Stop()
 	for {

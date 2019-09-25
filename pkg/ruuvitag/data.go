@@ -32,6 +32,7 @@ type SensorFormat3 struct {
 	AccelerationY       int16
 	AccelerationZ       int16
 	BatteryVoltageMv    uint16
+	Padding             uint32
 }
 
 func ParseTemperature(t uint8, f uint8) float64 {
