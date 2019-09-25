@@ -207,7 +207,8 @@ func TestScanner(t *testing.T) {
 	ctx := context.Background()
 	err = scn.Start(ctx)
 	require.NoError(t, err)
-	time.Sleep(500 * time.Millisecond)
+	// Wait a bit for messages to appear in the measurements channel
+	time.Sleep(100 * time.Millisecond)
 	scn.Stop()
 	assert.NotEmpty(t, exp.events)
 	e := exp.events[0]
