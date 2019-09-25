@@ -21,7 +21,7 @@ type SensorData struct {
 	Timestamp     time.Time `json:"ts"`
 }
 
-type sensorFormat3 struct {
+type SensorFormat3 struct {
 	ManufacturerID      uint16
 	DataFormat          uint8
 	Humidity            uint8
@@ -34,7 +34,7 @@ type sensorFormat3 struct {
 	BatteryVoltageMv    uint16
 }
 
-func parseTemperature(t uint8, f uint8) float64 {
+func ParseTemperature(t uint8, f uint8) float64 {
 	var mask uint8
 	mask = 1 << 7
 	isNegative := (t & mask) > 0
@@ -45,22 +45,22 @@ func parseTemperature(t uint8, f uint8) float64 {
 	return temp
 }
 
-func parseSensorFormat3(data []byte) SensorData {
+func ParseSensorFormat3(data []byte) (SensorData, error) {
 	reader := bytes.NewReader(data)
-	var result sensorFormat3
+	var result SensorFormat3
 	err := binary.Read(reader, binary.BigEndian, &result)
 	if err != nil {
-		panic(err)
+		return SensorData{}, err
 	}
 	var sd SensorData
-	sd.Temperature = parseTemperature(result.Temperature, result.TemperatureFraction)
+	sd.Temperature = ParseTemperature(result.Temperature, result.TemperatureFraction)
 	sd.Humidity = float64(result.Humidity) / 2.0
 	sd.Pressure = int(result.Pressure) + 50000
 	sd.Battery = int(result.BatteryVoltageMv)
 	sd.AccelerationX = int(result.AccelerationX)
 	sd.AccelerationY = int(result.AccelerationY)
 	sd.AccelerationZ = int(result.AccelerationZ)
-	return sd
+	return sd, nil
 }
 
 func Parse(data []byte) (sensorData SensorData, err error) {
@@ -68,7 +68,7 @@ func Parse(data []byte) (sensorData SensorData, err error) {
 		sensorFormat := data[2]
 		switch sensorFormat {
 		case 3:
-			sensorData = parseSensorFormat3(data)
+			sensorData, err = ParseSensorFormat3(data)
 			return
 		default:
 			err = fmt.Errorf("unknown sensor format: %v", sensorFormat)
