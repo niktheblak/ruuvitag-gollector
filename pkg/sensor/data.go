@@ -1,4 +1,4 @@
-package ruuvitag
+package sensor
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type SensorData struct {
+type Data struct {
 	DeviceID      string    `json:"device_id"`
 	Name          string    `json:"name"`
 	Temperature   float64   `json:"temperature"`
@@ -21,7 +21,7 @@ type SensorData struct {
 	Timestamp     time.Time `json:"ts"`
 }
 
-type SensorFormat3 struct {
+type DataFormat3 struct {
 	ManufacturerID      uint16
 	DataFormat          uint8
 	Humidity            uint8
@@ -46,14 +46,13 @@ func ParseTemperature(t uint8, f uint8) float64 {
 	return temp
 }
 
-func ParseSensorFormat3(data []byte) (SensorData, error) {
+func ParseSensorFormat3(data []byte) (sd Data, err error) {
 	reader := bytes.NewReader(data)
-	var result SensorFormat3
-	err := binary.Read(reader, binary.BigEndian, &result)
+	var result DataFormat3
+	err = binary.Read(reader, binary.BigEndian, &result)
 	if err != nil {
-		return SensorData{}, err
+		return
 	}
-	var sd SensorData
 	sd.Temperature = ParseTemperature(result.Temperature, result.TemperatureFraction)
 	sd.Humidity = float64(result.Humidity) / 2.0
 	sd.Pressure = int(result.Pressure) + 50000
@@ -61,10 +60,10 @@ func ParseSensorFormat3(data []byte) (SensorData, error) {
 	sd.AccelerationX = int(result.AccelerationX)
 	sd.AccelerationY = int(result.AccelerationY)
 	sd.AccelerationZ = int(result.AccelerationZ)
-	return sd, nil
+	return
 }
 
-func Parse(data []byte) (sensorData SensorData, err error) {
+func Parse(data []byte) (sensorData Data, err error) {
 	if len(data) == 20 && binary.LittleEndian.Uint16(data[0:2]) == 0x0499 {
 		sensorFormat := data[2]
 		switch sensorFormat {

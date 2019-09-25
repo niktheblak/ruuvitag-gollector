@@ -9,7 +9,7 @@ import (
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/config"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/ruuvitag"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 	"github.com/paypal/gatt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -162,14 +162,14 @@ func (m *mockPeripheral) SetMTU(mtu uint16) error {
 }
 
 type mockExporter struct {
-	events []ruuvitag.SensorData
+	events []sensor.Data
 }
 
 func (m *mockExporter) Name() string {
 	return "Mock"
 }
 
-func (m *mockExporter) Export(ctx context.Context, data ruuvitag.SensorData) error {
+func (m *mockExporter) Export(ctx context.Context, data sensor.Data) error {
 	m.events = append(m.events, data)
 	return nil
 }
@@ -178,7 +178,7 @@ func (m *mockExporter) Close() error {
 	return nil
 }
 
-var testData = ruuvitag.SensorFormat3{
+var testData = sensor.DataFormat3{
 	ManufacturerID:      0x9904,
 	DataFormat:          3,
 	Humidity:            120,

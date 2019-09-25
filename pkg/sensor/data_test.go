@@ -1,4 +1,4 @@
-package ruuvitag
+package sensor
 
 import (
 	"testing"

@@ -6,7 +6,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/ruuvitag"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 
 type pubsubExporter struct {
@@ -34,7 +34,7 @@ func (e *pubsubExporter) Name() string {
 	return "Google Pub/Sub"
 }
 
-func (e *pubsubExporter) Export(ctx context.Context, data ruuvitag.SensorData) error {
+func (e *pubsubExporter) Export(ctx context.Context, data sensor.Data) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return err

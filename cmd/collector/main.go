@@ -53,7 +53,7 @@ func main() {
 	if configFile == "" {
 		configFile = "ruuvitags.toml"
 	}
-	cfg, err := config.ReadConfig(configFile)
+	cfg, err := config.Read(configFile)
 	if err != nil {
 		log.Fatalf("Failed to decode configuration: %v", err)
 	}

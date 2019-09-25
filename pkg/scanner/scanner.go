@@ -8,7 +8,7 @@ import (
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/config"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/ruuvitag"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 	"github.com/paypal/gatt"
 )
 
@@ -17,7 +17,7 @@ type Scanner struct {
 	Exporters            []exporter.Exporter
 	quit                 chan int
 	stopScan             chan int
-	measurements         chan ruuvitag.SensorData
+	measurements         chan sensor.Data
 	deviceIDs            []gatt.UUID
 	deviceNames          map[string]string
 	deviceCreator        deviceCreator
@@ -29,7 +29,7 @@ func New(cfg config.Config) (*Scanner, error) {
 		SleepInterval:        cfg.ReportingInterval.Duration,
 		quit:                 make(chan int, 1),
 		stopScan:             make(chan int, 1),
-		measurements:         make(chan ruuvitag.SensorData, 10),
+		measurements:         make(chan sensor.Data, 10),
 		deviceNames:          make(map[string]string),
 		deviceCreator:        gattDeviceCreator{},
 		peripheralDiscoverer: gattPeripheralDiscoverer{},
@@ -106,7 +106,7 @@ func (s *Scanner) onStateChanged(d gatt.Device, state gatt.State) {
 }
 
 func (s *Scanner) onPeripheralDiscovered(p gatt.Peripheral, a *gatt.Advertisement, rssi int) {
-	data, err := ruuvitag.Parse(a.ManufacturerData)
+	data, err := sensor.Parse(a.ManufacturerData)
 	if err != nil {
 		log.Printf("Error while parsing RuuviTag data: %v", err)
 		return

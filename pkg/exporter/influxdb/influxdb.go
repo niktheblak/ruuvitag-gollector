@@ -5,7 +5,7 @@ import (
 
 	"github.com/influxdata/influxdb-client-go"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/ruuvitag"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 
 type influxdbExporter struct {
@@ -37,7 +37,7 @@ func (e *influxdbExporter) Name() string {
 	return "InfluxDB"
 }
 
-func (e *influxdbExporter) Export(ctx context.Context, data ruuvitag.SensorData) error {
+func (e *influxdbExporter) Export(ctx context.Context, data sensor.Data) error {
 	m := influxdb.NewRowMetric(map[string]interface{}{
 		"temperature": data.Temperature,
 		"humidity":    data.Humidity,

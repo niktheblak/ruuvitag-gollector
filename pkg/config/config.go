@@ -38,7 +38,7 @@ func (d *Duration) UnmarshalText(text []byte) error {
 	return err
 }
 
-func ReadConfig(fileName string) (cfg Config, err error) {
+func Read(fileName string) (cfg Config, err error) {
 	var blob []byte
 	if filepath.IsAbs(fileName) {
 		blob, err = ioutil.ReadFile(fileName)
