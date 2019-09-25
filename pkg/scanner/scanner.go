@@ -114,7 +114,7 @@ func (s *Scanner) onPeripheralDiscovered(p gatt.Peripheral, a *gatt.Advertisemen
 	data.DeviceID = p.ID()
 	data.Name = s.deviceNames[p.ID()]
 	data.Timestamp = time.Now()
-	log.Printf("Read sensor data %v from device ID %v", data, p.ID())
+	log.Printf("Read sensor data from device %s:%s", p.ID(), p.Name())
 	s.measurements <- data
 }
 
