@@ -18,6 +18,7 @@ type RuuviTag struct {
 
 type Config struct {
 	ReportingInterval Duration   `toml:"reporting_interval"`
+	Device            string     `toml:"device"`
 	RuuviTags         []RuuviTag `toml:"ruuvitag"`
 }
 

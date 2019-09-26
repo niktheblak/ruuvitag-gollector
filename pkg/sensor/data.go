@@ -64,18 +64,21 @@ func ParseSensorFormat3(data []byte) (sd Data, err error) {
 }
 
 func Parse(data []byte) (sensorData Data, err error) {
-	if len(data) == 20 && binary.LittleEndian.Uint16(data[0:2]) == 0x0499 {
-		sensorFormat := data[2]
-		switch sensorFormat {
-		case 3:
-			sensorData, err = ParseSensorFormat3(data)
-			return
-		default:
-			err = fmt.Errorf("unknown sensor format: %v", sensorFormat)
-			return
-		}
-	} else {
+	if !IsRuuviTag(data) {
 		err = fmt.Errorf("not a RuuviTag device")
 		return
 	}
+	sensorFormat := data[2]
+	switch sensorFormat {
+	case 3:
+		sensorData, err = ParseSensorFormat3(data)
+		return
+	default:
+		err = fmt.Errorf("unknown sensor format: %v", sensorFormat)
+		return
+	}
+}
+
+func IsRuuviTag(data []byte) bool {
+	return len(data) == 20 && binary.LittleEndian.Uint16(data[0:2]) == 0x0499
 }
