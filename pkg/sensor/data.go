@@ -32,7 +32,6 @@ type DataFormat3 struct {
 	AccelerationY       int16
 	AccelerationZ       int16
 	BatteryVoltageMv    uint16
-	Padding             uint32
 }
 
 func ParseTemperature(t uint8, f uint8) float64 {
@@ -80,5 +79,5 @@ func Parse(data []byte) (sensorData Data, err error) {
 }
 
 func IsRuuviTag(data []byte) bool {
-	return len(data) == 20 && binary.LittleEndian.Uint16(data[0:2]) == 0x0499
+	return len(data) >= 16 && binary.LittleEndian.Uint16(data[0:2]) == 0x0499
 }
