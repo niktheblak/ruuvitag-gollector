@@ -19,7 +19,6 @@ type Scanner struct {
 	Exporters     []exporter.Exporter
 	device        ble.Device
 	quit          chan int
-	stopScan      chan int
 	measurements  chan sensor.Data
 	peripherals   map[string]string
 	deviceImpl    string
@@ -62,7 +61,6 @@ func New(cfg config.Config) (*Scanner, error) {
 	return &Scanner{
 		SleepInterval: cfg.ReportingInterval.Duration,
 		quit:          make(chan int),
-		stopScan:      make(chan int),
 		measurements:  make(chan sensor.Data),
 		peripherals:   peripherals,
 		deviceImpl:    cfg.Device,
@@ -98,30 +96,34 @@ func (s *Scanner) scan() {
 	log.Println("Scanner starting")
 	timer := time.NewTimer(s.SleepInterval)
 	defer timer.Stop()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	s.doScan(ctx)
+	cancel()
+	ctx, cancel = context.WithCancel(context.Background())
 	for {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		select {
 		case <-timer.C:
-			if err := s.ble.Scan(ctx, false, s.handle, s.filter); err != nil {
-				switch errors.Cause(err) {
-				case nil:
-				case context.DeadlineExceeded:
-					// Nothing found during scan window
-				case context.Canceled:
-					log.Println("Scan canceled")
-				default:
-					log.Printf("Scan failed: %v", err)
-				}
-			}
 			cancel()
-		case <-s.stopScan:
-			log.Println("Scanner stopping")
-			cancel()
-			return
+			ctx, cancel = context.WithCancel(context.Background())
+			go s.doScan(ctx)
 		case <-s.quit:
 			log.Println("Scanner quitting")
 			cancel()
 			return
+		}
+	}
+}
+
+func (s *Scanner) doScan(ctx context.Context) {
+	if err := s.ble.Scan(ctx, false, s.handle, s.filter); err != nil {
+		switch errors.Cause(err) {
+		case nil:
+		case context.DeadlineExceeded:
+			// Nothing found during scan window
+		case context.Canceled:
+			log.Println("Scan canceled")
+		default:
+			log.Printf("Scan failed: %v", err)
 		}
 	}
 }
