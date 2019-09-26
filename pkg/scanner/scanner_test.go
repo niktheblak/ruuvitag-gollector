@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/currantlabs/ble"
+	"github.com/go-ble/ble"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/config"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
@@ -31,6 +31,10 @@ func (m mockDevice) SetServices(svcs []*ble.Service) error {
 }
 
 func (m mockDevice) Stop() error {
+	return nil
+}
+
+func (m mockDevice) Advertise(ctx context.Context, adv ble.Advertisement) error {
 	return nil
 }
 
@@ -87,6 +91,10 @@ type mockAdvertisement struct {
 	localName        string
 	manufacturerData []byte
 	addr             string
+}
+
+func (m mockAdvertisement) Addr() ble.Addr {
+	return ble.NewAddr(m.addr)
 }
 
 func (m mockAdvertisement) LocalName() string {

@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/currantlabs/ble"
-	"github.com/currantlabs/ble/examples/lib/dev"
+	"github.com/go-ble/ble"
+	"github.com/go-ble/ble/examples/lib/dev"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/config"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
@@ -127,14 +127,14 @@ func (s *Scanner) scan() {
 }
 
 func (s *Scanner) handle(a ble.Advertisement) {
-	log.Printf("Read sensor data from device %s:%v", a.LocalName(), a.Address())
+	log.Printf("Read sensor data from device %s:%v", a.LocalName(), a.Addr())
 	data := a.ManufacturerData()
 	sensorData, err := sensor.Parse(data)
 	if err != nil {
 		logInvalidData(data, err)
 		return
 	}
-	sensorData.DeviceID = a.Address().String()
+	sensorData.DeviceID = a.Addr().String()
 	sensorData.Name = s.peripherals[sensorData.DeviceID]
 	sensorData.Timestamp = time.Now()
 	s.measurements <- sensorData
@@ -159,7 +159,7 @@ func (s *Scanner) filter(a ble.Advertisement) bool {
 	if len(s.peripherals) == 0 {
 		return true
 	}
-	_, ok := s.peripherals[a.Address().String()]
+	_, ok := s.peripherals[a.Addr().String()]
 	return ok
 }
 
