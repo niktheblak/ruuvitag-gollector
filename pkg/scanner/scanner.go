@@ -131,13 +131,7 @@ func (s *Scanner) handle(a ble.Advertisement) {
 	data := a.ManufacturerData()
 	sensorData, err := sensor.Parse(data)
 	if err != nil {
-		var header []byte
-		if len(data) >= 3 {
-			header = data[:3]
-		} else {
-			header = data
-		}
-		log.Printf("Error while parsing RuuviTag data (%d bytes) %v: %v", len(data), header, err)
+		logInvalidData(data, err)
 		return
 	}
 	sensorData.DeviceID = a.Address().String()
@@ -146,8 +140,20 @@ func (s *Scanner) handle(a ble.Advertisement) {
 	s.measurements <- sensorData
 }
 
+func logInvalidData(data []byte, err error) {
+	var header []byte
+	if len(data) >= 3 {
+		header = data[:3]
+	} else {
+		header = data
+	}
+	log.Printf("Error while parsing RuuviTag data (%d bytes) %v: %v", len(data), header, err)
+}
+
 func (s *Scanner) filter(a ble.Advertisement) bool {
 	if !sensor.IsRuuviTag(a.ManufacturerData()) {
+		// TODO: remove noisy logging
+		logInvalidData(a.ManufacturerData(), nil)
 		return false
 	}
 	if len(s.peripherals) == 0 {
