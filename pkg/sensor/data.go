@@ -8,7 +8,7 @@ import (
 )
 
 type Data struct {
-	DeviceID      string    `json:"device_id"`
+	Addr          string    `json:"addr"`
 	Name          string    `json:"name"`
 	Temperature   float64   `json:"temperature"`
 	Humidity      float64   `json:"humidity"`

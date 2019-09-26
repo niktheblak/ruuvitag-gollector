@@ -42,7 +42,7 @@ func (e *pubsubExporter) Export(ctx context.Context, data sensor.Data) error {
 	msg := &pubsub.Message{
 		Data: jsonData,
 		Attributes: map[string]string{
-			"mac":  data.DeviceID,
+			"mac":  data.Addr,
 			"name": data.Name,
 		},
 	}

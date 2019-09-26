@@ -43,7 +43,7 @@ func (e *influxdbExporter) Export(ctx context.Context, data sensor.Data) error {
 		"humidity":    data.Humidity,
 		"pressure":    data.Pressure,
 	}, "ruuvitag", map[string]string{
-		"mac":  data.DeviceID,
+		"mac":  data.Addr,
 		"name": data.Name,
 	}, data.Timestamp)
 	_, err := e.client.Write(ctx, "", "", m)

@@ -136,8 +136,8 @@ func (s *Scanner) handle(a ble.Advertisement) {
 		logInvalidData(data, err)
 		return
 	}
-	sensorData.DeviceID = a.Addr().String()
-	sensorData.Name = s.peripherals[sensorData.DeviceID]
+	sensorData.Addr = a.Addr().String()
+	sensorData.Name = s.peripherals[sensorData.Addr]
 	sensorData.Timestamp = time.Now()
 	s.measurements <- sensorData
 }
