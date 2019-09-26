@@ -154,8 +154,6 @@ func logInvalidData(data []byte, err error) {
 
 func (s *Scanner) filter(a ble.Advertisement) bool {
 	if !sensor.IsRuuviTag(a.ManufacturerData()) {
-		// TODO: remove noisy logging
-		logInvalidData(a.ManufacturerData(), nil)
 		return false
 	}
 	if len(s.peripherals) == 0 {
