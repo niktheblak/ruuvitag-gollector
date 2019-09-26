@@ -2,6 +2,7 @@ package console
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
@@ -15,7 +16,11 @@ func (e Exporter) Name() string {
 }
 
 func (e Exporter) Export(ctx context.Context, data sensor.Data) error {
-	fmt.Println(data)
+	j, err := json.MarshalIndent(data, "", "    ")
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(j))
 	return nil
 }
 
