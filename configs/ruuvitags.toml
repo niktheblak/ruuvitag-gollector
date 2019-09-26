@@ -1,13 +1,14 @@
 reporting_interval = "1m"
+device = "default"
 
 [[ruuvitag]]
-id = "CC:CA:7E:52:CC:34"
+addr = "CC:CA:7E:52:CC:34"
 name = "Backyard"
 
 [[ruuvitag]]
-id = "FB:E1:B7:04:95:EE"
+addr = "FB:E1:B7:04:95:EE"
 name = "Upstairs"
 
 [[ruuvitag]]
-id = "E8:E0:C6:0B:B8:C5"
+addr = "E8:E0:C6:0B:B8:C5"
 name = "Downstairs"

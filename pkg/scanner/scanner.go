@@ -57,7 +57,7 @@ func (s defaultBLEScanner) Scan(ctx context.Context, allowDup bool, h ble.AdvHan
 func New(cfg config.Config) (*Scanner, error) {
 	peripherals := make(map[string]string)
 	for _, rt := range cfg.RuuviTags {
-		peripherals[rt.ID] = rt.Name
+		peripherals[rt.Addr] = rt.Name
 	}
 	return &Scanner{
 		SleepInterval: cfg.ReportingInterval.Duration,

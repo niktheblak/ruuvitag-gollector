@@ -12,7 +12,7 @@ import (
 )
 
 type RuuviTag struct {
-	ID   string `toml:"id"`
+	Addr string `toml:"addr"`
 	Name string `toml:"name"`
 }
 
@@ -25,6 +25,9 @@ type Config struct {
 func (c Config) Validate() error {
 	if c.ReportingInterval.Duration == 0 {
 		return fmt.Errorf("reporting interval must be set")
+	}
+	if c.Device == "" {
+		return fmt.Errorf("device must be set (use default if unsure)")
 	}
 	return nil
 }
