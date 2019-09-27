@@ -44,8 +44,12 @@ func run(c *cli.Context) error {
 	}
 	ctx := context.Background()
 	if c.GlobalBool("influxdb") {
+		url := c.GlobalString("url")
+		if url == "" {
+			return fmt.Errorf("InfluxDB URL must be specified")
+		}
 		influx, err := influxdb.New(influxdb.Config{
-			URL:      c.GlobalString("url"),
+			URL:      url,
 			Username: c.GlobalString("username"),
 			Password: c.GlobalString("password"),
 		})
@@ -55,7 +59,15 @@ func run(c *cli.Context) error {
 		exporters = append(exporters, influx)
 	}
 	if c.GlobalBool("pubsub") {
-		ps, err := pubsub.New(ctx, c.GlobalString("project"), c.GlobalString("topic"))
+		project := c.GlobalString("project")
+		if project == "" {
+			return fmt.Errorf("Google Cloud Platform project must be specified")
+		}
+		topic := c.GlobalString("topic")
+		if topic == "" {
+			return fmt.Errorf("Google Pub/Sub topic must be specified")
+		}
+		ps, err := pubsub.New(ctx, project, topic)
 		if err != nil {
 			return fmt.Errorf("failed to create Google Pub/Sub reporter: %w", err)
 		}
