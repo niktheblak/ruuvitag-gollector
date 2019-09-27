@@ -73,23 +73,32 @@ func (s *Scanner) Start(ctx context.Context) error {
 	return nil
 }
 
-func (s *Scanner) ScanOnce(ctx context.Context) error {
-	if err := s.init(); err != nil {
-		return err
+func (s *Scanner) ScanOnce(ctx context.Context) (err error) {
+	if err = s.init(); err != nil {
+		return
 	}
-	if err := s.ble.Scan(ctx, false, s.handle, s.filter); err != nil {
-		switch errors.Cause(err) {
-		case context.Canceled:
-			return fmt.Errorf("scan canceled")
-		default:
-			return fmt.Errorf("scan failed: %w", err)
+	quit := make(chan int)
+	go func() {
+		err = s.ble.Scan(ctx, false, s.handle, s.filter)
+		if err != nil {
+			switch errors.Cause(err) {
+			case context.DeadlineExceeded:
+				err = fmt.Errorf("scan interrupted")
+			case context.Canceled:
+				err = fmt.Errorf("scan canceled")
+			default:
+				err = fmt.Errorf("scan failed: %w", err)
+			}
+			quit <- 1
 		}
+	}()
+	select {
+	case <-quit:
+	case <-ctx.Done():
+	case m := <-s.measurements:
+		err = s.doExport(ctx, m)
 	}
-	m := <-s.measurements
-	if err := s.doExport(ctx, m); err != nil {
-		log.Printf("Failed to report measurement: %v", err)
-	}
-	return nil
+	return
 }
 
 func (s *Scanner) init() error {

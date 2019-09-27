@@ -97,7 +97,7 @@ func runAsDaemon(ctx context.Context, scn *scanner.Scanner) error {
 
 func runOnce(ctx context.Context, scn *scanner.Scanner) error {
 	log.Println("Scanning once")
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
