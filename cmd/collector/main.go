@@ -74,6 +74,15 @@ func run(c *cli.Context) error {
 		exporters = append(exporters, ps)
 	}
 	scn.Exporters = exporters
+	defer scn.Close()
+	if c.GlobalBool("daemon") {
+		return runAsDaemon(ctx, scn)
+	} else {
+		return runOnce(ctx, scn)
+	}
+}
+
+func runAsDaemon(ctx context.Context, scn *scanner.Scanner) error {
 	log.Println("Starting scanner")
 	if err := scn.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start scanner: %w", err)
@@ -83,11 +92,23 @@ func run(c *cli.Context) error {
 	<-interrupt
 	log.Println("Stopping ruuvitag-gollector")
 	scn.Stop()
-	for _, e := range exporters {
-		if err := e.Close(); err != nil {
-			log.Printf("Failed to close exporter %s: %v", e.Name(), err)
-		}
+	return nil
+}
+
+func runOnce(ctx context.Context, scn *scanner.Scanner) error {
+	log.Println("Scanning once")
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt)
+	go func() {
+		<-interrupt
+		cancel()
+	}()
+	if err := scn.ScanOnce(ctx); err != nil {
+		log.Printf("failed to scan: %v", err)
 	}
+	log.Println("Stopping ruuvitag-gollector")
 	return nil
 }
 
@@ -120,7 +141,7 @@ func main() {
 			Required: true,
 		},
 		cli.BoolFlag{
-			Name:  "daemon, s",
+			Name:  "daemon, d",
 			Usage: "run as a background service",
 		},
 		cli.BoolFlag{

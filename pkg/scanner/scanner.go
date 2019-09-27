@@ -65,6 +65,34 @@ func New(reportingInterval time.Duration, device string, peripherals map[string]
 }
 
 func (s *Scanner) Start(ctx context.Context) error {
+	if err := s.init(); err != nil {
+		return err
+	}
+	go s.scan()
+	go s.exportMeasurements(ctx)
+	return nil
+}
+
+func (s *Scanner) ScanOnce(ctx context.Context) error {
+	if err := s.init(); err != nil {
+		return err
+	}
+	if err := s.ble.Scan(ctx, false, s.handle, s.filter); err != nil {
+		switch errors.Cause(err) {
+		case context.Canceled:
+			return fmt.Errorf("scan canceled")
+		default:
+			return fmt.Errorf("scan failed: %w", err)
+		}
+	}
+	m := <-s.measurements
+	if err := s.doExport(ctx, m); err != nil {
+		log.Printf("Failed to report measurement: %v", err)
+	}
+	return nil
+}
+
+func (s *Scanner) init() error {
 	d, err := s.dev.NewDevice(s.deviceImpl)
 	if err != nil {
 		return fmt.Errorf("failed to initialize device %s: %w", s.deviceImpl, err)
@@ -75,20 +103,25 @@ func (s *Scanner) Start(ctx context.Context) error {
 	} else {
 		log.Println("Reading from all nearby BLE peripherals")
 	}
-	go s.scan()
-	go s.exportMeasurements(ctx)
 	return nil
 }
 
 func (s *Scanner) Stop() {
 	s.quit <- 1
+}
+
+func (s *Scanner) Close() {
 	if err := s.device.Stop(); err != nil {
 		log.Println(err)
+	}
+	for _, e := range s.Exporters {
+		if err := e.Close(); err != nil {
+			log.Printf("Failed to close exporter %s: %v", e.Name(), err)
+		}
 	}
 }
 
 func (s *Scanner) scan() {
-	log.Println("Scanner starting")
 	timer := time.NewTimer(s.SleepInterval)
 	defer timer.Stop()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -162,15 +195,21 @@ func (s *Scanner) exportMeasurements(ctx context.Context) {
 	for {
 		select {
 		case m := <-s.measurements:
-			log.Printf("Received measurement from sensor %v", m.Name)
-			for _, e := range s.Exporters {
-				log.Printf("Exporting measurement to %v", e.Name())
-				if err := e.Export(ctx, m); err != nil {
-					log.Printf("Failed to report measurement: %v", err)
-				}
+			if err := s.doExport(ctx, m); err != nil {
+				log.Printf("Failed to report measurement: %v", err)
 			}
 		case <-s.quit:
 			return
 		}
 	}
+}
+
+func (s *Scanner) doExport(ctx context.Context, m sensor.Data) error {
+	for _, e := range s.Exporters {
+		log.Printf("Exporting measurement to %v", e.Name())
+		if err := e.Export(ctx, m); err != nil {
+			return err
+		}
+	}
+	return nil
 }
