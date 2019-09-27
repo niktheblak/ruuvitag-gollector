@@ -1,14 +1,8 @@
 reporting_interval = "1m"
 device = "default"
 
-[[ruuvitag]]
-addr = "CC:CA:7E:52:CC:34"
-name = "Backyard"
-
-[[ruuvitag]]
-addr = "FB:E1:B7:04:95:EE"
-name = "Upstairs"
-
-[[ruuvitag]]
-addr = "E8:E0:C6:0B:B8:C5"
-name = "Downstairs"
+ruuvitags = [
+  "CC:CA:7E:52:CC:34=Backyard",
+  "FB:E1:B7:04:95:EE=Upstairs",
+  "E8:E0:C6:0B:B8:C5=Downstairs"
+]

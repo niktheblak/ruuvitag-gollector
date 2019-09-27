@@ -12,4 +12,5 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/raff/goble v0.0.0-20190909174656-72afc67d6a99 // indirect
 	github.com/stretchr/testify v1.4.0
+	github.com/urfave/cli v1.22.1
 )

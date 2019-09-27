@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-ble/ble"
 	"github.com/go-ble/ble/examples/lib/dev"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/config"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 	"github.com/pkg/errors"
@@ -53,17 +52,13 @@ func (s defaultBLEScanner) Scan(ctx context.Context, allowDup bool, h ble.AdvHan
 	return ble.Scan(ctx, allowDup, h, f)
 }
 
-func New(cfg config.Config) (*Scanner, error) {
-	peripherals := make(map[string]string)
-	for _, rt := range cfg.RuuviTags {
-		peripherals[rt.Addr] = rt.Name
-	}
+func New(reportingInterval time.Duration, device string, ruuviTags map[string]string) (*Scanner, error) {
 	return &Scanner{
-		SleepInterval: cfg.ReportingInterval.Duration,
+		SleepInterval: reportingInterval,
 		quit:          make(chan int),
 		measurements:  make(chan sensor.Data),
-		peripherals:   peripherals,
-		deviceImpl:    cfg.Device,
+		peripherals:   ruuviTags,
+		deviceImpl:    device,
 		dev:           defaultDeviceCreator{},
 		ble:           defaultBLEScanner{},
 	}, nil
