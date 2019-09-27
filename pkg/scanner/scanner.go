@@ -52,12 +52,12 @@ func (s defaultBLEScanner) Scan(ctx context.Context, allowDup bool, h ble.AdvHan
 	return ble.Scan(ctx, allowDup, h, f)
 }
 
-func New(reportingInterval time.Duration, device string, ruuviTags map[string]string) (*Scanner, error) {
+func New(reportingInterval time.Duration, device string, peripherals map[string]string) (*Scanner, error) {
 	return &Scanner{
 		SleepInterval: reportingInterval,
 		quit:          make(chan int),
 		measurements:  make(chan sensor.Data),
-		peripherals:   ruuviTags,
+		peripherals:   peripherals,
 		deviceImpl:    device,
 		dev:           defaultDeviceCreator{},
 		ble:           defaultBLEScanner{},
@@ -71,7 +71,7 @@ func (s *Scanner) Start(ctx context.Context) error {
 	}
 	s.device = d
 	if len(s.peripherals) > 0 {
-		log.Printf("Reading from RuuviTags %v", s.peripherals)
+		log.Printf("Reading from peripherals %v", s.peripherals)
 	} else {
 		log.Println("Reading from all nearby BLE peripherals")
 	}

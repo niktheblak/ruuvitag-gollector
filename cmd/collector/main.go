@@ -86,9 +86,9 @@ func parseRuuviTags(ruuviTags []string) (map[string]string, error) {
 		if len(tokens) != 2 {
 			return nil, fmt.Errorf("invalid RuuviTag entry: %s", rt)
 		}
-		key := strings.TrimSpace(tokens[0])
-		value := strings.TrimSpace(tokens[1])
-		m[key] = value
+		addr := strings.ToLower(strings.TrimSpace(tokens[0]))
+		name := strings.TrimSpace(tokens[1])
+		m[addr] = name
 	}
 	return m, nil
 }
