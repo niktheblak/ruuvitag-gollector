@@ -68,37 +68,38 @@ func (s *Scanner) Start(ctx context.Context) error {
 	if err := s.init(); err != nil {
 		return err
 	}
-	go s.scan()
-	go s.exportMeasurements(ctx)
+	go func() {
+		err := s.scan(ctx, func(m sensor.Data) {
+			if err := s.doExport(ctx, m); err != nil {
+				log.Printf("Failed to report measurement: %v", err)
+			}
+		})
+		if err != nil {
+			log.Println(err)
+		}
+		log.Println("Scanner quitting")
+	}()
 	return nil
 }
 
-func (s *Scanner) ScanOnce(ctx context.Context) (err error) {
-	if err = s.init(); err != nil {
-		return
+func (s *Scanner) ScanOnce(ctx context.Context) error {
+	if err := s.init(); err != nil {
+		return err
 	}
-	quit := make(chan int)
+	seenPeripherals := make(map[string]bool)
 	go func() {
-		err = s.ble.Scan(ctx, false, s.handle, s.filter)
-		if err != nil {
-			switch errors.Cause(err) {
-			case context.DeadlineExceeded:
-				err = fmt.Errorf("scan interrupted")
-			case context.Canceled:
-				err = fmt.Errorf("scan canceled")
-			default:
-				err = fmt.Errorf("scan failed: %w", err)
+		s.scan(ctx, func(m sensor.Data) {
+			seenPeripherals[m.Addr] = true
+			if err := s.doExport(ctx, m); err != nil {
+				log.Printf("Failed to report measurement: %v", err)
 			}
-			quit <- 1
-		}
+			if ContainsKeys(s.peripherals, seenPeripherals) {
+				s.quit <- 1
+			}
+		})
 	}()
-	select {
-	case <-quit:
-	case <-ctx.Done():
-	case m := <-s.measurements:
-		err = s.doExport(ctx, m)
-	}
-	return
+	<-s.quit
+	return nil
 }
 
 func (s *Scanner) init() error {
@@ -120,8 +121,10 @@ func (s *Scanner) Stop() {
 }
 
 func (s *Scanner) Close() {
-	if err := s.device.Stop(); err != nil {
-		log.Println(err)
+	if s.device != nil {
+		if err := s.device.Stop(); err != nil {
+			log.Println(err)
+		}
 	}
 	for _, e := range s.Exporters {
 		if err := e.Close(); err != nil {
@@ -130,39 +133,30 @@ func (s *Scanner) Close() {
 	}
 }
 
-func (s *Scanner) scan() {
-	timer := time.NewTimer(s.SleepInterval)
-	defer timer.Stop()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	s.doScan(ctx)
-	cancel()
-	ctx, cancel = context.WithCancel(context.Background())
+func (s *Scanner) scan(ctx context.Context, f func(sensor.Data)) (err error) {
+	go func() {
+		if err = s.ble.Scan(ctx, false, s.handle, s.filter); err != nil {
+			switch errors.Cause(err) {
+			case context.Canceled:
+				err = fmt.Errorf("scan canceled")
+			default:
+				err = fmt.Errorf("scan failed: %w", err)
+			}
+			s.quit <- 1
+		}
+	}()
 	for {
 		select {
-		case <-timer.C:
-			cancel()
-			ctx, cancel = context.WithCancel(context.Background())
-			go s.doScan(ctx)
 		case <-s.quit:
-			log.Println("Scanner quitting")
-			cancel()
-			return
+			break
+		case <-ctx.Done():
+			s.quit <- 1
+			break
+		case m := <-s.measurements:
+			f(m)
 		}
 	}
-}
-
-func (s *Scanner) doScan(ctx context.Context) {
-	if err := s.ble.Scan(ctx, false, s.handle, s.filter); err != nil {
-		switch errors.Cause(err) {
-		case nil:
-		case context.DeadlineExceeded:
-			// Nothing found during scan window
-		case context.Canceled:
-			log.Println("Scan canceled")
-		default:
-			log.Printf("Scan failed: %v", err)
-		}
-	}
+	return
 }
 
 func (s *Scanner) handle(a ble.Advertisement) {
@@ -179,16 +173,6 @@ func (s *Scanner) handle(a ble.Advertisement) {
 	s.measurements <- sensorData
 }
 
-func logInvalidData(data []byte, err error) {
-	var header []byte
-	if len(data) >= 3 {
-		header = data[:3]
-	} else {
-		header = data
-	}
-	log.Printf("Error while parsing RuuviTag data (%d bytes) %v: %v", len(data), header, err)
-}
-
 func (s *Scanner) filter(a ble.Advertisement) bool {
 	if !sensor.IsRuuviTag(a.ManufacturerData()) {
 		return false
@@ -200,19 +184,6 @@ func (s *Scanner) filter(a ble.Advertisement) bool {
 	return ok
 }
 
-func (s *Scanner) exportMeasurements(ctx context.Context) {
-	for {
-		select {
-		case m := <-s.measurements:
-			if err := s.doExport(ctx, m); err != nil {
-				log.Printf("Failed to report measurement: %v", err)
-			}
-		case <-s.quit:
-			return
-		}
-	}
-}
-
 func (s *Scanner) doExport(ctx context.Context, m sensor.Data) error {
 	for _, e := range s.Exporters {
 		log.Printf("Exporting measurement to %v", e.Name())
@@ -221,4 +192,24 @@ func (s *Scanner) doExport(ctx context.Context, m sensor.Data) error {
 		}
 	}
 	return nil
+}
+
+func logInvalidData(data []byte, err error) {
+	var header []byte
+	if len(data) >= 3 {
+		header = data[:3]
+	} else {
+		header = data
+	}
+	log.Printf("Error while parsing RuuviTag data (%d bytes) %v: %v", len(data), header, err)
+}
+
+func ContainsKeys(a map[string]string, b map[string]bool) bool {
+	for k := range a {
+		_, ok := b[k]
+		if !ok {
+			return false
+		}
+	}
+	return true
 }

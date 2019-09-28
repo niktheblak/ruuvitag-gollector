@@ -104,6 +104,7 @@ func runOnce(ctx context.Context, scn *scanner.Scanner) error {
 	go func() {
 		<-interrupt
 		cancel()
+		scn.Stop()
 	}()
 	if err := scn.ScanOnce(ctx); err != nil {
 		log.Printf("failed to scan: %v", err)
