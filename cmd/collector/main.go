@@ -139,9 +139,10 @@ func main() {
 	app.Copyright = "(c) 2019 Niko Korhonen"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:     "config",
-			Usage:    "RuuviTag configuration file",
-			Required: true,
+			Name:      "config",
+			Usage:     "RuuviTag configuration file",
+			TakesFile: true,
+			Required:  true,
 		},
 		cli.BoolFlag{
 			Name:  "daemon, d",
@@ -152,7 +153,7 @@ func main() {
 			Usage: "print measurements to console",
 		},
 		altsrc.NewDurationFlag(cli.DurationFlag{
-			Name:  "reporting_interval, r",
+			Name:  "reporting_interval",
 			Usage: "reporting interval",
 			Value: 60 * time.Second,
 		}),
@@ -188,12 +189,12 @@ func main() {
 			Value:  "ruuvitag_sensor",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
-			Name:   "username, u",
+			Name:   "username",
 			Usage:  "InfluxDB username",
 			EnvVar: "RUUVITAG_INFLUXDB_USERNAME",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
-			Name:   "password, p",
+			Name:   "password",
 			Usage:  "InfluxDB password",
 			EnvVar: "RUUVITAG_INFLUXDB_PASSWORD",
 		}),
