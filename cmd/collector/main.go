@@ -24,7 +24,11 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	scn, err := scanner.New(c.GlobalDuration("reporting_interval"), c.String("device"), ruuviTags)
+	interval, err := time.ParseDuration(c.GlobalString("reporting_interval"))
+	if err != nil {
+		return fmt.Errorf("invalid reporting interval: %w", err)
+	}
+	scn, err := scanner.New(interval, c.String("device"), ruuviTags)
 	if err != nil {
 		return fmt.Errorf("failed to create scanner: %w", err)
 	}
@@ -142,10 +146,10 @@ func main() {
 			Name:  "console, c",
 			Usage: "print measurements to console",
 		},
-		altsrc.NewDurationFlag(cli.DurationFlag{
+		altsrc.NewStringFlag(cli.StringFlag{
 			Name:  "reporting_interval",
 			Usage: "reporting interval",
-			Value: 60 * time.Second,
+			Value: "1m",
 		}),
 		altsrc.NewStringSliceFlag(cli.StringSliceFlag{
 			Name:  "ruuvitags",
