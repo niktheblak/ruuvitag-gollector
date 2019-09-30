@@ -3,13 +3,13 @@ package influxdb
 import (
 	"context"
 
-	"github.com/influxdata/influxdb-client-go"
+	influx "github.com/influxdata/influxdb1-client/v2"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 
 type influxdbExporter struct {
-	client *influxdb.Client
+	client influx.Client
 }
 
 type Config struct {
@@ -20,11 +20,11 @@ type Config struct {
 }
 
 func New(cfg Config) (exporter.Exporter, error) {
-	var opts []influxdb.Option
-	if cfg.Username != "" && cfg.Password != "" {
-		opts = append(opts, influxdb.WithUserAndPass(cfg.Username, cfg.Password))
-	}
-	client, err := influxdb.New(cfg.URL, cfg.Token, opts...)
+	client, err := influx.NewHTTPClient(influx.HTTPConfig{
+		Addr:     cfg.URL,
+		Username: cfg.Username,
+		Password: cfg.Password,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -38,16 +38,23 @@ func (e *influxdbExporter) Name() string {
 }
 
 func (e *influxdbExporter) Export(ctx context.Context, data sensor.Data) error {
-	m := influxdb.NewRowMetric(map[string]interface{}{
+	conf := influx.BatchPointsConfig{
+		Database: "ruuvitag",
+	}
+	bp, err := influx.NewBatchPoints(conf)
+	if err != nil {
+		return err
+	}
+	point, err := influx.NewPoint("measurement", map[string]string{
+		"mac":  data.Addr,
+		"name": data.Name,
+	}, map[string]interface{}{
 		"temperature": data.Temperature,
 		"humidity":    data.Humidity,
 		"pressure":    data.Pressure,
-	}, "ruuvitag", map[string]string{
-		"mac":  data.Addr,
-		"name": data.Name,
 	}, data.Timestamp)
-	_, err := e.client.Write(ctx, "", "", m)
-	return err
+	bp.AddPoint(point)
+	return e.client.Write(bp)
 }
 
 func (e *influxdbExporter) Close() error {
