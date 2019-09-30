@@ -57,7 +57,7 @@ func (e *influxdbExporter) Export(ctx context.Context, data sensor.Data) error {
 	}, map[string]interface{}{
 		"temperature": data.Temperature,
 		"humidity":    data.Humidity,
-		"pressure":    data.Pressure,
+		"pressure":    float64(data.Pressure),
 	}, data.Timestamp)
 	bp.AddPoint(point)
 	return e.client.Write(bp)
