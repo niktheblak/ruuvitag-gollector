@@ -167,9 +167,12 @@ var testData = sensor.DataFormat3{
 	BatteryVoltageMv:    500,
 }
 
-func TestScanner(t *testing.T) {
+func TestScanOnce(t *testing.T) {
 	cfg := config.Config{}
-	scn, err := New(cfg)
+	peripherals := map[string]string{
+		"cc:ca:7e:52:cc:34": "Test",
+	}
+	scn, err := New(cfg.ReportingInterval.Duration, cfg.Device, peripherals)
 	require.NoError(t, err)
 	exp := new(mockExporter)
 	scn.Exporters = []exporter.Exporter{exp}
@@ -181,16 +184,16 @@ func TestScanner(t *testing.T) {
 		manufacturerData: buf.Bytes(),
 	}
 	scn.dev = mockDeviceCreator{device: device}
-	ctx := context.Background()
-	err = scn.Start(ctx)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err = scn.ScanOnce(ctx)
 	require.NoError(t, err)
 	// Wait a bit for messages to appear in the measurements channel
-	time.Sleep(100 * time.Millisecond)
-	scn.Stop()
+	//time.Sleep(100 * time.Millisecond)
 	assert.NotEmpty(t, exp.events)
 	e := exp.events[0]
-	assert.Equal(t, "", e.Name)
-	assert.Equal(t, "cc:ca:7e:52:cc:34", e.DeviceID)
+	assert.Equal(t, "Test", e.Name)
+	assert.Equal(t, "cc:ca:7e:52:cc:34", e.Addr)
 	assert.Equal(t, 55.0, e.Temperature)
 	assert.Equal(t, 60.0, e.Humidity)
 	assert.Equal(t, 51000, e.Pressure)

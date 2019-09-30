@@ -82,13 +82,13 @@ func (s *Scanner) Start(ctx context.Context) error {
 	return nil
 }
 
-func (s *Scanner) ScanOnce(ctx context.Context) error {
-	if err := s.init(); err != nil {
+func (s *Scanner) ScanOnce(ctx context.Context) (err error) {
+	if err = s.init(); err != nil {
 		return err
 	}
 	seenPeripherals := make(map[string]bool)
 	go func() {
-		s.scan(ctx, func(m sensor.Data) {
+		err = s.scan(ctx, func(m sensor.Data) {
 			seenPeripherals[m.Addr] = true
 			if err := s.doExport(ctx, m); err != nil {
 				log.Printf("Failed to report measurement: %v", err)
@@ -99,7 +99,7 @@ func (s *Scanner) ScanOnce(ctx context.Context) error {
 		})
 	}()
 	<-s.quit
-	return nil
+	return
 }
 
 func (s *Scanner) init() error {
