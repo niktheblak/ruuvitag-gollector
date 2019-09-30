@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/niktheblak/ruuvitag-gollector/pkg/config"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/influxdb"
@@ -21,15 +20,6 @@ import (
 
 func run(c *cli.Context) error {
 	log.Println("Starting ruuvitag-gollector")
-	log.Printf("Device: %v", c.GlobalString("device"))
-	cfg, err := config.Read(c.GlobalString("config"))
-	if err != nil {
-		return fmt.Errorf("failed to decode configuration: %w", err)
-	}
-	err = cfg.Validate()
-	if err != nil {
-		return err
-	}
 	ruuviTags, err := parseRuuviTags(c.GlobalStringSlice("ruuvitags"))
 	if err != nil {
 		return err
