@@ -49,9 +49,11 @@ func run(c *cli.Context) error {
 			return fmt.Errorf("InfluxDB URL must be specified")
 		}
 		influx, err := influxdb.New(influxdb.Config{
-			URL:      url,
-			Username: c.GlobalString("username"),
-			Password: c.GlobalString("password"),
+			URL:         url,
+			Database:    c.GlobalString("database"),
+			Measurement: c.GlobalString("measurement"),
+			Username:    c.GlobalString("username"),
+			Password:    c.GlobalString("password"),
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create InfluxDB reporter: %w", err)
@@ -172,6 +174,18 @@ func main() {
 			Name:   "url",
 			Usage:  "InfluxDB URL",
 			EnvVar: "RUUVITAG_INFLUXDB_URL",
+		}),
+		altsrc.NewStringFlag(cli.StringFlag{
+			Name:   "database",
+			Usage:  "InfluxDB database",
+			EnvVar: "RUUVITAG_INFLUXDB_DATABASE",
+			Value:  "ruuvitag",
+		}),
+		altsrc.NewStringFlag(cli.StringFlag{
+			Name:   "measurement",
+			Usage:  "InfluxDB measurement",
+			EnvVar: "RUUVITAG_INFLUXDB_MEASUREMENT",
+			Value:  "ruuvitag_sensor",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
 			Name:   "username, u",

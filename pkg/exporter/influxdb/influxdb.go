@@ -9,14 +9,18 @@ import (
 )
 
 type influxdbExporter struct {
-	client influx.Client
+	client      influx.Client
+	database    string
+	measurement string
 }
 
 type Config struct {
-	URL      string
-	Token    string
-	Username string
-	Password string
+	URL         string
+	Token       string
+	Database    string
+	Measurement string
+	Username    string
+	Password    string
 }
 
 func New(cfg Config) (exporter.Exporter, error) {
@@ -29,7 +33,8 @@ func New(cfg Config) (exporter.Exporter, error) {
 		return nil, err
 	}
 	return &influxdbExporter{
-		client: client,
+		client:   client,
+		database: cfg.Database,
 	}, nil
 }
 
@@ -39,13 +44,13 @@ func (e *influxdbExporter) Name() string {
 
 func (e *influxdbExporter) Export(ctx context.Context, data sensor.Data) error {
 	conf := influx.BatchPointsConfig{
-		Database: "ruuvitag",
+		Database: e.database,
 	}
 	bp, err := influx.NewBatchPoints(conf)
 	if err != nil {
 		return err
 	}
-	point, err := influx.NewPoint("measurement", map[string]string{
+	point, err := influx.NewPoint(e.measurement, map[string]string{
 		"mac":  data.Addr,
 		"name": data.Name,
 	}, map[string]interface{}{
