@@ -148,15 +148,14 @@ func (s *Scanner) scan(ctx context.Context, f func(sensor.Data)) (err error) {
 	for {
 		select {
 		case <-s.quit:
-			break
+			return
 		case <-ctx.Done():
 			s.quit <- 1
-			break
+			return
 		case m := <-s.measurements:
 			f(m)
 		}
 	}
-	return
 }
 
 func (s *Scanner) handle(a ble.Advertisement) {
