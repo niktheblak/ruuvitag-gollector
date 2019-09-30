@@ -33,8 +33,9 @@ func New(cfg Config) (exporter.Exporter, error) {
 		return nil, err
 	}
 	return &influxdbExporter{
-		client:   client,
-		database: cfg.Database,
+		client:      client,
+		database:    cfg.Database,
+		measurement: cfg.Measurement,
 	}, nil
 }
 
