@@ -55,7 +55,7 @@ func run(c *cli.Context) error {
 		exporters = append(exporters, influx)
 	}
 	if c.GlobalBool("pubsub") {
-		project := c.GlobalString("pubsub_project")
+		project := c.GlobalString("project")
 		if project == "" {
 			return fmt.Errorf("Google Cloud Platform project must be specified")
 		}
@@ -199,9 +199,9 @@ func main() {
 			EnvVar: "RUUVITAG_USE_PUBSUB",
 		},
 		altsrc.NewStringFlag(cli.StringFlag{
-			Name:   "pubsub_project",
-			Usage:  "Google Pub/Sub project",
-			EnvVar: "RUUVITAG_PUBSUB_PROJECT",
+			Name:   "project",
+			Usage:  "Google Cloud Platform project",
+			EnvVar: "RUUVITAG_GOOGLE_PROJECT",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
 			Name:   "pubsub_topic",
