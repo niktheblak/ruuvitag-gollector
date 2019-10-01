@@ -175,13 +175,11 @@ func main() {
 			Name:   "influxdb_database",
 			Usage:  "InfluxDB database",
 			EnvVar: "RUUVITAG_INFLUXDB_DATABASE",
-			Value:  "ruuvitag",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
 			Name:   "influxdb_measurement",
 			Usage:  "InfluxDB measurement",
 			EnvVar: "RUUVITAG_INFLUXDB_MEASUREMENT",
-			Value:  "ruuvitag_sensor",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
 			Name:   "influxdb_username",
