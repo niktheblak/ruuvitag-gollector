@@ -15,7 +15,7 @@ type influxdbExporter struct {
 }
 
 type Config struct {
-	URL         string
+	Addr        string
 	Token       string
 	Database    string
 	Measurement string
@@ -25,7 +25,7 @@ type Config struct {
 
 func New(cfg Config) (exporter.Exporter, error) {
 	client, err := influx.NewHTTPClient(influx.HTTPConfig{
-		Addr:     cfg.URL,
+		Addr:     cfg.Addr,
 		Username: cfg.Username,
 		Password: cfg.Password,
 	})

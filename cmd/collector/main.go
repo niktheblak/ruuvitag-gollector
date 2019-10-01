@@ -38,16 +38,16 @@ func run(c *cli.Context) error {
 	}
 	ctx := context.Background()
 	if c.GlobalBool("influxdb") {
-		url := c.GlobalString("url")
+		url := c.GlobalString("influxdb_addr")
 		if url == "" {
-			return fmt.Errorf("InfluxDB URL must be specified")
+			return fmt.Errorf("InfluxDB Addr must be specified")
 		}
 		influx, err := influxdb.New(influxdb.Config{
-			URL:         url,
-			Database:    c.GlobalString("database"),
-			Measurement: c.GlobalString("measurement"),
-			Username:    c.GlobalString("username"),
-			Password:    c.GlobalString("password"),
+			Addr:        url,
+			Database:    c.GlobalString("influxdb_database"),
+			Measurement: c.GlobalString("influxdb_measurement"),
+			Username:    c.GlobalString("influxdb_username"),
+			Password:    c.GlobalString("influxdb_password"),
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create InfluxDB reporter: %w", err)
@@ -55,11 +55,11 @@ func run(c *cli.Context) error {
 		exporters = append(exporters, influx)
 	}
 	if c.GlobalBool("pubsub") {
-		project := c.GlobalString("project")
+		project := c.GlobalString("pubsub_project")
 		if project == "" {
 			return fmt.Errorf("Google Cloud Platform project must be specified")
 		}
-		topic := c.GlobalString("topic")
+		topic := c.GlobalString("pubsub_topic")
 		if topic == "" {
 			return fmt.Errorf("Google Pub/Sub topic must be specified")
 		}
@@ -135,6 +135,7 @@ func main() {
 		cli.StringFlag{
 			Name:      "config",
 			Usage:     "RuuviTag configuration file",
+			EnvVar:    "RUUVITAG_CONFIG_FILE",
 			TakesFile: true,
 			Required:  true,
 		},
@@ -166,29 +167,29 @@ func main() {
 			EnvVar: "RUUVITAG_USE_INFLUXDB",
 		},
 		altsrc.NewStringFlag(cli.StringFlag{
-			Name:   "url",
-			Usage:  "InfluxDB URL",
-			EnvVar: "RUUVITAG_INFLUXDB_URL",
+			Name:   "influxdb_addr",
+			Usage:  "InfluxDB server address",
+			EnvVar: "RUUVITAG_INFLUXDB_ADDR",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
-			Name:   "database",
+			Name:   "influxdb_database",
 			Usage:  "InfluxDB database",
 			EnvVar: "RUUVITAG_INFLUXDB_DATABASE",
 			Value:  "ruuvitag",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
-			Name:   "measurement",
+			Name:   "influxdb_measurement",
 			Usage:  "InfluxDB measurement",
 			EnvVar: "RUUVITAG_INFLUXDB_MEASUREMENT",
 			Value:  "ruuvitag_sensor",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
-			Name:   "username",
+			Name:   "influxdb_username",
 			Usage:  "InfluxDB username",
 			EnvVar: "RUUVITAG_INFLUXDB_USERNAME",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
-			Name:   "password",
+			Name:   "influxdb_password",
 			Usage:  "InfluxDB password",
 			EnvVar: "RUUVITAG_INFLUXDB_PASSWORD",
 		}),
@@ -198,12 +199,12 @@ func main() {
 			EnvVar: "RUUVITAG_USE_PUBSUB",
 		},
 		altsrc.NewStringFlag(cli.StringFlag{
-			Name:   "project",
+			Name:   "pubsub_project",
 			Usage:  "Google Pub/Sub project",
 			EnvVar: "RUUVITAG_PUBSUB_PROJECT",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
-			Name:   "topic",
+			Name:   "pubsub_topic",
 			Usage:  "Google Pub/Sub topic",
 			EnvVar: "RUUVITAG_PUBSUB_TOPIC",
 		}),
