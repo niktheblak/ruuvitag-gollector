@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/logging"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/influxdb"
@@ -18,8 +19,10 @@ import (
 	"github.com/urfave/cli/altsrc"
 )
 
+var logger = log.New(os.Stdout, "", log.LstdFlags)
+
 func run(c *cli.Context) error {
-	log.Println("Starting ruuvitag-gollector")
+	logger.Println("Starting ruuvitag-gollector")
 	ruuviTags, err := parseRuuviTags(c.GlobalStringSlice("ruuvitags"))
 	if err != nil {
 		return err
@@ -28,7 +31,20 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("invalid reporting interval: %w", err)
 	}
-	scn, err := scanner.New(interval, c.String("device"), ruuviTags)
+	ctx := context.Background()
+	if c.GlobalBool("stackdriver") {
+		project := c.GlobalString("project")
+		if project == "" {
+			return fmt.Errorf("Google Cloud Platform project must be specified")
+		}
+		client, err := logging.NewClient(ctx, project)
+		if err != nil {
+			return fmt.Errorf("failed to create Stackdriver client: %w", err)
+		}
+		defer client.Close()
+		logger = client.Logger("ruuvitag-gollector").StandardLogger(logging.Info)
+	}
+	scn, err := scanner.New(logger, interval, c.String("device"), ruuviTags)
 	if err != nil {
 		return fmt.Errorf("failed to create scanner: %w", err)
 	}
@@ -36,7 +52,6 @@ func run(c *cli.Context) error {
 	if c.GlobalBool("console") {
 		exporters = append(exporters, console.Exporter{})
 	}
-	ctx := context.Background()
 	if c.GlobalBool("influxdb") {
 		url := c.GlobalString("influxdb_addr")
 		if url == "" {
@@ -79,20 +94,20 @@ func run(c *cli.Context) error {
 }
 
 func runAsDaemon(ctx context.Context, scn *scanner.Scanner) error {
-	log.Println("Starting scanner")
+	logger.Println("Starting scanner")
 	if err := scn.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start scanner: %w", err)
 	}
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 	<-interrupt
-	log.Println("Stopping ruuvitag-gollector")
+	logger.Println("Stopping ruuvitag-gollector")
 	scn.Stop()
 	return nil
 }
 
 func runOnce(ctx context.Context, scn *scanner.Scanner) error {
-	log.Println("Scanning once")
+	logger.Println("Scanning once")
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	interrupt := make(chan os.Signal, 1)
@@ -103,9 +118,9 @@ func runOnce(ctx context.Context, scn *scanner.Scanner) error {
 		scn.Stop()
 	}()
 	if err := scn.ScanOnce(ctx); err != nil {
-		log.Printf("failed to scan: %v", err)
+		logger.Printf("failed to scan: %v", err)
 	}
-	log.Println("Stopping ruuvitag-gollector")
+	logger.Println("Stopping ruuvitag-gollector")
 	return nil
 }
 
@@ -206,12 +221,17 @@ func main() {
 			Usage:  "Google Pub/Sub topic",
 			EnvVar: "RUUVITAG_PUBSUB_TOPIC",
 		}),
+		cli.BoolFlag{
+			Name:   "stackdriver",
+			Usage:  "use Google Stackdriver logging",
+			EnvVar: "RUUVITAG_USE_STACKDRIVER_LOGGING",
+		},
 	}
 	app.Before = altsrc.InitInputSourceWithContext(app.Flags, altsrc.NewTomlSourceFromFlagFunc("config"))
 	app.Action = func(c *cli.Context) error {
 		return run(c)
 	}
 	if err := app.Run(os.Args); err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 }

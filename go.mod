@@ -3,8 +3,9 @@ module github.com/niktheblak/ruuvitag-gollector
 go 1.13
 
 require (
+	cloud.google.com/go/logging v1.0.0
 	cloud.google.com/go/pubsub v1.0.1
-	github.com/BurntSushi/toml v0.3.1
+	cloud.google.com/go/storage v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-ble/ble v0.0.0-20190521171521-147700f13610
 	github.com/influxdata/influxdb1-client v0.0.0-20190809212627-fc22c7df067e
@@ -16,5 +17,12 @@ require (
 	github.com/raff/goble v0.0.0-20190909174656-72afc67d6a99 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/urfave/cli v1.22.1
-	honnef.co/go/tools v0.0.1-2019.2.2 // indirect
+	go.opencensus.io v0.22.1 // indirect
+	golang.org/x/net v0.0.0-20190930134127-c5a3c61f89f3 // indirect
+	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
+	golang.org/x/sys v0.0.0-20190927073244-c990c680b611 // indirect
+	google.golang.org/api v0.10.0 // indirect
+	google.golang.org/appengine v1.6.4 // indirect
+	google.golang.org/genproto v0.0.0-20190927181202-20e1ac93f88c // indirect
+	google.golang.org/grpc v1.24.0 // indirect
 )
