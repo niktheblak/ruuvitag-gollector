@@ -14,7 +14,6 @@ type Data struct {
 	Humidity      float64   `json:"humidity"`
 	Pressure      int       `json:"pressure"`
 	Battery       int       `json:"battery"`
-	Address       string    `json:"address"`
 	AccelerationX int       `json:"acceleration_x"`
 	AccelerationY int       `json:"acceleration_y"`
 	AccelerationZ int       `json:"acceleration_z"`
