@@ -22,7 +22,6 @@ import (
 var logger = log.New(os.Stdout, "", log.LstdFlags)
 
 func run(c *cli.Context) error {
-	logger.Println("Starting ruuvitag-gollector")
 	ruuviTags, err := parseRuuviTags(c.GlobalStringSlice("ruuvitags"))
 	if err != nil {
 		return err
@@ -48,6 +47,7 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to create scanner: %w", err)
 	}
+	defer scn.Close()
 	var exporters []exporter.Exporter
 	if c.GlobalBool("console") {
 		exporters = append(exporters, console.Exporter{})
@@ -85,7 +85,7 @@ func run(c *cli.Context) error {
 		exporters = append(exporters, ps)
 	}
 	scn.Exporters = exporters
-	defer scn.Close()
+	logger.Println("Starting ruuvitag-gollector")
 	if c.GlobalBool("daemon") {
 		return runAsDaemon(ctx, scn)
 	} else {
