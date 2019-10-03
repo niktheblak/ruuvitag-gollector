@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"io/ioutil"
+	"log"
 	"testing"
 	"time"
 
@@ -26,11 +28,13 @@ var testData = sensor.DataFormat3{
 	BatteryVoltageMv:    500,
 }
 
+var logger = log.New(ioutil.Discard, "", log.LstdFlags)
+
 func TestScanOnce(t *testing.T) {
 	peripherals := map[string]string{
 		"cc:ca:7e:52:cc:34": "Test",
 	}
-	scn, err := New(1*time.Second, "default", peripherals)
+	scn, err := New(logger, "default", peripherals)
 	require.NoError(t, err)
 	exp := new(mockExporter)
 	scn.Exporters = []exporter.Exporter{exp}
@@ -60,7 +64,7 @@ func TestScan(t *testing.T) {
 	peripherals := map[string]string{
 		"cc:ca:7e:52:cc:34": "Test",
 	}
-	scn, err := New(1*time.Second, "default", peripherals)
+	scn, err := New(logger, "default", peripherals)
 	require.NoError(t, err)
 	exp := new(mockExporter)
 	scn.Exporters = []exporter.Exporter{exp}

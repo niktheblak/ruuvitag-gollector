@@ -14,7 +14,6 @@ import (
 )
 
 type Scanner struct {
-	SleepInterval time.Duration
 	Exporters     []exporter.Exporter
 	logger        *log.Logger
 	device        ble.Device
@@ -53,9 +52,8 @@ func (s defaultBLEScanner) Scan(ctx context.Context, allowDup bool, h ble.AdvHan
 	return ble.Scan(ctx, allowDup, h, f)
 }
 
-func New(logger *log.Logger, reportingInterval time.Duration, device string, peripherals map[string]string) (*Scanner, error) {
+func New(logger *log.Logger, device string, peripherals map[string]string) (*Scanner, error) {
 	return &Scanner{
-		SleepInterval: reportingInterval,
 		logger:        logger,
 		quit:          make(chan int),
 		measurements:  make(chan sensor.Data),

@@ -26,10 +26,6 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	interval, err := time.ParseDuration(c.GlobalString("reporting_interval"))
-	if err != nil {
-		return fmt.Errorf("invalid reporting interval: %w", err)
-	}
 	ctx := context.Background()
 	if c.GlobalBool("stackdriver") {
 		project := c.GlobalString("project")
@@ -43,7 +39,7 @@ func run(c *cli.Context) error {
 		defer client.Close()
 		logger = client.Logger("ruuvitag-gollector").StandardLogger(logging.Info)
 	}
-	scn, err := scanner.New(logger, interval, c.String("device"), ruuviTags)
+	scn, err := scanner.New(logger, c.String("device"), ruuviTags)
 	if err != nil {
 		return fmt.Errorf("failed to create scanner: %w", err)
 	}
@@ -162,11 +158,6 @@ func main() {
 			Name:  "console, c",
 			Usage: "print measurements to console",
 		},
-		altsrc.NewStringFlag(cli.StringFlag{
-			Name:  "reporting_interval",
-			Usage: "reporting interval",
-			Value: "1m",
-		}),
 		altsrc.NewStringSliceFlag(cli.StringSliceFlag{
 			Name:  "ruuvitags",
 			Usage: "RuuviTag addresses and names to use",
