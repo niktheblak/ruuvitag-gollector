@@ -3,6 +3,8 @@ package pubsub
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
 
 	"cloud.google.com/go/pubsub"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
@@ -16,14 +18,15 @@ type pubsubExporter struct {
 
 // New creates a new Google Pub/Sub reporter
 func New(ctx context.Context, project, topic string) (exporter.Exporter, error) {
+	creds := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
+	if creds == "" {
+		return nil, fmt.Errorf("GOOGLE_APPLICATION_CREDENTIALS must be set")
+	}
 	client, err := pubsub.NewClient(ctx, project)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error while creating client: %w", err)
 	}
-	t, err := client.CreateTopic(ctx, topic)
-	if err != nil {
-		return nil, err
-	}
+	t := client.Topic(topic)
 	return &pubsubExporter{
 		client: client,
 		topic:  t,
@@ -46,8 +49,8 @@ func (e *pubsubExporter) Export(ctx context.Context, data sensor.Data) error {
 			"name": data.Name,
 		},
 	}
-	e.topic.Publish(ctx, msg)
-	return nil
+	_, err = e.topic.Publish(ctx, msg).Get(ctx)
+	return err
 }
 
 func (e *pubsubExporter) Close() error {
