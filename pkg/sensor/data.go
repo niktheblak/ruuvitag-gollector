@@ -12,7 +12,7 @@ type Data struct {
 	Name          string    `json:"name"`
 	Temperature   float64   `json:"temperature"`
 	Humidity      float64   `json:"humidity"`
-	Pressure      int       `json:"pressure"`
+	Pressure      float64   `json:"pressure"`
 	Battery       int       `json:"battery"`
 	AccelerationX int       `json:"acceleration_x"`
 	AccelerationY int       `json:"acceleration_y"`
@@ -53,7 +53,7 @@ func ParseSensorFormat3(data []byte) (sd Data, err error) {
 	}
 	sd.Temperature = ParseTemperature(result.Temperature, result.TemperatureFraction)
 	sd.Humidity = float64(result.Humidity) / 2.0
-	sd.Pressure = int(result.Pressure) + 50000
+	sd.Pressure = float64(int(result.Pressure)+50000) / 100.0
 	sd.Battery = int(result.BatteryVoltageMv)
 	sd.AccelerationX = int(result.AccelerationX)
 	sd.AccelerationY = int(result.AccelerationY)
