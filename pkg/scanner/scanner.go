@@ -1,10 +1,10 @@
 package scanner
 
 import (
-	"strings"
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/go-ble/ble"
@@ -15,15 +15,15 @@ import (
 )
 
 type Scanner struct {
-	Exporters     []exporter.Exporter
-	logger        *log.Logger
-	device        ble.Device
-	quit          chan int
-	measurements  chan sensor.Data
-	peripherals   map[string]string
-	deviceImpl    string
-	dev           DeviceCreator
-	ble           BLEScanner
+	Exporters    []exporter.Exporter
+	logger       *log.Logger
+	device       ble.Device
+	quit         chan int
+	measurements chan sensor.Data
+	peripherals  map[string]string
+	deviceImpl   string
+	dev          DeviceCreator
+	ble          BLEScanner
 }
 
 type DeviceCreator interface {
@@ -55,13 +55,13 @@ func (s defaultBLEScanner) Scan(ctx context.Context, allowDup bool, h ble.AdvHan
 
 func New(logger *log.Logger, device string, peripherals map[string]string) (*Scanner, error) {
 	return &Scanner{
-		logger:        logger,
-		quit:          make(chan int),
-		measurements:  make(chan sensor.Data),
-		peripherals:   peripherals,
-		deviceImpl:    device,
-		dev:           defaultDeviceCreator{},
-		ble:           defaultBLEScanner{},
+		logger:       logger,
+		quit:         make(chan int),
+		measurements: make(chan sensor.Data),
+		peripherals:  peripherals,
+		deviceImpl:   device,
+		dev:          defaultDeviceCreator{},
+		ble:          defaultBLEScanner{},
 	}, nil
 }
 
