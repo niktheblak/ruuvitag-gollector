@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"strings"
 	"context"
 	"fmt"
 	"log"
@@ -166,8 +167,9 @@ func (s *Scanner) handle(a ble.Advertisement) {
 		s.logInvalidData(data, err)
 		return
 	}
-	sensorData.Addr = a.Addr().String()
-	sensorData.Name = s.peripherals[sensorData.Addr]
+	addr := a.Addr().String()
+	sensorData.Addr = strings.ToUpper(addr)
+	sensorData.Name = s.peripherals[addr]
 	sensorData.Timestamp = time.Now()
 	s.measurements <- sensorData
 }

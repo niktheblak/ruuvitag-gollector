@@ -53,7 +53,7 @@ func TestScanOnce(t *testing.T) {
 	assert.NotEmpty(t, exp.events)
 	e := exp.events[0]
 	assert.Equal(t, "Test", e.Name)
-	assert.Equal(t, "cc:ca:7e:52:cc:34", e.Addr)
+	assert.Equal(t, "CC:CA:7E:52:CC:34", e.Addr)
 	assert.Equal(t, 55.0, e.Temperature)
 	assert.Equal(t, 60.0, e.Humidity)
 	assert.Equal(t, 51000, e.Pressure)
