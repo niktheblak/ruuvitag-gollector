@@ -65,20 +65,82 @@ func New(logger *log.Logger, device string, peripherals map[string]string) (*Sca
 	}, nil
 }
 
-func (s *Scanner) Start(ctx context.Context) error {
+func (s *Scanner) Scan(ctx context.Context) error {
 	if err := s.init(); err != nil {
 		return err
 	}
+	scanCtx, cancel := context.WithCancel(ctx)
 	go func() {
-		err := s.scan(ctx, func(m sensor.Data) {
-			if err := s.doExport(ctx, m); err != nil {
-				s.logger.Printf("Failed to report measurement: %v", err)
+		if err := s.ble.Scan(scanCtx, false, s.handle, s.filter); err != nil {
+			switch errors.Cause(err) {
+			case context.DeadlineExceeded:
+				s.quit <- 1
+			case context.Canceled:
+				s.logger.Printf("Scan canceled")
+			case nil:
+				s.quit <- 1
+			default:
+				s.logger.Printf("Scan failed: %v", err)
+				s.quit <- 1
 			}
-		})
-		if err != nil {
-			s.logger.Println(err)
 		}
-		s.logger.Println("Scanner quitting")
+	}()
+	go func() {
+		for {
+			select {
+			case m := <-s.measurements:
+				if err := s.export(ctx, m); err != nil {
+					s.logger.Printf("Failed to report measurement: %v", err)
+				}
+			case <-s.quit:
+				cancel()
+				return
+			}
+		}
+	}()
+	return nil
+}
+
+func (s *Scanner) Start(ctx context.Context, scanInterval time.Duration) error {
+	if err := s.init(); err != nil {
+		return err
+	}
+	ticker := time.NewTicker(scanInterval)
+	go func() {
+		for {
+			ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+			select {
+			case <-ticker.C:
+				if err := s.ble.Scan(ctx, false, s.handle, s.filter); err != nil {
+					switch errors.Cause(err) {
+					case context.Canceled:
+						s.logger.Printf("scan canceled")
+						s.quit <- 1
+					case context.DeadlineExceeded:
+					default:
+						s.logger.Printf("Scan failed: %w", err)
+						s.quit <- 1
+					}
+				}
+			case <-s.quit:
+				s.logger.Println("Scanner quitting")
+				cancel()
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+	go func() {
+		for {
+			select {
+			case m := <-s.measurements:
+				if err := s.export(ctx, m); err != nil {
+					s.logger.Printf("Failed to report measurement: %v", err)
+				}
+			case <-s.quit:
+				return
+			}
+		}
 	}()
 	return nil
 }
@@ -87,19 +149,37 @@ func (s *Scanner) ScanOnce(ctx context.Context) (err error) {
 	if err = s.init(); err != nil {
 		return err
 	}
-	seenPeripherals := make(map[string]bool)
+	scanCtx, cancel := context.WithCancel(ctx)
 	go func() {
-		err = s.scan(ctx, func(m sensor.Data) {
-			seenPeripherals[m.Addr] = true
-			if err := s.doExport(ctx, m); err != nil {
-				s.logger.Printf("Failed to report measurement: %v", err)
+		if err = s.ble.Scan(scanCtx, false, s.handle, s.filter); err != nil {
+			switch errors.Cause(err) {
+			case context.Canceled:
+				err = fmt.Errorf("scan canceled")
+			default:
+				err = fmt.Errorf("scan failed: %w", err)
 			}
-			if ContainsKeys(s.peripherals, seenPeripherals) {
-				s.quit <- 1
+			s.quit <- 1
+		}
+	}()
+	go func() {
+		seenPeripherals := make(map[string]bool)
+		for {
+			select {
+			case m := <-s.measurements:
+				seenPeripherals[m.Addr] = true
+				if err := s.export(ctx, m); err != nil {
+					s.logger.Printf("Failed to report measurement: %v", err)
+				}
+				if ContainsKeys(s.peripherals, seenPeripherals) {
+					s.quit <- 1
+				}
+			case <-s.quit:
+				return
 			}
-		})
+		}
 	}()
 	<-s.quit
+	cancel()
 	return
 }
 
@@ -134,31 +214,6 @@ func (s *Scanner) Close() {
 	}
 }
 
-func (s *Scanner) scan(ctx context.Context, f func(sensor.Data)) (err error) {
-	go func() {
-		if err = s.ble.Scan(ctx, false, s.handle, s.filter); err != nil {
-			switch errors.Cause(err) {
-			case context.Canceled:
-				err = fmt.Errorf("scan canceled")
-			default:
-				err = fmt.Errorf("scan failed: %w", err)
-			}
-			s.quit <- 1
-		}
-	}()
-	for {
-		select {
-		case <-s.quit:
-			return
-		case <-ctx.Done():
-			s.quit <- 1
-			return
-		case m := <-s.measurements:
-			f(m)
-		}
-	}
-}
-
 func (s *Scanner) handle(a ble.Advertisement) {
 	s.logger.Printf("Read sensor data from device %s:%v", a.LocalName(), a.Addr())
 	data := a.ManufacturerData()
@@ -185,7 +240,7 @@ func (s *Scanner) filter(a ble.Advertisement) bool {
 	return ok
 }
 
-func (s *Scanner) doExport(ctx context.Context, m sensor.Data) error {
+func (s *Scanner) export(ctx context.Context, m sensor.Data) error {
 	for _, e := range s.Exporters {
 		s.logger.Printf("Exporting measurement to %v", e.Name())
 		if err := e.Export(ctx, m); err != nil {

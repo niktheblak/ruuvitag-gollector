@@ -78,7 +78,7 @@ func TestScan(t *testing.T) {
 	scn.dev = mockDeviceCreator{device: device}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	err = scn.Start(ctx)
+	err = scn.Scan(ctx)
 	require.NoError(t, err)
 	// Wait a bit for messages to appear in the measurements channel
 	time.Sleep(100 * time.Millisecond)

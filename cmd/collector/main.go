@@ -83,15 +83,15 @@ func run(c *cli.Context) error {
 	scn.Exporters = exporters
 	logger.Println("Starting ruuvitag-gollector")
 	if c.GlobalBool("daemon") {
-		return runAsDaemon(ctx, scn)
+		return runAsDaemon(ctx, scn, c.GlobalDuration("scan_interval"))
 	} else {
 		return runOnce(ctx, scn)
 	}
 }
 
-func runAsDaemon(ctx context.Context, scn *scanner.Scanner) error {
+func runAsDaemon(ctx context.Context, scn *scanner.Scanner, scanInterval time.Duration) error {
 	logger.Println("Starting scanner")
-	if err := scn.Start(ctx); err != nil {
+	if err := scn.Start(ctx, scanInterval); err != nil {
 		return fmt.Errorf("failed to start scanner: %w", err)
 	}
 	interrupt := make(chan os.Signal, 1)
@@ -166,6 +166,12 @@ func main() {
 			Name:  "device",
 			Usage: "HCL device to use",
 			Value: "default",
+		}),
+		altsrc.NewDurationFlag(cli.DurationFlag{
+			Name:   "scan_interval",
+			Usage:  "Pause between RuuviTag device scans in daemon mode",
+			EnvVar: "RUUVITAG_SCAN_INTERVAL",
+			Value:  1 * time.Minute,
 		}),
 		cli.BoolFlag{
 			Name:   "influxdb",
