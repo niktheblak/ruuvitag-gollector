@@ -2,6 +2,7 @@ package influxdb
 
 import (
 	"context"
+	"strings"
 
 	influx "github.com/influxdata/influxdb1-client/v2"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
@@ -52,7 +53,7 @@ func (e *influxdbExporter) Export(ctx context.Context, data sensor.Data) error {
 		return err
 	}
 	point, err := influx.NewPoint(e.measurement, map[string]string{
-		"mac":  data.Addr,
+		"mac":  strings.ToUpper(data.Addr),
 		"name": data.Name,
 	}, map[string]interface{}{
 		"temperature": data.Temperature,

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/go-ble/ble"
@@ -130,6 +129,7 @@ func (s *Scanner) ScanOnce(ctx context.Context) error {
 		return err
 	}
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	go func() {
 		err := s.ble.Scan(ctx, false, s.handle, s.filter)
 		switch err {
@@ -155,7 +155,6 @@ func (s *Scanner) ScanOnce(ctx context.Context) error {
 			}
 		case <-s.quit:
 			s.stopped = true
-			cancel()
 			return nil
 		}
 	}
@@ -208,7 +207,7 @@ func (s *Scanner) handle(a ble.Advertisement) {
 		return
 	}
 	addr := a.Addr().String()
-	sensorData.Addr = strings.ToUpper(addr)
+	sensorData.Addr = addr
 	sensorData.Name = s.peripherals[addr]
 	sensorData.Timestamp = time.Now()
 	s.measurements <- sensorData

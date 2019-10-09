@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"cloud.google.com/go/pubsub"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
@@ -45,7 +46,7 @@ func (e *pubsubExporter) Export(ctx context.Context, data sensor.Data) error {
 	msg := &pubsub.Message{
 		Data: jsonData,
 		Attributes: map[string]string{
-			"mac":  data.Addr,
+			"mac":  strings.ToUpper(data.Addr),
 			"name": data.Name,
 		},
 	}
