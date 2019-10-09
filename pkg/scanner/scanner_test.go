@@ -93,3 +93,40 @@ func TestScan(t *testing.T) {
 	assert.Equal(t, 510.0, e.Pressure)
 	assert.Equal(t, 500, e.Battery)
 }
+
+func TestStart(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+	peripherals := map[string]string{
+		"cc:ca:7e:52:cc:34": "Test",
+	}
+	scn, err := New(logger, "default", peripherals)
+	require.NoError(t, err)
+	defer scn.Close()
+	exp := new(mockExporter)
+	scn.Exporters = []exporter.Exporter{exp}
+	buf := new(bytes.Buffer)
+	err = binary.Write(buf, binary.BigEndian, testData)
+	require.NoError(t, err)
+	device := mockDevice{}
+	scn.ble = mockBLEScanner{
+		manufacturerData: buf.Bytes(),
+	}
+	scn.dev = mockDeviceCreator{device: device}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err = scn.Start(ctx, 1*time.Second)
+	require.NoError(t, err)
+	// Wait a bit for messages to appear in the measurements channel
+	time.Sleep(2 * time.Second)
+	scn.Stop()
+	assert.NotEmpty(t, exp.events)
+	e := exp.events[0]
+	assert.Equal(t, "Test", e.Name)
+	assert.Equal(t, "CC:CA:7E:52:CC:34", e.Addr)
+	assert.Equal(t, 55.0, e.Temperature)
+	assert.Equal(t, 60.0, e.Humidity)
+	assert.Equal(t, 510.0, e.Pressure)
+	assert.Equal(t, 500, e.Battery)
+}
