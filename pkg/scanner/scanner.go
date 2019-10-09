@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/go-ble/ble"
-	"github.com/go-ble/ble/examples/lib/dev"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
@@ -21,6 +20,7 @@ type Scanner struct {
 	measurements chan sensor.Data
 	peripherals  map[string]string
 	deviceImpl   string
+	stopped      bool
 	dev          DeviceCreator
 	ble          BLEScanner
 }
@@ -37,34 +37,8 @@ func New(logger *log.Logger, device string, peripherals map[string]string) (*Sca
 	}, nil
 }
 
-type DeviceCreator interface {
-	NewDevice(impl string) (ble.Device, error)
-}
-
-type defaultDeviceCreator struct {
-}
-
-func (c defaultDeviceCreator) NewDevice(impl string) (ble.Device, error) {
-	d, err := dev.NewDevice(impl)
-	if err != nil {
-		return nil, err
-	}
-	ble.SetDefaultDevice(d)
-	return d, nil
-}
-
-type BLEScanner interface {
-	Scan(ctx context.Context, allowDup bool, h ble.AdvHandler, f ble.AdvFilter) error
-}
-
-type defaultBLEScanner struct {
-}
-
-func (s defaultBLEScanner) Scan(ctx context.Context, allowDup bool, h ble.AdvHandler, f ble.AdvFilter) error {
-	return ble.Scan(ctx, allowDup, h, f)
-}
-
-func (s *Scanner) Scan(ctx context.Context) error {
+// ScanContinuously scans and reports measurements immediately as they are received
+func (s *Scanner) ScanContinuously(ctx context.Context) error {
 	if err := s.init(); err != nil {
 		return err
 	}
@@ -92,6 +66,7 @@ func (s *Scanner) Scan(ctx context.Context) error {
 					s.logger.Printf("Failed to report measurement: %v", err)
 				}
 			case <-s.quit:
+				s.stopped = true
 				cancel()
 				return
 			}
@@ -100,7 +75,8 @@ func (s *Scanner) Scan(ctx context.Context) error {
 	return nil
 }
 
-func (s *Scanner) Start(ctx context.Context, scanInterval time.Duration) error {
+// ScanWithInterval scans and reports measurements at specified intervals
+func (s *Scanner) ScanWithInterval(ctx context.Context, scanInterval time.Duration) error {
 	if err := s.init(); err != nil {
 		return err
 	}
@@ -123,6 +99,7 @@ func (s *Scanner) Start(ctx context.Context, scanInterval time.Duration) error {
 				}
 			case <-s.quit:
 				s.logger.Println("Scanner quitting")
+				s.stopped = true
 				cancel()
 				ticker.Stop()
 				return
@@ -144,7 +121,11 @@ func (s *Scanner) Start(ctx context.Context, scanInterval time.Duration) error {
 	return nil
 }
 
+// ScanOnce scans all registered peripherals once and quits
 func (s *Scanner) ScanOnce(ctx context.Context) error {
+	if len(s.peripherals) == 0 {
+		return fmt.Errorf("at least one peripheral must be specified")
+	}
 	if err := s.init(); err != nil {
 		return err
 	}
@@ -173,8 +154,33 @@ func (s *Scanner) ScanOnce(ctx context.Context) error {
 				s.quit <- 1
 			}
 		case <-s.quit:
+			s.stopped = true
 			cancel()
 			return nil
+		}
+	}
+}
+
+// Stop stops all running scans
+func (s *Scanner) Stop() {
+	s.logger.Println("Stopping")
+	s.stopped = true
+	s.quit <- 1
+}
+
+// Close closes the scanner and frees allocated resources
+func (s *Scanner) Close() {
+	if !s.stopped {
+		s.Stop()
+	}
+	if s.device != nil {
+		if err := s.device.Stop(); err != nil {
+			s.logger.Println(err)
+		}
+	}
+	for _, e := range s.Exporters {
+		if err := e.Close(); err != nil {
+			s.logger.Printf("Failed to close exporter %s: %v", e.Name(), err)
 		}
 	}
 }
@@ -191,24 +197,6 @@ func (s *Scanner) init() error {
 		s.logger.Println("Reading from all nearby BLE peripherals")
 	}
 	return nil
-}
-
-func (s *Scanner) Stop() {
-	s.logger.Println("Stopping")
-	s.quit <- 1
-}
-
-func (s *Scanner) Close() {
-	if s.device != nil {
-		if err := s.device.Stop(); err != nil {
-			s.logger.Println(err)
-		}
-	}
-	for _, e := range s.Exporters {
-		if err := e.Close(); err != nil {
-			s.logger.Printf("Failed to close exporter %s: %v", e.Name(), err)
-		}
-	}
 }
 
 func (s *Scanner) handle(a ble.Advertisement) {
@@ -255,14 +243,4 @@ func (s *Scanner) logInvalidData(data []byte, err error) {
 		header = data
 	}
 	s.logger.Printf("Error while parsing RuuviTag data (%d bytes) %v: %v", len(data), header, err)
-}
-
-func ContainsKeys(a map[string]string, b map[string]bool) bool {
-	for k := range a {
-		_, ok := b[k]
-		if !ok {
-			return false
-		}
-	}
-	return true
 }

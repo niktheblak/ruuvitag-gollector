@@ -91,7 +91,13 @@ func run(c *cli.Context) error {
 
 func runAsDaemon(ctx context.Context, scn *scanner.Scanner, scanInterval time.Duration) error {
 	logger.Println("Starting scanner")
-	if err := scn.Start(ctx, scanInterval); err != nil {
+	var err error
+	if scanInterval > 0 {
+		err = scn.ScanWithInterval(ctx, scanInterval)
+	} else {
+		err = scn.ScanContinuously(ctx)
+	}
+	if err != nil {
 		return fmt.Errorf("failed to start scanner: %w", err)
 	}
 	interrupt := make(chan os.Signal, 1)
