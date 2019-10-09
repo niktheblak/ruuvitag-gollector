@@ -78,5 +78,5 @@ func Parse(data []byte) (sensorData Data, err error) {
 }
 
 func IsRuuviTag(data []byte) bool {
-	return len(data) >= 16 && binary.LittleEndian.Uint16(data[0:2]) == 0x0499
+	return len(data) >= 16 && binary.BigEndian.Uint16(data[0:2]) == 0x9904
 }
