@@ -11,7 +11,6 @@ import (
 	"github.com/go-ble/ble/examples/lib/dev"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
-	"github.com/pkg/errors"
 )
 
 type Scanner struct {
@@ -24,6 +23,18 @@ type Scanner struct {
 	deviceImpl   string
 	dev          DeviceCreator
 	ble          BLEScanner
+}
+
+func New(logger *log.Logger, device string, peripherals map[string]string) (*Scanner, error) {
+	return &Scanner{
+		logger:       logger,
+		quit:         make(chan int, 1),
+		measurements: make(chan sensor.Data),
+		peripherals:  peripherals,
+		deviceImpl:   device,
+		dev:          defaultDeviceCreator{},
+		ble:          defaultBLEScanner{},
+	}, nil
 }
 
 type DeviceCreator interface {
@@ -53,39 +64,27 @@ func (s defaultBLEScanner) Scan(ctx context.Context, allowDup bool, h ble.AdvHan
 	return ble.Scan(ctx, allowDup, h, f)
 }
 
-func New(logger *log.Logger, device string, peripherals map[string]string) (*Scanner, error) {
-	return &Scanner{
-		logger:       logger,
-		quit:         make(chan int),
-		measurements: make(chan sensor.Data),
-		peripherals:  peripherals,
-		deviceImpl:   device,
-		dev:          defaultDeviceCreator{},
-		ble:          defaultBLEScanner{},
-	}, nil
-}
-
 func (s *Scanner) Scan(ctx context.Context) error {
 	if err := s.init(); err != nil {
 		return err
 	}
-	scanCtx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	go func() {
-		if err := s.ble.Scan(scanCtx, false, s.handle, s.filter); err != nil {
-			switch errors.Cause(err) {
-			case context.DeadlineExceeded:
-				s.quit <- 1
-			case context.Canceled:
-				s.logger.Printf("Scan canceled")
-			case nil:
-				s.quit <- 1
-			default:
-				s.logger.Printf("Scan failed: %v", err)
-				s.quit <- 1
-			}
+		s.logger.Println("Starting scan")
+		err := s.ble.Scan(ctx, false, s.handle, s.filter)
+		switch err {
+		case context.Canceled:
+			s.logger.Printf("Scan canceled")
+		case nil:
+			s.quit <- 1
+		default:
+			s.logger.Printf("Scan failed: %v", err)
+			s.quit <- 1
 		}
 	}()
 	go func() {
+		s.logger.Println("Listening for measurements")
 		for {
 			select {
 			case m := <-s.measurements:
@@ -107,20 +106,20 @@ func (s *Scanner) Start(ctx context.Context, scanInterval time.Duration) error {
 	}
 	ticker := time.NewTicker(scanInterval)
 	go func() {
+		s.logger.Printf("Scanning measurements every %v", scanInterval)
 		for {
 			ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 			select {
 			case <-ticker.C:
-				if err := s.ble.Scan(ctx, false, s.handle, s.filter); err != nil {
-					switch errors.Cause(err) {
-					case context.Canceled:
-						s.logger.Printf("scan canceled")
-						s.quit <- 1
-					case context.DeadlineExceeded:
-					default:
-						s.logger.Printf("Scan failed: %w", err)
-						s.quit <- 1
-					}
+				err := s.ble.Scan(ctx, false, s.handle, s.filter)
+				switch err {
+				case context.Canceled:
+					s.logger.Printf("scan canceled")
+				case context.DeadlineExceeded:
+				case nil:
+				default:
+					s.logger.Printf("Scan failed: %v", err)
+					s.quit <- 1
 				}
 			case <-s.quit:
 				s.logger.Println("Scanner quitting")
@@ -145,42 +144,39 @@ func (s *Scanner) Start(ctx context.Context, scanInterval time.Duration) error {
 	return nil
 }
 
-func (s *Scanner) ScanOnce(ctx context.Context) (err error) {
-	if err = s.init(); err != nil {
+func (s *Scanner) ScanOnce(ctx context.Context) error {
+	if err := s.init(); err != nil {
 		return err
 	}
-	scanCtx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(ctx)
 	go func() {
-		if err = s.ble.Scan(scanCtx, false, s.handle, s.filter); err != nil {
-			switch errors.Cause(err) {
-			case context.Canceled:
-				err = fmt.Errorf("scan canceled")
-			default:
-				err = fmt.Errorf("scan failed: %w", err)
-			}
+		err := s.ble.Scan(ctx, false, s.handle, s.filter)
+		switch err {
+		case context.Canceled:
+			s.logger.Println("scan canceled")
+		case nil:
+			s.quit <- 1
+		default:
+			s.logger.Printf("scan failed: %v", err)
 			s.quit <- 1
 		}
 	}()
-	go func() {
-		seenPeripherals := make(map[string]bool)
-		for {
-			select {
-			case m := <-s.measurements:
-				seenPeripherals[m.Addr] = true
-				if err := s.export(ctx, m); err != nil {
-					s.logger.Printf("Failed to report measurement: %v", err)
-				}
-				if ContainsKeys(s.peripherals, seenPeripherals) {
-					s.quit <- 1
-				}
-			case <-s.quit:
-				return
+	seenPeripherals := make(map[string]bool)
+	for {
+		select {
+		case m := <-s.measurements:
+			seenPeripherals[m.Addr] = true
+			if err := s.export(ctx, m); err != nil {
+				s.logger.Printf("Failed to report measurement: %v", err)
 			}
+			if ContainsKeys(s.peripherals, seenPeripherals) {
+				s.quit <- 1
+			}
+		case <-s.quit:
+			cancel()
+			return nil
 		}
-	}()
-	<-s.quit
-	cancel()
-	return
+	}
 }
 
 func (s *Scanner) init() error {
@@ -198,6 +194,7 @@ func (s *Scanner) init() error {
 }
 
 func (s *Scanner) Stop() {
+	s.logger.Println("Stopping")
 	s.quit <- 1
 }
 

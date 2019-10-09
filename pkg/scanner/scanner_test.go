@@ -56,7 +56,7 @@ func TestScanOnce(t *testing.T) {
 	assert.Equal(t, "CC:CA:7E:52:CC:34", e.Addr)
 	assert.Equal(t, 55.0, e.Temperature)
 	assert.Equal(t, 60.0, e.Humidity)
-	assert.Equal(t, 51000, e.Pressure)
+	assert.Equal(t, 510.0, e.Pressure)
 	assert.Equal(t, 500, e.Battery)
 }
 
@@ -66,6 +66,7 @@ func TestScan(t *testing.T) {
 	}
 	scn, err := New(logger, "default", peripherals)
 	require.NoError(t, err)
+	defer scn.Close()
 	exp := new(mockExporter)
 	scn.Exporters = []exporter.Exporter{exp}
 	buf := new(bytes.Buffer)
@@ -86,9 +87,9 @@ func TestScan(t *testing.T) {
 	assert.NotEmpty(t, exp.events)
 	e := exp.events[0]
 	assert.Equal(t, "Test", e.Name)
-	assert.Equal(t, "cc:ca:7e:52:cc:34", e.Addr)
+	assert.Equal(t, "CC:CA:7E:52:CC:34", e.Addr)
 	assert.Equal(t, 55.0, e.Temperature)
 	assert.Equal(t, 60.0, e.Humidity)
-	assert.Equal(t, 51000, e.Pressure)
+	assert.Equal(t, 510.0, e.Pressure)
 	assert.Equal(t, 500, e.Battery)
 }
