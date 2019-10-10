@@ -2,6 +2,8 @@ package scanner
 
 import (
 	"context"
+	"log"
+	"testing"
 
 	"github.com/go-ble/ble"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
@@ -67,15 +69,11 @@ func (m mockDeviceCreator) NewDevice(impl string) (ble.Device, error) {
 }
 
 type mockBLEScanner struct {
-	manufacturerData []byte
+	advertisement ble.Advertisement
 }
 
 func (m mockBLEScanner) Scan(ctx context.Context, allowDup bool, h ble.AdvHandler, f ble.AdvFilter) error {
-	h(mockAdvertisement{
-		localName:        "RuuviTag",
-		addr:             "CC:CA:7E:52:CC:34",
-		manufacturerData: m.manufacturerData,
-	})
+	h(m.advertisement)
 	return nil
 }
 
@@ -144,4 +142,18 @@ func (m *mockExporter) Export(ctx context.Context, data sensor.Data) error {
 
 func (m *mockExporter) Close() error {
 	return nil
+}
+
+type testLogWriter struct {
+	t *testing.T
+}
+
+func NewTestLogger(t *testing.T) *log.Logger {
+	w := &testLogWriter{t: t}
+	return log.New(w, "", log.LstdFlags)
+}
+
+func (l *testLogWriter) Write(p []byte) (n int, err error) {
+	l.t.Log(string(p))
+	return n, nil
 }

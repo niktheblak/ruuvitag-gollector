@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"io/ioutil"
-	"log"
 	"testing"
 	"time"
 
@@ -28,22 +26,35 @@ var testData = sensor.DataFormat3{
 	BatteryVoltageMv:    500,
 }
 
-var logger = log.New(ioutil.Discard, "", log.LstdFlags)
+const testAddr = "cc:ca:7e:52:cc:34"
+
+var peripherals = map[string]string{
+	testAddr: "Test",
+}
+
+var testAdvertisement mockAdvertisement
+
+func init() {
+	buf := new(bytes.Buffer)
+	if err := binary.Write(buf, binary.BigEndian, testData); err != nil {
+		panic(err)
+	}
+	testAdvertisement = mockAdvertisement{
+		localName:        "RuuviTag",
+		addr:             testAddr,
+		manufacturerData: buf.Bytes(),
+	}
+}
 
 func TestScanOnce(t *testing.T) {
-	peripherals := map[string]string{
-		"cc:ca:7e:52:cc:34": "Test",
-	}
+	var logger = NewTestLogger(t)
 	scn, err := New(logger, "default", peripherals)
 	require.NoError(t, err)
 	exp := new(mockExporter)
 	scn.Exporters = []exporter.Exporter{exp}
-	buf := new(bytes.Buffer)
-	err = binary.Write(buf, binary.BigEndian, testData)
-	require.NoError(t, err)
 	device := mockDevice{}
 	scn.ble = mockBLEScanner{
-		manufacturerData: buf.Bytes(),
+		advertisement: testAdvertisement,
 	}
 	scn.dev = mockDeviceCreator{device: device}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -53,7 +64,7 @@ func TestScanOnce(t *testing.T) {
 	assert.NotEmpty(t, exp.events)
 	e := exp.events[0]
 	assert.Equal(t, "Test", e.Name)
-	assert.Equal(t, "CC:CA:7E:52:CC:34", e.Addr)
+	assert.Equal(t, testAddr, e.Addr)
 	assert.Equal(t, 55.0, e.Temperature)
 	assert.Equal(t, 60.0, e.Humidity)
 	assert.Equal(t, 510.0, e.Pressure)
@@ -61,20 +72,15 @@ func TestScanOnce(t *testing.T) {
 }
 
 func TestScan(t *testing.T) {
-	peripherals := map[string]string{
-		"cc:ca:7e:52:cc:34": "Test",
-	}
+	var logger = NewTestLogger(t)
 	scn, err := New(logger, "default", peripherals)
 	require.NoError(t, err)
 	defer scn.Close()
 	exp := new(mockExporter)
 	scn.Exporters = []exporter.Exporter{exp}
-	buf := new(bytes.Buffer)
-	err = binary.Write(buf, binary.BigEndian, testData)
-	require.NoError(t, err)
 	device := mockDevice{}
 	scn.ble = mockBLEScanner{
-		manufacturerData: buf.Bytes(),
+		advertisement: testAdvertisement,
 	}
 	scn.dev = mockDeviceCreator{device: device}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -87,7 +93,7 @@ func TestScan(t *testing.T) {
 	assert.NotEmpty(t, exp.events)
 	e := exp.events[0]
 	assert.Equal(t, "Test", e.Name)
-	assert.Equal(t, "CC:CA:7E:52:CC:34", e.Addr)
+	assert.Equal(t, testAddr, e.Addr)
 	assert.Equal(t, 55.0, e.Temperature)
 	assert.Equal(t, 60.0, e.Humidity)
 	assert.Equal(t, 510.0, e.Pressure)
@@ -98,20 +104,15 @@ func TestStart(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	peripherals := map[string]string{
-		"cc:ca:7e:52:cc:34": "Test",
-	}
+	var logger = NewTestLogger(t)
 	scn, err := New(logger, "default", peripherals)
 	require.NoError(t, err)
 	defer scn.Close()
 	exp := new(mockExporter)
 	scn.Exporters = []exporter.Exporter{exp}
-	buf := new(bytes.Buffer)
-	err = binary.Write(buf, binary.BigEndian, testData)
-	require.NoError(t, err)
 	device := mockDevice{}
 	scn.ble = mockBLEScanner{
-		manufacturerData: buf.Bytes(),
+		advertisement: testAdvertisement,
 	}
 	scn.dev = mockDeviceCreator{device: device}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -124,7 +125,7 @@ func TestStart(t *testing.T) {
 	assert.NotEmpty(t, exp.events)
 	e := exp.events[0]
 	assert.Equal(t, "Test", e.Name)
-	assert.Equal(t, "CC:CA:7E:52:CC:34", e.Addr)
+	assert.Equal(t, testAddr, e.Addr)
 	assert.Equal(t, 55.0, e.Temperature)
 	assert.Equal(t, 60.0, e.Humidity)
 	assert.Equal(t, 510.0, e.Pressure)
