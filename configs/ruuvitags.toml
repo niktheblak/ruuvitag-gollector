@@ -1,5 +1,3 @@
-device = "default"
-
 ruuvitags = [
   "CC:CA:7E:52:CC:34=Backyard",
   "FB:E1:B7:04:95:EE=Upstairs",
