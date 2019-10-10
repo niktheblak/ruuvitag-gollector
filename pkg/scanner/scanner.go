@@ -202,7 +202,7 @@ func (s *Scanner) init() error {
 }
 
 func (s *Scanner) handle(a ble.Advertisement) {
-	s.logger.Printf("Read sensor data from device %s:%v", a.LocalName(), a.Addr())
+	s.logger.Printf("Read sensor data from device %v", a.Addr())
 	data := a.ManufacturerData()
 	sensorData, err := sensor.Parse(data)
 	if err != nil {
