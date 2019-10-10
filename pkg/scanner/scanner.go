@@ -129,35 +129,38 @@ func (s *Scanner) ScanOnce(ctx context.Context) error {
 		return err
 	}
 	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 	go func() {
 		err := s.ble.Scan(ctx, false, s.handle, s.filter)
 		switch err {
+		case context.DeadlineExceeded:
 		case context.Canceled:
-			s.logger.Println("scan canceled")
 		case nil:
-			s.quit <- 1
 		default:
-			s.logger.Printf("scan failed: %v", err)
+			s.logger.Printf("Scan failed: %v", err)
 			s.quit <- 1
 		}
 	}()
 	seenPeripherals := make(map[string]bool)
-	for {
-		select {
-		case m := <-s.measurements:
-			seenPeripherals[m.Addr] = true
-			if err := s.export(ctx, m); err != nil {
-				s.logger.Printf("Failed to report measurement: %v", err)
+	go func() {
+		for {
+			select {
+			case m := <-s.measurements:
+				seenPeripherals[m.Addr] = true
+				if err := s.export(ctx, m); err != nil {
+					s.logger.Printf("Failed to report measurement: %v", err)
+				}
+				if ContainsKeys(s.peripherals, seenPeripherals) {
+					s.quit <- 1
+				}
+			case <-s.quit:
+				return
 			}
-			if ContainsKeys(s.peripherals, seenPeripherals) {
-				s.quit <- 1
-			}
-		case <-s.quit:
-			s.stopped = true
-			return nil
 		}
-	}
+	}()
+	<-s.quit
+	s.stopped = true
+	cancel()
+	return nil
 }
 
 // Stop stops all running scans
