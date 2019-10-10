@@ -149,11 +149,10 @@ type testLogWriter struct {
 }
 
 func NewTestLogger(t *testing.T) *log.Logger {
-	w := &testLogWriter{t: t}
-	return log.New(w, "", log.LstdFlags)
+	return log.New(testLogWriter{t: t}, "", log.LstdFlags)
 }
 
-func (l *testLogWriter) Write(p []byte) (n int, err error) {
+func (l testLogWriter) Write(p []byte) (int, error) {
 	l.t.Log(string(p))
-	return n, nil
+	return len(p), nil
 }
