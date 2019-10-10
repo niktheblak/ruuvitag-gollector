@@ -39,7 +39,7 @@ func run(c *cli.Context) error {
 		defer client.Close()
 		logger = client.Logger("ruuvitag-gollector").StandardLogger(logging.Info)
 	}
-	scn, err := scanner.New(logger, c.String("device"), ruuviTags)
+	scn, err := scanner.New(logger, c.GlobalString("device"), ruuviTags)
 	if err != nil {
 		return fmt.Errorf("failed to create scanner: %w", err)
 	}
