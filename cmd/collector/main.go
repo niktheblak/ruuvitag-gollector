@@ -51,7 +51,7 @@ func run(c *cli.Context) error {
 	if c.GlobalBool("influxdb") {
 		url := c.GlobalString("influxdb_addr")
 		if url == "" {
-			return fmt.Errorf("InfluxDB Addr must be specified")
+			return fmt.Errorf("InfluxDB address must be specified")
 		}
 		influx, err := influxdb.New(influxdb.Config{
 			Addr:        url,
