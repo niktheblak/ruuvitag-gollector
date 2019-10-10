@@ -228,6 +228,8 @@ func (s *Scanner) filter(a ble.Advertisement) bool {
 }
 
 func (s *Scanner) export(ctx context.Context, m sensor.Data) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 	for _, e := range s.Exporters {
 		s.logger.Printf("Exporting measurement to %v", e.Name())
 		if err := e.Export(ctx, m); err != nil {

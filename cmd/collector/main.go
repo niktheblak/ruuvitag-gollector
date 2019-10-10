@@ -26,12 +26,12 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	ctx := context.Background()
 	if c.GlobalBool("stackdriver") {
 		project := c.GlobalString("project")
 		if project == "" {
 			return fmt.Errorf("Google Cloud Platform project must be specified")
 		}
+		ctx := context.Background()
 		client, err := logging.NewClient(ctx, project)
 		if err != nil {
 			return fmt.Errorf("failed to create Stackdriver client: %w", err)
@@ -66,6 +66,7 @@ func run(c *cli.Context) error {
 		exporters = append(exporters, influx)
 	}
 	if c.GlobalBool("pubsub") {
+		ctx := context.Background()
 		project := c.GlobalString("project")
 		if project == "" {
 			return fmt.Errorf("Google Cloud Platform project must be specified")
@@ -83,14 +84,15 @@ func run(c *cli.Context) error {
 	scn.Exporters = exporters
 	logger.Println("Starting ruuvitag-gollector")
 	if c.GlobalBool("daemon") {
-		return runAsDaemon(ctx, scn, c.GlobalDuration("scan_interval"))
+		return runAsDaemon(scn, c.GlobalDuration("scan_interval"))
 	} else {
-		return runOnce(ctx, scn)
+		return runOnce(scn)
 	}
 }
 
-func runAsDaemon(ctx context.Context, scn *scanner.Scanner, scanInterval time.Duration) error {
+func runAsDaemon(scn *scanner.Scanner, scanInterval time.Duration) error {
 	logger.Println("Starting scanner")
+	ctx := context.Background()
 	var err error
 	if scanInterval > 0 {
 		err = scn.ScanWithInterval(ctx, scanInterval)
@@ -108,9 +110,9 @@ func runAsDaemon(ctx context.Context, scn *scanner.Scanner, scanInterval time.Du
 	return nil
 }
 
-func runOnce(ctx context.Context, scn *scanner.Scanner) error {
+func runOnce(scn *scanner.Scanner) error {
 	logger.Println("Scanning once")
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
