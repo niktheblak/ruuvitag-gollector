@@ -175,12 +175,12 @@ func main() {
 			Usage: "HCL device to use",
 			Value: "default",
 		}),
-		altsrc.NewDurationFlag(cli.DurationFlag{
+		cli.DurationFlag{
 			Name:   "scan_interval",
 			Usage:  "Pause between RuuviTag device scans in daemon mode",
 			EnvVar: "RUUVITAG_SCAN_INTERVAL",
 			Value:  1 * time.Minute,
-		}),
+		},
 		cli.BoolFlag{
 			Name:   "influxdb",
 			Usage:  "use influxdb",
