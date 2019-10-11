@@ -39,6 +39,7 @@ func (e *pubsubExporter) Name() string {
 }
 
 func (e *pubsubExporter) Export(ctx context.Context, data sensor.Data) error {
+	data.Addr = strings.ToUpper(data.Addr)
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return err
