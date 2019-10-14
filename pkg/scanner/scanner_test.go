@@ -61,6 +61,8 @@ func TestScanOnce(t *testing.T) {
 	defer cancel()
 	err = scn.ScanOnce(ctx)
 	require.NoError(t, err)
+	// Wait a bit for messages to appear in the measurements channel
+	time.Sleep(100 * time.Millisecond)
 	assert.NotEmpty(t, exp.events)
 	e := exp.events[0]
 	assert.Equal(t, "Test", e.Name)

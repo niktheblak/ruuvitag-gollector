@@ -74,6 +74,7 @@ type mockBLEScanner struct {
 
 func (m mockBLEScanner) Scan(ctx context.Context, allowDup bool, h ble.AdvHandler, f ble.AdvFilter) error {
 	h(m.advertisement)
+	<-ctx.Done()
 	return nil
 }
 

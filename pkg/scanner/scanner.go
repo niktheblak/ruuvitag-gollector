@@ -96,6 +96,7 @@ func (s *Scanner) ScanWithInterval(ctx context.Context, scanInterval time.Durati
 					s.logger.Printf("Scan failed: %v", err)
 					s.quit <- 1
 				}
+				cancel()
 			case <-s.quit:
 				s.logger.Println("Scanner quitting")
 				s.stopped = true
@@ -128,7 +129,6 @@ func (s *Scanner) ScanOnce(ctx context.Context) error {
 	if err := s.init(); err != nil {
 		return err
 	}
-	ctx, cancel := context.WithCancel(ctx)
 	go func() {
 		err := s.ble.Scan(ctx, false, s.handle, s.filter)
 		switch err {
@@ -137,11 +137,11 @@ func (s *Scanner) ScanOnce(ctx context.Context) error {
 		case nil:
 		default:
 			s.logger.Printf("Scan failed: %v", err)
-			s.quit <- 1
 		}
+		s.quit <- 1
 	}()
-	seenPeripherals := make(map[string]bool)
 	go func() {
+		seenPeripherals := make(map[string]bool)
 		for {
 			select {
 			case m := <-s.measurements:
@@ -151,6 +151,7 @@ func (s *Scanner) ScanOnce(ctx context.Context) error {
 				}
 				if ContainsKeys(s.peripherals, seenPeripherals) {
 					s.quit <- 1
+					return
 				}
 			case <-s.quit:
 				return
@@ -159,7 +160,6 @@ func (s *Scanner) ScanOnce(ctx context.Context) error {
 	}()
 	<-s.quit
 	s.stopped = true
-	cancel()
 	return nil
 }
 
