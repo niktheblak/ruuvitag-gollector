@@ -171,9 +171,10 @@ func main() {
 			Usage: "RuuviTag addresses and names to use",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
-			Name:  "device",
-			Usage: "HCL device to use",
-			Value: "default",
+			Name:   "device",
+			Usage:  "HCL device to use",
+			EnvVar: "RUUVITAG_DEVICE",
+			Value:  "default",
 		}),
 		cli.DurationFlag{
 			Name:   "scan_interval",
