@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-ble/ble"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/evenminutes"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
@@ -76,14 +77,28 @@ func (s *Scanner) ScanContinuously(ctx context.Context) error {
 
 // ScanWithInterval scans and reports measurements at specified intervals
 func (s *Scanner) ScanWithInterval(ctx context.Context, scanInterval time.Duration) error {
+	if scanInterval == 0 {
+		return fmt.Errorf("scan interval must be greater than zero")
+	}
 	if err := s.init(); err != nil {
 		return err
 	}
-	ticker := time.NewTicker(scanInterval)
 	go func() {
+		delay := evenminutes.Until(time.Now(), scanInterval)
+		s.logger.Printf("Sleeping until %v", time.Now().Add(delay))
+		firstRun := time.After(delay)
+		select {
+		case <-firstRun:
+		case <-s.quit:
+			return
+		}
 		s.logger.Printf("Scanning measurements every %v", scanInterval)
+		ticker := time.NewTicker(scanInterval)
+		firstCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+		s.doScan(firstCtx)
+		cancel()
 		for {
-			ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+			ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 			select {
 			case <-ticker.C:
 				err := s.ble.Scan(ctx, false, s.handle, s.filter)
@@ -129,6 +144,12 @@ func (s *Scanner) ScanOnce(ctx context.Context) error {
 	if err := s.init(); err != nil {
 		return err
 	}
+	s.doScan(ctx)
+	s.stopped = true
+	return nil
+}
+
+func (s *Scanner) doScan(ctx context.Context) {
 	go func() {
 		err := s.ble.Scan(ctx, false, s.handle, s.filter)
 		switch err {
@@ -159,8 +180,6 @@ func (s *Scanner) ScanOnce(ctx context.Context) error {
 		}
 	}()
 	<-s.quit
-	s.stopped = true
-	return nil
 }
 
 // Stop stops all running scans

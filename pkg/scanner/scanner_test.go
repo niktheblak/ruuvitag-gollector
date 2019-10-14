@@ -73,7 +73,7 @@ func TestScanOnce(t *testing.T) {
 	assert.Equal(t, 500, e.Battery)
 }
 
-func TestScan(t *testing.T) {
+func TestScanContinuously(t *testing.T) {
 	var logger = NewTestLogger(t)
 	scn, err := New(logger, "default", peripherals)
 	require.NoError(t, err)
@@ -102,7 +102,7 @@ func TestScan(t *testing.T) {
 	assert.Equal(t, 500, e.Battery)
 }
 
-func TestStart(t *testing.T) {
+func TestScanWithInterval(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
