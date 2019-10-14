@@ -1,0 +1,17 @@
+[Unit]
+Description=RuuviTag measurement collector service
+After=network.target
+StartLimitBurst=2
+StartLimitIntervalSec=90
+StartLimitAction=reboot
+OnFailure=systemd-reboot.service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=pi
+ExecStart=/home/pi/bin/run-ruuvitag-gollector.sh
+
+[Install]
+WantedBy=multi-user.target
