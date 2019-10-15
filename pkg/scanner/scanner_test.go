@@ -26,10 +26,14 @@ var testData = sensor.DataFormat3{
 	BatteryVoltageMv:    500,
 }
 
-const testAddr = "cc:ca:7e:52:cc:34"
+const (
+	testAddr1 = "cc:ca:7e:52:cc:34"
+	testAddr2 = "fb:e1:b7:04:95:ee"
+	testAddr3 = "e8:e0:c6:0b:b8:c5"
+)
 
 var peripherals = map[string]string{
-	testAddr: "Test",
+	testAddr1: "Test",
 }
 
 var testAdvertisement mockAdvertisement
@@ -40,32 +44,31 @@ func init() {
 		panic(err)
 	}
 	testAdvertisement = mockAdvertisement{
-		localName:        "RuuviTag",
-		addr:             testAddr,
+		addr:             testAddr1,
 		manufacturerData: buf.Bytes(),
 	}
 }
 
 func TestScanOnce(t *testing.T) {
 	var logger = NewTestLogger(t)
-	scn := New(logger, "default", peripherals)
+	scn := New(logger, peripherals)
 	exp := new(mockExporter)
 	scn.Exporters = []exporter.Exporter{exp}
 	device := mockDevice{}
-	scn.ble = mockBLEScanner{
-		advertisement: testAdvertisement,
-	}
+	scn.ble = NewMockBLEScanner(testAdvertisement)
 	scn.dev = mockDeviceCreator{device: device}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	err := scn.ScanOnce(ctx)
+	err := scn.Init("default")
+	require.NoError(t, err)
+	err = scn.ScanOnce(ctx)
 	require.NoError(t, err)
 	// Wait a bit for messages to appear in the measurements channel
 	time.Sleep(100 * time.Millisecond)
 	assert.NotEmpty(t, exp.events)
 	e := exp.events[0]
 	assert.Equal(t, "Test", e.Name)
-	assert.Equal(t, testAddr, e.Addr)
+	assert.Equal(t, testAddr1, e.Addr)
 	assert.Equal(t, 55.0, e.Temperature)
 	assert.Equal(t, 60.0, e.Humidity)
 	assert.Equal(t, 510.0, e.Pressure)
@@ -74,18 +77,18 @@ func TestScanOnce(t *testing.T) {
 
 func TestScanContinuously(t *testing.T) {
 	var logger = NewTestLogger(t)
-	scn := New(logger, "default", peripherals)
+	scn := New(logger, peripherals)
 	defer scn.Close()
 	exp := new(mockExporter)
 	scn.Exporters = []exporter.Exporter{exp}
 	device := mockDevice{}
-	scn.ble = mockBLEScanner{
-		advertisement: testAdvertisement,
-	}
+	scn.ble = NewMockBLEScanner(testAdvertisement)
 	scn.dev = mockDeviceCreator{device: device}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	err := scn.ScanContinuously(ctx)
+	err := scn.Init("default")
+	require.NoError(t, err)
+	err = scn.ScanContinuously(ctx)
 	require.NoError(t, err)
 	// Wait a bit for messages to appear in the measurements channel
 	time.Sleep(100 * time.Millisecond)
@@ -93,7 +96,7 @@ func TestScanContinuously(t *testing.T) {
 	assert.NotEmpty(t, exp.events)
 	e := exp.events[0]
 	assert.Equal(t, "Test", e.Name)
-	assert.Equal(t, testAddr, e.Addr)
+	assert.Equal(t, testAddr1, e.Addr)
 	assert.Equal(t, 55.0, e.Temperature)
 	assert.Equal(t, 60.0, e.Humidity)
 	assert.Equal(t, 510.0, e.Pressure)
@@ -105,26 +108,48 @@ func TestScanWithInterval(t *testing.T) {
 		t.SkipNow()
 	}
 	var logger = NewTestLogger(t)
-	scn := New(logger, "default", peripherals)
+	peripherals := map[string]string{
+		testAddr1: "Backyard",
+		testAddr2: "Upstairs",
+		testAddr3: "Downstairs",
+	}
+	scn := New(logger, peripherals)
 	defer scn.Close()
 	exp := new(mockExporter)
 	scn.Exporters = []exporter.Exporter{exp}
 	device := mockDevice{}
-	scn.ble = mockBLEScanner{
-		advertisement: testAdvertisement,
+	buf := new(bytes.Buffer)
+	if err := binary.Write(buf, binary.BigEndian, testData); err != nil {
+		panic(err)
 	}
+	scn.ble = NewMockBLEScanner(
+		mockAdvertisement{
+			addr:             testAddr1,
+			manufacturerData: buf.Bytes(),
+		},
+		mockAdvertisement{
+			addr:             testAddr2,
+			manufacturerData: buf.Bytes(),
+		},
+		mockAdvertisement{
+			addr:             testAddr3,
+			manufacturerData: buf.Bytes(),
+		},
+	)
 	scn.dev = mockDeviceCreator{device: device}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	err := scn.ScanWithInterval(ctx, 1*time.Second)
+	err := scn.Init("default")
+	require.NoError(t, err)
+	err = scn.ScanWithInterval(ctx, 100*time.Millisecond)
 	require.NoError(t, err)
 	// Wait a bit for messages to appear in the measurements channel
 	time.Sleep(2 * time.Second)
 	scn.Stop()
-	assert.NotEmpty(t, exp.events)
+	require.Len(t, exp.events, 3)
 	e := exp.events[0]
-	assert.Equal(t, "Test", e.Name)
-	assert.Equal(t, testAddr, e.Addr)
+	assert.Equal(t, "Backyard", e.Name)
+	assert.Equal(t, testAddr1, e.Addr)
 	assert.Equal(t, 55.0, e.Temperature)
 	assert.Equal(t, 60.0, e.Humidity)
 	assert.Equal(t, 510.0, e.Pressure)

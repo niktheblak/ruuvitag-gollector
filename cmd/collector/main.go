@@ -39,7 +39,7 @@ func run(c *cli.Context) error {
 		defer client.Close()
 		logger = client.Logger("ruuvitag-gollector").StandardLogger(logging.Info)
 	}
-	scn := scanner.New(logger, c.GlobalString("device"), ruuviTags)
+	scn := scanner.New(logger, ruuviTags)
 	defer scn.Close()
 	var exporters []exporter.Exporter
 	if c.GlobalBool("console") {
@@ -79,6 +79,10 @@ func run(c *cli.Context) error {
 		exporters = append(exporters, ps)
 	}
 	scn.Exporters = exporters
+	device := c.GlobalString("device")
+	if err := scn.Init(device); err != nil {
+		return fmt.Errorf("failed to initialize device %s: %w", device, err)
+	}
 	logger.Println("Starting ruuvitag-gollector")
 	if c.GlobalBool("daemon") {
 		return runAsDaemon(scn, c.GlobalDuration("scan_interval"))

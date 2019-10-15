@@ -69,17 +69,29 @@ func (m mockDeviceCreator) NewDevice(impl string) (ble.Device, error) {
 }
 
 type mockBLEScanner struct {
-	advertisement ble.Advertisement
+	advertisements []ble.Advertisement
+	current        int
 }
 
-func (m mockBLEScanner) Scan(ctx context.Context, allowDup bool, h ble.AdvHandler, f ble.AdvFilter) error {
-	h(m.advertisement)
+func NewMockBLEScanner(advertisements ...ble.Advertisement) *mockBLEScanner {
+	return &mockBLEScanner{
+		advertisements: advertisements,
+		current:        0,
+	}
+}
+
+func (m *mockBLEScanner) Scan(ctx context.Context, allowDup bool, h ble.AdvHandler, f ble.AdvFilter) error {
+	if m.current == len(m.advertisements) {
+		//m.current = 0
+		return nil
+	}
+	h(m.advertisements[m.current])
+	m.current++
 	<-ctx.Done()
 	return nil
 }
 
 type mockAdvertisement struct {
-	localName        string
 	manufacturerData []byte
 	addr             string
 }
@@ -89,7 +101,7 @@ func (m mockAdvertisement) Addr() ble.Addr {
 }
 
 func (m mockAdvertisement) LocalName() string {
-	return m.localName
+	return m.addr
 }
 
 func (m mockAdvertisement) ManufacturerData() []byte {

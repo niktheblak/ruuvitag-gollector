@@ -15,7 +15,6 @@ import (
 type Scanner struct {
 	Exporters   []exporter.Exporter
 	logger      *log.Logger
-	deviceName  string
 	device      ble.Device
 	quit        chan int
 	peripherals map[string]string
@@ -24,10 +23,9 @@ type Scanner struct {
 	ble         BLEScanner
 }
 
-func New(logger *log.Logger, device string, peripherals map[string]string) *Scanner {
+func New(logger *log.Logger, peripherals map[string]string) *Scanner {
 	return &Scanner{
 		logger:      logger,
-		deviceName:  device,
 		quit:        make(chan int, 1),
 		peripherals: peripherals,
 		dev:         defaultDeviceCreator{},
@@ -37,9 +35,6 @@ func New(logger *log.Logger, device string, peripherals map[string]string) *Scan
 
 // ScanContinuously scans and reports measurements immediately as they are received
 func (s *Scanner) ScanContinuously(ctx context.Context) error {
-	if err := s.init(s.deviceName); err != nil {
-		return err
-	}
 	s.logger.Println("Listening for measurements")
 	meas := s.Measurements(ctx)
 	go s.doExportContinuously(ctx, meas)
@@ -63,9 +58,6 @@ func (s *Scanner) ScanWithInterval(ctx context.Context, scanInterval time.Durati
 	if scanInterval == 0 {
 		return fmt.Errorf("scan interval must be greater than zero")
 	}
-	if err := s.init(s.deviceName); err != nil {
-		return err
-	}
 	go func() {
 		delay := evenminutes.Until(time.Now(), scanInterval)
 		s.logger.Printf("Sleeping until %v", time.Now().Add(delay))
@@ -79,15 +71,14 @@ func (s *Scanner) ScanWithInterval(ctx context.Context, scanInterval time.Durati
 		}
 		s.logger.Printf("Scanning measurements every %v", scanInterval)
 		ticker := time.NewTicker(scanInterval)
-		firstCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+		firstCtx, cancel := context.WithTimeout(ctx, scanInterval)
 		err := s.ScanOnce(firstCtx)
 		cancel()
 		if err != nil {
 			s.logger.Printf("Scan failed: %v", err)
 			return
 		}
-		s.listen(ctx, ticker.C)
-		s.logger.Println("Scanner quitting")
+		s.listen(ctx, ticker.C, scanInterval)
 		s.stopped = true
 		ticker.Stop()
 	}()
@@ -98,9 +89,6 @@ func (s *Scanner) ScanWithInterval(ctx context.Context, scanInterval time.Durati
 func (s *Scanner) ScanOnce(ctx context.Context) error {
 	if len(s.peripherals) == 0 {
 		return fmt.Errorf("at least one peripheral must be specified")
-	}
-	if err := s.init(s.deviceName); err != nil {
-		return err
 	}
 	meas := s.Measurements(ctx)
 	done := make(chan int, 1)
@@ -155,7 +143,7 @@ func (s *Scanner) Close() {
 	}
 }
 
-func (s *Scanner) init(device string) error {
+func (s *Scanner) Init(device string) error {
 	d, err := s.dev.NewDevice(device)
 	if err != nil {
 		return fmt.Errorf("failed to initialize device %s: %w", device, err)
@@ -169,12 +157,12 @@ func (s *Scanner) init(device string) error {
 	return nil
 }
 
-func (s *Scanner) listen(ctx context.Context, ticks <-chan time.Time) {
+func (s *Scanner) listen(ctx context.Context, ticks <-chan time.Time, scanTimeout time.Duration) {
 	failures := 0
 	for {
 		select {
 		case <-ticks:
-			ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+			ctx, cancel := context.WithTimeout(ctx, scanTimeout)
 			err := s.ScanOnce(ctx)
 			cancel()
 			switch err {
@@ -219,15 +207,16 @@ func (s *Scanner) doExport(ctx context.Context, measurements chan sensor.Data, d
 	for {
 		select {
 		case m, ok := <-measurements:
+			if !ok {
+				done <- 1
+				return
+			}
 			seenPeripherals[m.Addr] = true
 			if err := s.export(ctx, m); err != nil {
 				s.logger.Printf("Failed to report measurement: %v", err)
 			}
 			if len(s.peripherals) > 0 && ContainsKeys(s.peripherals, seenPeripherals) {
 				done <- 1
-				return
-			}
-			if !ok {
 				return
 			}
 		case <-ctx.Done():
