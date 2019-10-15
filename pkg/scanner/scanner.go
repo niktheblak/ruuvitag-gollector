@@ -111,7 +111,11 @@ func (s *Scanner) Measurements(ctx context.Context) chan sensor.Data {
 	ch := make(chan sensor.Data, 128)
 	go func() {
 		err := s.ble.Scan(ctx, false, s.handler(ch), s.filter)
-		if err != nil {
+		switch err {
+		case context.Canceled:
+		case context.DeadlineExceeded:
+		case nil:
+		default:
 			s.logger.Printf("Scan failed: %v", err)
 		}
 		close(ch)
