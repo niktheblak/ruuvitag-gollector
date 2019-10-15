@@ -48,8 +48,7 @@ func init() {
 
 func TestScanOnce(t *testing.T) {
 	var logger = NewTestLogger(t)
-	scn, err := New(logger, "default", peripherals)
-	require.NoError(t, err)
+	scn := New(logger, "default", peripherals)
 	exp := new(mockExporter)
 	scn.Exporters = []exporter.Exporter{exp}
 	device := mockDevice{}
@@ -59,7 +58,7 @@ func TestScanOnce(t *testing.T) {
 	scn.dev = mockDeviceCreator{device: device}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	err = scn.ScanOnce(ctx)
+	err := scn.ScanOnce(ctx)
 	require.NoError(t, err)
 	// Wait a bit for messages to appear in the measurements channel
 	time.Sleep(100 * time.Millisecond)
@@ -75,8 +74,7 @@ func TestScanOnce(t *testing.T) {
 
 func TestScanContinuously(t *testing.T) {
 	var logger = NewTestLogger(t)
-	scn, err := New(logger, "default", peripherals)
-	require.NoError(t, err)
+	scn := New(logger, "default", peripherals)
 	defer scn.Close()
 	exp := new(mockExporter)
 	scn.Exporters = []exporter.Exporter{exp}
@@ -87,7 +85,7 @@ func TestScanContinuously(t *testing.T) {
 	scn.dev = mockDeviceCreator{device: device}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	err = scn.ScanContinuously(ctx)
+	err := scn.ScanContinuously(ctx)
 	require.NoError(t, err)
 	// Wait a bit for messages to appear in the measurements channel
 	time.Sleep(100 * time.Millisecond)
@@ -107,8 +105,7 @@ func TestScanWithInterval(t *testing.T) {
 		t.SkipNow()
 	}
 	var logger = NewTestLogger(t)
-	scn, err := New(logger, "default", peripherals)
-	require.NoError(t, err)
+	scn := New(logger, "default", peripherals)
 	defer scn.Close()
 	exp := new(mockExporter)
 	scn.Exporters = []exporter.Exporter{exp}
@@ -119,7 +116,7 @@ func TestScanWithInterval(t *testing.T) {
 	scn.dev = mockDeviceCreator{device: device}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	err = scn.ScanWithInterval(ctx, 1*time.Second)
+	err := scn.ScanWithInterval(ctx, 1*time.Second)
 	require.NoError(t, err)
 	// Wait a bit for messages to appear in the measurements channel
 	time.Sleep(2 * time.Second)
