@@ -56,9 +56,13 @@ func (e *influxdbExporter) Export(ctx context.Context, data sensor.Data) error {
 		"mac":  strings.ToUpper(data.Addr),
 		"name": data.Name,
 	}, map[string]interface{}{
-		"temperature": data.Temperature,
-		"humidity":    data.Humidity,
-		"pressure":    data.Pressure,
+		"temperature":    data.Temperature,
+		"humidity":       data.Humidity,
+		"pressure":       data.Pressure,
+		"battery":        data.Battery,
+		"acceleration_x": data.AccelerationX,
+		"acceleration_y": data.AccelerationY,
+		"acceleration_z": data.AccelerationZ,
 	}, data.Timestamp)
 	bp.AddPoint(point)
 	return e.client.Write(bp)
