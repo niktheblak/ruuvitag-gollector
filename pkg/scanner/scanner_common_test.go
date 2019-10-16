@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/go-ble/ble"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/multilogger"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 
@@ -161,8 +162,8 @@ type testLogWriter struct {
 	t *testing.T
 }
 
-func NewTestLogger(t *testing.T) *log.Logger {
-	return log.New(testLogWriter{t: t}, "", log.LstdFlags)
+func NewTestLogger(t *testing.T) multilogger.Logger {
+	return multilogger.New(log.New(testLogWriter{t: t}, "", log.LstdFlags))
 }
 
 func (l testLogWriter) Write(p []byte) (int, error) {

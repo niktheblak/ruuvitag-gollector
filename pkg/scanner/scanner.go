@@ -3,18 +3,18 @@ package scanner
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/go-ble/ble"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/evenminutes"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/multilogger"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 
 type Scanner struct {
 	Exporters   []exporter.Exporter
-	logger      *log.Logger
+	logger      multilogger.Logger
 	device      ble.Device
 	quit        chan int
 	peripherals map[string]string
@@ -23,7 +23,7 @@ type Scanner struct {
 	ble         BLEScanner
 }
 
-func New(logger *log.Logger, peripherals map[string]string) *Scanner {
+func New(logger multilogger.Logger, peripherals map[string]string) *Scanner {
 	return &Scanner{
 		logger:      logger,
 		quit:        make(chan int, 1),

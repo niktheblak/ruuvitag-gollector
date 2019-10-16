@@ -14,12 +14,13 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/influxdb"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/pubsub"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/multilogger"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
 	"github.com/urfave/cli"
 	"github.com/urfave/cli/altsrc"
 )
 
-var logger = log.New(os.Stdout, "", log.LstdFlags)
+var logger multilogger.Logger
 
 func run(c *cli.Context) error {
 	ruuviTags, err := parseRuuviTags(c.GlobalStringSlice("ruuvitags"))
@@ -37,7 +38,12 @@ func run(c *cli.Context) error {
 			return fmt.Errorf("failed to create Stackdriver client: %w", err)
 		}
 		defer client.Close()
-		logger = client.Logger("ruuvitag-gollector").StandardLogger(logging.Info)
+		logger = multilogger.New(
+			log.New(os.Stdout, "", log.LstdFlags),
+			client.Logger("ruuvitag-gollector").StandardLogger(logging.Info),
+		)
+	} else {
+		logger = multilogger.New(log.New(os.Stdout, "", log.LstdFlags))
 	}
 	scn := scanner.New(logger, ruuviTags)
 	defer scn.Close()
