@@ -60,7 +60,7 @@ func (s *Scanner) ScanWithInterval(ctx context.Context, scanInterval time.Durati
 	}
 	go func() {
 		delay := evenminutes.Until(time.Now(), scanInterval)
-		s.logger.Info("Sleeping until %v", time.Now().Add(delay))
+		s.logger.Infof("Sleeping until %v", time.Now().Add(delay))
 		firstRun := time.After(delay)
 		select {
 		case <-firstRun:
@@ -69,7 +69,7 @@ func (s *Scanner) ScanWithInterval(ctx context.Context, scanInterval time.Durati
 		case <-s.quit:
 			return
 		}
-		s.logger.Info("Scanning measurements every %v", scanInterval)
+		s.logger.Infof("Scanning measurements every %v", scanInterval)
 		ticker := time.NewTicker(scanInterval)
 		firstCtx, cancel := context.WithTimeout(ctx, scanInterval)
 		err := s.ScanOnce(firstCtx)
