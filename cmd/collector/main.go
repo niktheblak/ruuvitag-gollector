@@ -38,7 +38,7 @@ func run(c *cli.Context) error {
 		}
 		defer gcpBackend.Close()
 		logging.SetBackend(
-			logging.NewLogBackend(os.Stdout, "ruuvitag-gollector", log.LstdFlags),
+			logging.NewLogBackend(os.Stdout, "", log.LstdFlags),
 			gcpBackend,
 		)
 	}
