@@ -2,11 +2,8 @@ package scanner
 
 import (
 	"context"
-	"log"
-	"testing"
 
 	"github.com/go-ble/ble"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/multilogger"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 
@@ -156,17 +153,4 @@ func (m *mockExporter) Export(ctx context.Context, data sensor.Data) error {
 
 func (m *mockExporter) Close() error {
 	return nil
-}
-
-type testLogWriter struct {
-	t *testing.T
-}
-
-func NewTestLogger(t *testing.T) multilogger.Logger {
-	return multilogger.New(log.New(testLogWriter{t: t}, "", log.LstdFlags))
-}
-
-func (l testLogWriter) Write(p []byte) (int, error) {
-	l.t.Log(string(p))
-	return len(p), nil
 }

@@ -9,22 +9,10 @@ import (
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
+	"github.com/op/go-logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-var testData = sensor.DataFormat3{
-	ManufacturerID:      0x9904,
-	DataFormat:          3,
-	Humidity:            120,
-	Temperature:         55,
-	TemperatureFraction: 0,
-	Pressure:            1000,
-	AccelerationX:       0,
-	AccelerationY:       0,
-	AccelerationZ:       0,
-	BatteryVoltageMv:    500,
-}
 
 const (
 	testAddr1 = "cc:ca:7e:52:cc:34"
@@ -32,13 +20,29 @@ const (
 	testAddr3 = "e8:e0:c6:0b:b8:c5"
 )
 
-var peripherals = map[string]string{
-	testAddr1: "Test",
-}
-
-var testAdvertisement mockAdvertisement
+var (
+	testData = sensor.DataFormat3{
+		ManufacturerID:      0x9904,
+		DataFormat:          3,
+		Humidity:            120,
+		Temperature:         55,
+		TemperatureFraction: 0,
+		Pressure:            1000,
+		AccelerationX:       0,
+		AccelerationY:       0,
+		AccelerationZ:       0,
+		BatteryVoltageMv:    500,
+	}
+	peripherals = map[string]string{
+		testAddr1: "Test",
+	}
+	testAdvertisement mockAdvertisement
+	logger            *logging.Logger
+)
 
 func init() {
+	logging.InitForTesting(logging.CRITICAL)
+	logger = logging.MustGetLogger("ruuvitag-gollector-test")
 	buf := new(bytes.Buffer)
 	if err := binary.Write(buf, binary.BigEndian, testData); err != nil {
 		panic(err)
@@ -50,7 +54,6 @@ func init() {
 }
 
 func TestScanOnce(t *testing.T) {
-	var logger = NewTestLogger(t)
 	scn := New(logger, peripherals)
 	exp := new(mockExporter)
 	scn.Exporters = []exporter.Exporter{exp}
@@ -76,7 +79,6 @@ func TestScanOnce(t *testing.T) {
 }
 
 func TestScanContinuously(t *testing.T) {
-	var logger = NewTestLogger(t)
 	scn := New(logger, peripherals)
 	defer scn.Close()
 	exp := new(mockExporter)
@@ -107,7 +109,6 @@ func TestScanWithInterval(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	var logger = NewTestLogger(t)
 	peripherals := map[string]string{
 		testAddr1: "Backyard",
 		testAddr2: "Upstairs",

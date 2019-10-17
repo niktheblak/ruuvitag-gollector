@@ -8,13 +8,13 @@ import (
 	"github.com/go-ble/ble"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/evenminutes"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/multilogger"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
+	"github.com/op/go-logging"
 )
 
 type Scanner struct {
 	Exporters   []exporter.Exporter
-	logger      multilogger.Logger
+	logger      *logging.Logger
 	device      ble.Device
 	quit        chan int
 	peripherals map[string]string
@@ -23,7 +23,7 @@ type Scanner struct {
 	ble         BLEScanner
 }
 
-func New(logger multilogger.Logger, peripherals map[string]string) *Scanner {
+func New(logger *logging.Logger, peripherals map[string]string) *Scanner {
 	return &Scanner{
 		logger:      logger,
 		quit:        make(chan int, 1),
@@ -35,17 +35,17 @@ func New(logger multilogger.Logger, peripherals map[string]string) *Scanner {
 
 // ScanContinuously scans and reports measurements immediately as they are received
 func (s *Scanner) ScanContinuously(ctx context.Context) error {
-	s.logger.Println("Listening for measurements")
+	s.logger.Info("Listening for measurements")
 	meas := s.Measurements(ctx)
 	go s.doExportContinuously(ctx, meas)
 	go func() {
 		select {
 		case <-s.quit:
-			s.logger.Println("Scanner quitting")
+			s.logger.Info("Scanner quitting")
 			s.stopped = true
 			return
 		case <-ctx.Done():
-			s.logger.Println("Scanner context done")
+			s.logger.Info("Scanner context done")
 			s.stopped = true
 			return
 		}
@@ -60,7 +60,7 @@ func (s *Scanner) ScanWithInterval(ctx context.Context, scanInterval time.Durati
 	}
 	go func() {
 		delay := evenminutes.Until(time.Now(), scanInterval)
-		s.logger.Printf("Sleeping until %v", time.Now().Add(delay))
+		s.logger.Info("Sleeping until %v", time.Now().Add(delay))
 		firstRun := time.After(delay)
 		select {
 		case <-firstRun:
@@ -69,13 +69,13 @@ func (s *Scanner) ScanWithInterval(ctx context.Context, scanInterval time.Durati
 		case <-s.quit:
 			return
 		}
-		s.logger.Printf("Scanning measurements every %v", scanInterval)
+		s.logger.Info("Scanning measurements every %v", scanInterval)
 		ticker := time.NewTicker(scanInterval)
 		firstCtx, cancel := context.WithTimeout(ctx, scanInterval)
 		err := s.ScanOnce(firstCtx)
 		cancel()
 		if err != nil {
-			s.logger.Printf("Scan failed: %v", err)
+			s.logger.Errorf("Scan failed: %v", err)
 			return
 		}
 		s.listen(ctx, ticker.C, scanInterval)
@@ -116,7 +116,7 @@ func (s *Scanner) Measurements(ctx context.Context) chan sensor.Data {
 		case context.DeadlineExceeded:
 		case nil:
 		default:
-			s.logger.Printf("Scan failed: %v", err)
+			s.logger.Errorf("Scan failed: %v", err)
 		}
 		close(ch)
 	}()
@@ -125,7 +125,7 @@ func (s *Scanner) Measurements(ctx context.Context) chan sensor.Data {
 
 // Stop stops all running scans
 func (s *Scanner) Stop() {
-	s.logger.Println("Stopping")
+	s.logger.Infof("Stopping")
 	s.stopped = true
 	s.quit <- 1
 }
@@ -137,12 +137,12 @@ func (s *Scanner) Close() {
 	}
 	if s.device != nil {
 		if err := s.device.Stop(); err != nil {
-			s.logger.Println(err)
+			s.logger.Error(err)
 		}
 	}
 	for _, e := range s.Exporters {
 		if err := e.Close(); err != nil {
-			s.logger.Printf("Failed to close exporter %s: %v", e.Name(), err)
+			s.logger.Errorf("Failed to close exporter %s: %v", e.Name(), err)
 		}
 	}
 }
@@ -154,9 +154,9 @@ func (s *Scanner) Init(device string) error {
 	}
 	s.device = d
 	if len(s.peripherals) > 0 {
-		s.logger.Printf("Reading from peripherals %v", s.peripherals)
+		s.logger.Infof("Reading from peripherals %v", s.peripherals)
 	} else {
-		s.logger.Println("Reading from all nearby BLE peripherals")
+		s.logger.Info("Reading from all nearby BLE peripherals")
 	}
 	return nil
 }
@@ -172,14 +172,14 @@ func (s *Scanner) listen(ctx context.Context, ticks <-chan time.Time, scanTimeou
 			switch err {
 			case context.DeadlineExceeded:
 			case context.Canceled:
-				s.logger.Println("Scan canceled")
+				s.logger.Info("Scan canceled")
 				return
 			case nil:
 			default:
-				s.logger.Printf("Scan failed: %v", err)
+				s.logger.Errorf("Scan failed: %v", err)
 				failures++
 				if failures == 3 {
-					s.logger.Println("Too many failures, exiting scan")
+					s.logger.Critical("Too many failures, exiting scan")
 					return
 				}
 			}
@@ -196,7 +196,7 @@ func (s *Scanner) doExportContinuously(ctx context.Context, measurements chan se
 		select {
 		case m := <-measurements:
 			if err := s.export(ctx, m); err != nil {
-				s.logger.Printf("Failed to report measurement: %v", err)
+				s.logger.Errorf("Failed to report measurement: %v", err)
 			}
 		case <-ctx.Done():
 			return
@@ -217,7 +217,7 @@ func (s *Scanner) doExport(ctx context.Context, measurements chan sensor.Data, d
 			}
 			seenPeripherals[m.Addr] = true
 			if err := s.export(ctx, m); err != nil {
-				s.logger.Printf("Failed to report measurement: %v", err)
+				s.logger.Errorf("Failed to report measurement: %v", err)
 			}
 			if len(s.peripherals) > 0 && ContainsKeys(s.peripherals, seenPeripherals) {
 				done <- 1
@@ -233,7 +233,7 @@ func (s *Scanner) doExport(ctx context.Context, measurements chan sensor.Data, d
 
 func (s *Scanner) handler(ch chan sensor.Data) func(ble.Advertisement) {
 	return func(a ble.Advertisement) {
-		s.logger.Printf("Read sensor data from device %v", a.Addr())
+		s.logger.Infof("Read sensor data from device %v", a.Addr())
 		data := a.ManufacturerData()
 		sensorData, err := sensor.Parse(data)
 		if err != nil {
@@ -263,7 +263,7 @@ func (s *Scanner) export(ctx context.Context, m sensor.Data) error {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	for _, e := range s.Exporters {
-		s.logger.Printf("Exporting measurement to %v", e.Name())
+		s.logger.Infof("Exporting measurement to %v", e.Name())
 		if err := e.Export(ctx, m); err != nil {
 			return err
 		}
@@ -278,5 +278,5 @@ func (s *Scanner) logInvalidData(data []byte, err error) {
 	} else {
 		header = data
 	}
-	s.logger.Printf("Error while parsing RuuviTag data (%d bytes) %v: %v", len(data), header, err)
+	s.logger.Errorf("Error while parsing RuuviTag data (%d bytes) %v: %v", len(data), header, err)
 }

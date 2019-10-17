@@ -9,18 +9,18 @@ import (
 	"strings"
 	"time"
 
-	"cloud.google.com/go/logging"
+	gcplogging "cloud.google.com/go/logging"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/influxdb"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/pubsub"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/multilogger"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
+	"github.com/op/go-logging"
 	"github.com/urfave/cli"
 	"github.com/urfave/cli/altsrc"
 )
 
-var logger multilogger.Logger
+var logger *logging.Logger
 
 func run(c *cli.Context) error {
 	ruuviTags, err := parseRuuviTags(c.GlobalStringSlice("ruuvitags"))
@@ -33,18 +33,18 @@ func run(c *cli.Context) error {
 			return fmt.Errorf("Google Cloud Platform project must be specified")
 		}
 		ctx := context.Background()
-		client, err := logging.NewClient(ctx, project)
+		client, err := gcplogging.NewClient(ctx, project)
 		if err != nil {
 			return fmt.Errorf("failed to create Stackdriver client: %w", err)
 		}
 		defer client.Close()
-		logger = multilogger.New(
-			log.New(os.Stdout, "", log.LstdFlags),
-			client.Logger("ruuvitag-gollector").StandardLogger(logging.Info),
+		logging.SetBackend(
+			&logging.LogBackend{Logger: log.New(os.Stdout, "ruuvitag-gollector", log.LstdFlags)},
+			&logging.LogBackend{Logger: client.Logger("ruuvitag-gollector").StandardLogger(gcplogging.Info)},
 		)
-	} else {
-		logger = multilogger.New(log.New(os.Stdout, "", log.LstdFlags))
 	}
+	logging.SetLevel(logging.INFO, "ruuvitag-gollector")
+	logger = logging.MustGetLogger("ruuvitag-gollector")
 	scn := scanner.New(logger, ruuviTags)
 	defer scn.Close()
 	var exporters []exporter.Exporter
@@ -86,10 +86,11 @@ func run(c *cli.Context) error {
 	}
 	scn.Exporters = exporters
 	device := c.GlobalString("device")
+	logger.Infof("Initializing device %s", device)
 	if err := scn.Init(device); err != nil {
 		return fmt.Errorf("failed to initialize device %s: %w", device, err)
 	}
-	logger.Println("Starting ruuvitag-gollector")
+	logger.Info("Starting ruuvitag-gollector")
 	if c.GlobalBool("daemon") {
 		return runAsDaemon(scn, c.GlobalDuration("scan_interval"))
 	} else {
@@ -98,7 +99,7 @@ func run(c *cli.Context) error {
 }
 
 func runAsDaemon(scn *scanner.Scanner, scanInterval time.Duration) error {
-	logger.Println("Starting scanner")
+	logger.Info("Starting scanner")
 	ctx := context.Background()
 	var err error
 	if scanInterval > 0 {
@@ -112,13 +113,13 @@ func runAsDaemon(scn *scanner.Scanner, scanInterval time.Duration) error {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 	<-interrupt
-	logger.Println("Stopping ruuvitag-gollector")
+	logger.Info("Stopping ruuvitag-gollector")
 	scn.Stop()
 	return nil
 }
 
 func runOnce(scn *scanner.Scanner) error {
-	logger.Println("Scanning once")
+	logger.Info("Scanning once")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	interrupt := make(chan os.Signal, 1)
@@ -129,9 +130,9 @@ func runOnce(scn *scanner.Scanner) error {
 		scn.Stop()
 	}()
 	if err := scn.ScanOnce(ctx); err != nil {
-		logger.Printf("failed to scan: %v", err)
+		logger.Errorf("failed to scan: %v", err)
 	}
-	logger.Println("Stopping ruuvitag-gollector")
+	logger.Info("Stopping ruuvitag-gollector")
 	return nil
 }
 
