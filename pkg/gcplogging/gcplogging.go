@@ -13,8 +13,8 @@ type GCPBackend struct {
 	Logger *gcplogging.Logger
 }
 
-func (b *GCPBackend) Log(level logging.Level, flags int, r *logging.Record) error {
-	b.Logger.Log(toEntry(r))
+func (b *GCPBackend) Log(level logging.Level, calldepth int, rec *logging.Record) error {
+	b.Logger.Log(toEntry(rec))
 	return nil
 }
 
@@ -57,6 +57,6 @@ func toSeverity(level logging.Level) gcplogging.Severity {
 	case logging.DEBUG:
 		return gcplogging.Debug
 	default:
-		return gcplogging.Info
+		return gcplogging.Default
 	}
 }
