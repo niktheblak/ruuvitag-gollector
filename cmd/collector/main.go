@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	gcplogging "cloud.google.com/go/logging"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/influxdb"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/pubsub"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/gcplogging"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
 	"github.com/op/go-logging"
 	"github.com/urfave/cli"
@@ -32,19 +32,21 @@ func run(c *cli.Context) error {
 		if project == "" {
 			return fmt.Errorf("Google Cloud Platform project must be specified")
 		}
-		ctx := context.Background()
-		client, err := gcplogging.NewClient(ctx, project)
+		gcpBackend, err := gcplogging.NewBackend(project, "ruuvitag-gollector")
 		if err != nil {
-			return fmt.Errorf("failed to create Stackdriver client: %w", err)
+			return fmt.Errorf("failed to initialize Stackdriver logger: %w", err)
 		}
-		defer client.Close()
+		defer gcpBackend.Close()
 		logging.SetBackend(
-			&logging.LogBackend{Logger: log.New(os.Stdout, "ruuvitag-gollector", log.LstdFlags)},
-			&logging.LogBackend{Logger: client.Logger("ruuvitag-gollector").StandardLogger(gcplogging.Info)},
+			logging.NewLogBackend(os.Stdout, "ruuvitag-gollector", log.LstdFlags),
+			gcpBackend,
 		)
 	}
 	logging.SetLevel(logging.INFO, "ruuvitag-gollector")
-	logger = logging.MustGetLogger("ruuvitag-gollector")
+	logger, err = logging.GetLogger("ruuvitag-gollector")
+	if err != nil {
+		return fmt.Errorf("failed to initialize logger: %w", err)
+	}
 	scn := scanner.New(logger, ruuviTags)
 	defer scn.Close()
 	var exporters []exporter.Exporter
