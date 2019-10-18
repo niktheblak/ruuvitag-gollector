@@ -60,7 +60,7 @@ func (s *Scanner) ScanWithInterval(ctx context.Context, scanInterval time.Durati
 	}
 	go func() {
 		delay := evenminutes.Until(time.Now(), scanInterval)
-		s.logger.Info("Sleeping", zap.Time("until", time.Now().Add(delay)))
+		s.logger.Info(fmt.Sprintf("Sleeping until %v", time.Now().Add(delay)))
 		firstRun := time.After(delay)
 		select {
 		case <-firstRun:
