@@ -9,12 +9,12 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/evenminutes"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
-	"github.com/op/go-logging"
+	"go.uber.org/zap"
 )
 
 type Scanner struct {
 	Exporters   []exporter.Exporter
-	logger      *logging.Logger
+	logger      *zap.Logger
 	device      ble.Device
 	quit        chan int
 	peripherals map[string]string
@@ -23,7 +23,7 @@ type Scanner struct {
 	ble         BLEScanner
 }
 
-func New(logger *logging.Logger, peripherals map[string]string) *Scanner {
+func New(logger *zap.Logger, peripherals map[string]string) *Scanner {
 	return &Scanner{
 		logger:      logger,
 		quit:        make(chan int, 1),
@@ -60,7 +60,7 @@ func (s *Scanner) ScanWithInterval(ctx context.Context, scanInterval time.Durati
 	}
 	go func() {
 		delay := evenminutes.Until(time.Now(), scanInterval)
-		s.logger.Infof("Sleeping until %v", time.Now().Add(delay))
+		s.logger.Info("Sleeping", zap.Time("until", time.Now().Add(delay)))
 		firstRun := time.After(delay)
 		select {
 		case <-firstRun:
@@ -69,13 +69,13 @@ func (s *Scanner) ScanWithInterval(ctx context.Context, scanInterval time.Durati
 		case <-s.quit:
 			return
 		}
-		s.logger.Infof("Scanning measurements every %v", scanInterval)
+		s.logger.Info("Scanning measurements", zap.Duration("interval", scanInterval))
 		ticker := time.NewTicker(scanInterval)
 		firstCtx, cancel := context.WithTimeout(ctx, scanInterval)
 		err := s.ScanOnce(firstCtx)
 		cancel()
 		if err != nil {
-			s.logger.Errorf("Scan failed: %v", err)
+			s.logger.Error("Scan failed", zap.Error(err))
 			return
 		}
 		s.listen(ctx, ticker.C, scanInterval)
@@ -116,7 +116,7 @@ func (s *Scanner) Measurements(ctx context.Context) chan sensor.Data {
 		case context.DeadlineExceeded:
 		case nil:
 		default:
-			s.logger.Errorf("Scan failed: %v", err)
+			s.logger.Error("Scan failed", zap.Error(err))
 		}
 		close(ch)
 	}()
@@ -125,7 +125,7 @@ func (s *Scanner) Measurements(ctx context.Context) chan sensor.Data {
 
 // Stop stops all running scans
 func (s *Scanner) Stop() {
-	s.logger.Infof("Stopping")
+	s.logger.Info("Stopping")
 	s.stopped = true
 	s.quit <- 1
 }
@@ -137,12 +137,12 @@ func (s *Scanner) Close() {
 	}
 	if s.device != nil {
 		if err := s.device.Stop(); err != nil {
-			s.logger.Error(err)
+			s.logger.Error("Error while stopping device", zap.Error(err))
 		}
 	}
 	for _, e := range s.Exporters {
 		if err := e.Close(); err != nil {
-			s.logger.Errorf("Failed to close exporter %s: %v", e.Name(), err)
+			s.logger.Error("Failed to close exporter", zap.String("exporter", e.Name()), zap.Error(err))
 		}
 	}
 }
@@ -154,7 +154,7 @@ func (s *Scanner) Init(device string) error {
 	}
 	s.device = d
 	if len(s.peripherals) > 0 {
-		s.logger.Infof("Reading from peripherals %v", s.peripherals)
+		s.logger.Info("Reading from peripherals", zap.Any("peripherals", s.peripherals))
 	} else {
 		s.logger.Info("Reading from all nearby BLE peripherals")
 	}
@@ -176,10 +176,10 @@ func (s *Scanner) listen(ctx context.Context, ticks <-chan time.Time, scanTimeou
 				return
 			case nil:
 			default:
-				s.logger.Errorf("Scan failed: %v", err)
+				s.logger.Error("Scan failed", zap.Error(err))
 				failures++
 				if failures == 3 {
-					s.logger.Critical("Too many failures, exiting scan")
+					s.logger.Fatal("Too many failures, exiting scan")
 					return
 				}
 			}
@@ -196,7 +196,7 @@ func (s *Scanner) doExportContinuously(ctx context.Context, measurements chan se
 		select {
 		case m := <-measurements:
 			if err := s.export(ctx, m); err != nil {
-				s.logger.Errorf("Failed to report measurement: %v", err)
+				s.logger.Error("Failed to report measurement", zap.Error(err))
 			}
 		case <-ctx.Done():
 			return
@@ -217,7 +217,7 @@ func (s *Scanner) doExport(ctx context.Context, measurements chan sensor.Data, d
 			}
 			seenPeripherals[m.Addr] = true
 			if err := s.export(ctx, m); err != nil {
-				s.logger.Errorf("Failed to report measurement: %v", err)
+				s.logger.Error("Failed to report measurement", zap.Error(err))
 			}
 			if len(s.peripherals) > 0 && ContainsKeys(s.peripherals, seenPeripherals) {
 				done <- 1
@@ -233,7 +233,7 @@ func (s *Scanner) doExport(ctx context.Context, measurements chan sensor.Data, d
 
 func (s *Scanner) handler(ch chan sensor.Data) func(ble.Advertisement) {
 	return func(a ble.Advertisement) {
-		s.logger.Infof("Read sensor data from device %v", a.Addr())
+		s.logger.Debug("Read sensor data from device", zap.String("addr", a.Addr().String()))
 		data := a.ManufacturerData()
 		sensorData, err := sensor.Parse(data)
 		if err != nil {
@@ -263,7 +263,7 @@ func (s *Scanner) export(ctx context.Context, m sensor.Data) error {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	for _, e := range s.Exporters {
-		s.logger.Infof("Exporting measurement to %v", e.Name())
+		s.logger.Info("Exporting measurement", zap.String("exporter", e.Name()))
 		if err := e.Export(ctx, m); err != nil {
 			return err
 		}
@@ -278,5 +278,9 @@ func (s *Scanner) logInvalidData(data []byte, err error) {
 	} else {
 		header = data
 	}
-	s.logger.Errorf("Error while parsing RuuviTag data (%d bytes) %v: %v", len(data), header, err)
+	s.logger.Error("Error while parsing RuuviTag data",
+		zap.Int("len", len(data)),
+		zap.Binary("header", header),
+		zap.Error(err),
+	)
 }

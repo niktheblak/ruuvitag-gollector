@@ -9,9 +9,9 @@ import (
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
-	"github.com/op/go-logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 const (
@@ -37,12 +37,11 @@ var (
 		testAddr1: "Test",
 	}
 	testAdvertisement mockAdvertisement
-	logger            *logging.Logger
+	logger            *zap.Logger
 )
 
 func init() {
-	logging.InitForTesting(logging.CRITICAL)
-	logger = logging.MustGetLogger("ruuvitag-gollector-test")
+	logger = zap.NewNop()
 	buf := new(bytes.Buffer)
 	if err := binary.Write(buf, binary.BigEndian, testData); err != nil {
 		panic(err)

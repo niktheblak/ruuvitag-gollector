@@ -3,49 +3,46 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"strings"
 	"time"
 
+	"github.com/jonstaryuk/gcloudzap"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/influxdb"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/pubsub"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/gcplogging"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
-	"github.com/op/go-logging"
 	"github.com/urfave/cli"
 	"github.com/urfave/cli/altsrc"
+	"go.uber.org/zap"
 )
 
-var logger *logging.Logger
+var logger *zap.Logger
 
 func run(c *cli.Context) error {
-	ruuviTags, err := parseRuuviTags(c.GlobalStringSlice("ruuvitags"))
-	if err != nil {
-		return err
-	}
 	if c.GlobalBool("stackdriver") {
 		project := c.GlobalString("project")
 		if project == "" {
 			return fmt.Errorf("Google Cloud Platform project must be specified")
 		}
-		gcpBackend, err := gcplogging.NewBackend(project, "ruuvitag-gollector")
+		var err error
+		logger, err = gcloudzap.NewProduction(project, "ruuvitag-gollector")
 		if err != nil {
-			return fmt.Errorf("failed to initialize Stackdriver logger: %w", err)
+			return fmt.Errorf("failed to create Stackdriver logger: %w", err)
 		}
-		defer gcpBackend.Close()
-		logging.SetBackend(
-			logging.NewLogBackend(os.Stdout, "", log.LstdFlags),
-			gcpBackend,
-		)
+	} else {
+		var err error
+		logger, err = zap.NewDevelopment()
+		if err != nil {
+			return fmt.Errorf("failed to create logger: %w", err)
+		}
 	}
-	logging.SetLevel(logging.INFO, "ruuvitag-gollector")
-	logger, err = logging.GetLogger("ruuvitag-gollector")
+	defer logger.Sync()
+	ruuviTags, err := parseRuuviTags(c.GlobalStringSlice("ruuvitags"))
 	if err != nil {
-		return fmt.Errorf("failed to initialize logger: %w", err)
+		return fmt.Errorf("failed to parse RuuviTag addresses: %w", err)
 	}
 	scn := scanner.New(logger, ruuviTags)
 	defer scn.Close()
@@ -88,9 +85,9 @@ func run(c *cli.Context) error {
 	}
 	scn.Exporters = exporters
 	device := c.GlobalString("device")
-	logger.Infof("Initializing device %s", device)
+	logger.Info("Initializing new device", zap.String("device", device))
 	if err := scn.Init(device); err != nil {
-		return fmt.Errorf("failed to initialize device %s: %w", device, err)
+		return err
 	}
 	logger.Info("Starting ruuvitag-gollector")
 	if c.GlobalBool("daemon") {
@@ -132,7 +129,7 @@ func runOnce(scn *scanner.Scanner) error {
 		scn.Stop()
 	}()
 	if err := scn.ScanOnce(ctx); err != nil {
-		logger.Errorf("failed to scan: %v", err)
+		logger.Error("Failed to scan", zap.Error(err))
 	}
 	logger.Info("Stopping ruuvitag-gollector")
 	return nil
@@ -248,6 +245,6 @@ func main() {
 		return run(c)
 	}
 	if err := app.Run(os.Args); err != nil {
-		logger.Fatal(err)
+		logger.Fatal("Error while running application", zap.Error(err))
 	}
 }
