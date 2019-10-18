@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -245,6 +246,10 @@ func main() {
 		return run(c)
 	}
 	if err := app.Run(os.Args); err != nil {
-		logger.Fatal("Error while running application", zap.Error(err))
+		if logger != nil {
+			logger.Error("Error while running application", zap.Error(err))
+		} else {
+			log.Fatalf("Error while running application: %v", err)
+		}
 	}
 }
