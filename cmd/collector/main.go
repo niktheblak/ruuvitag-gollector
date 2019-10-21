@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jonstaryuk/gcloudzap"
+	"github.com/niktheblak/gcloudzap"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/influxdb"
