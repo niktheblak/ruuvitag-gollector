@@ -13,10 +13,11 @@ import (
 )
 
 type Scanner struct {
-	Exporters   []exporter.Exporter
+	Exporters []exporter.Exporter
+	Quit      chan int
+
 	logger      *zap.Logger
 	device      ble.Device
-	quit        chan int
 	peripherals map[string]string
 	stopped     bool
 	dev         DeviceCreator
@@ -25,8 +26,8 @@ type Scanner struct {
 
 func New(logger *zap.Logger, peripherals map[string]string) *Scanner {
 	return &Scanner{
+		Quit:        make(chan int, 1),
 		logger:      logger,
-		quit:        make(chan int, 1),
 		peripherals: peripherals,
 		dev:         defaultDeviceCreator{},
 		ble:         defaultBLEScanner{},
@@ -34,29 +35,24 @@ func New(logger *zap.Logger, peripherals map[string]string) *Scanner {
 }
 
 // ScanContinuously scans and reports measurements immediately as they are received
-func (s *Scanner) ScanContinuously(ctx context.Context) error {
+func (s *Scanner) ScanContinuously(ctx context.Context) {
 	s.logger.Info("Listening for measurements")
 	meas := s.Measurements(ctx)
 	go s.doExportContinuously(ctx, meas)
 	go func() {
 		select {
-		case <-s.quit:
-			s.logger.Info("Scanner quitting")
-			s.stopped = true
-			return
+		case <-s.Quit:
 		case <-ctx.Done():
-			s.logger.Info("Scanner context done")
-			s.stopped = true
-			return
 		}
+		s.Stop()
 	}()
-	return nil
 }
 
 // ScanWithInterval scans and reports measurements at specified intervals
-func (s *Scanner) ScanWithInterval(ctx context.Context, scanInterval time.Duration) error {
+func (s *Scanner) ScanWithInterval(ctx context.Context, scanInterval time.Duration) {
 	if scanInterval == 0 {
-		return fmt.Errorf("scan interval must be greater than zero")
+		s.logger.Error("scan interval must be greater than zero")
+		return
 	}
 	go func() {
 		delay := evenminutes.Until(time.Now(), scanInterval)
@@ -66,23 +62,18 @@ func (s *Scanner) ScanWithInterval(ctx context.Context, scanInterval time.Durati
 		case <-firstRun:
 		case <-ctx.Done():
 			return
-		case <-s.quit:
+		case <-s.Quit:
 			return
 		}
 		s.logger.Info("Scanning measurements", zap.Duration("interval", scanInterval))
 		ticker := time.NewTicker(scanInterval)
 		firstCtx, cancel := context.WithTimeout(ctx, scanInterval)
-		err := s.ScanOnce(firstCtx)
+		s.doScan(firstCtx)
 		cancel()
-		if err != nil {
-			s.logger.Error("Scan failed", zap.Error(err))
-			return
-		}
 		s.listen(ctx, ticker.C, scanInterval)
-		s.stopped = true
 		ticker.Stop()
+		s.Stop()
 	}()
-	return nil
 }
 
 // ScanOnce scans all registered peripherals once and quits
@@ -90,17 +81,8 @@ func (s *Scanner) ScanOnce(ctx context.Context) error {
 	if len(s.peripherals) == 0 {
 		return fmt.Errorf("at least one peripheral must be specified")
 	}
-	meas := s.Measurements(ctx)
-	done := make(chan int, 1)
-	go s.doExport(ctx, meas, done)
-	select {
-	case <-ctx.Done():
-		done <- 1
-	case <-done:
-	case <-s.quit:
-		done <- 1
-	}
-	s.stopped = true
+	s.doScan(ctx)
+	s.Stop()
 	return nil
 }
 
@@ -125,9 +107,12 @@ func (s *Scanner) Measurements(ctx context.Context) chan sensor.Data {
 
 // Stop stops all running scans
 func (s *Scanner) Stop() {
-	s.logger.Info("Stopping")
+	if s.stopped {
+		return
+	}
+	s.logger.Info("Stopping scanner")
 	s.stopped = true
-	s.quit <- 1
+	s.Quit <- 1
 }
 
 // Close closes the scanner and frees allocated resources
@@ -162,33 +147,30 @@ func (s *Scanner) Init(device string) error {
 }
 
 func (s *Scanner) listen(ctx context.Context, ticks <-chan time.Time, scanTimeout time.Duration) {
-	failures := 0
 	for {
 		select {
 		case <-ticks:
 			ctx, cancel := context.WithTimeout(ctx, scanTimeout)
-			err := s.ScanOnce(ctx)
+			s.doScan(ctx)
 			cancel()
-			switch err {
-			case context.DeadlineExceeded:
-			case context.Canceled:
-				s.logger.Info("Scan canceled")
-				return
-			case nil:
-			default:
-				s.logger.Error("Scan failed", zap.Error(err))
-				failures++
-				if failures == 3 {
-					s.logger.Fatal("Too many failures, exiting scan")
-					return
-				}
-			}
 		case <-ctx.Done():
 			return
-		case <-s.quit:
+		case <-s.Quit:
 			return
 		}
 	}
+}
+
+func (s *Scanner) doScan(ctx context.Context) {
+	meas := s.Measurements(ctx)
+	done := make(chan int, 1)
+	go s.doExport(ctx, meas, done)
+	select {
+	case <-done:
+	case <-s.Quit:
+		done <- 1
+	}
+	close(done)
 }
 
 func (s *Scanner) doExportContinuously(ctx context.Context, measurements chan sensor.Data) {
@@ -200,7 +182,7 @@ func (s *Scanner) doExportContinuously(ctx context.Context, measurements chan se
 			}
 		case <-ctx.Done():
 			return
-		case <-s.quit:
+		case <-s.Quit:
 			return
 		}
 	}
@@ -224,8 +206,7 @@ func (s *Scanner) doExport(ctx context.Context, measurements chan sensor.Data, d
 				return
 			}
 		case <-ctx.Done():
-			return
-		case <-done:
+			done <- 1
 			return
 		}
 	}

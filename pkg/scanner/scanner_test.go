@@ -89,8 +89,7 @@ func TestScanContinuously(t *testing.T) {
 	defer cancel()
 	err := scn.Init("default")
 	require.NoError(t, err)
-	err = scn.ScanContinuously(ctx)
-	require.NoError(t, err)
+	scn.ScanContinuously(ctx)
 	// Wait a bit for messages to appear in the measurements channel
 	time.Sleep(100 * time.Millisecond)
 	scn.Stop()
@@ -141,8 +140,7 @@ func TestScanWithInterval(t *testing.T) {
 	defer cancel()
 	err := scn.Init("default")
 	require.NoError(t, err)
-	err = scn.ScanWithInterval(ctx, 100*time.Millisecond)
-	require.NoError(t, err)
+	scn.ScanWithInterval(ctx, 100*time.Millisecond)
 	// Wait a bit for messages to appear in the measurements channel
 	time.Sleep(2 * time.Second)
 	scn.Stop()

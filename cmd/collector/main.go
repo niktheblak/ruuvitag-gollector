@@ -92,30 +92,29 @@ func run(c *cli.Context) error {
 	}
 	logger.Info("Starting ruuvitag-gollector")
 	if c.GlobalBool("daemon") {
-		return runAsDaemon(scn, c.GlobalDuration("scan_interval"))
+		runAsDaemon(scn, c.GlobalDuration("scan_interval"))
+		return nil
 	} else {
 		return runOnce(scn)
 	}
 }
 
-func runAsDaemon(scn *scanner.Scanner, scanInterval time.Duration) error {
+func runAsDaemon(scn *scanner.Scanner, scanInterval time.Duration) {
 	logger.Info("Starting scanner")
 	ctx := context.Background()
-	var err error
 	if scanInterval > 0 {
-		err = scn.ScanWithInterval(ctx, scanInterval)
+		scn.ScanWithInterval(ctx, scanInterval)
 	} else {
-		err = scn.ScanContinuously(ctx)
-	}
-	if err != nil {
-		return fmt.Errorf("failed to start scanner: %w", err)
+		scn.ScanContinuously(ctx)
 	}
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
-	<-interrupt
+	select {
+	case <-interrupt:
+	case <-scn.Quit:
+	}
 	logger.Info("Stopping ruuvitag-gollector")
 	scn.Stop()
-	return nil
 }
 
 func runOnce(scn *scanner.Scanner) error {
@@ -130,7 +129,7 @@ func runOnce(scn *scanner.Scanner) error {
 		scn.Stop()
 	}()
 	if err := scn.ScanOnce(ctx); err != nil {
-		logger.Error("Failed to scan", zap.Error(err))
+		return fmt.Errorf("failed to scan: %w", err)
 	}
 	logger.Info("Stopping ruuvitag-gollector")
 	return nil
