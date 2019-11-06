@@ -23,8 +23,12 @@ import (
 var logger *zap.Logger
 
 func run(c *cli.Context) error {
-	if c.GlobalIsSet("application_credentials") {
-		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", c.GlobalString("application_credentials"))
+	appCreds := c.GlobalString("application_credentials") 
+	if appCreds != "" {
+		log.Printf("Setting GOOGLE_APPLICATION_CREDENTIALS=%s", appCreds)
+		if err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", appCreds); err != nil {
+			return err
+		}
 	}
 	if c.GlobalBool("stackdriver") {
 		project := c.GlobalString("project")
