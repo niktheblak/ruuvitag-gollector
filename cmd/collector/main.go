@@ -23,6 +23,9 @@ import (
 var logger *zap.Logger
 
 func run(c *cli.Context) error {
+	if c.GlobalIsSet("application_credentials") {
+		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", c.GlobalString("application_credentials"))
+	}
 	if c.GlobalBool("stackdriver") {
 		project := c.GlobalString("project")
 		if project == "" {
@@ -224,6 +227,12 @@ func main() {
 			Usage:  "use Google Pub/Sub",
 			EnvVar: "RUUVITAG_USE_PUBSUB",
 		},
+		altsrc.NewStringFlag(cli.StringFlag{
+			Name: "application_credentials",
+			Usage: "Google Cloud application credentials file",
+			EnvVar: "RUUVITAG_APPLICATION_CREDENTIALS_FILE",
+			TakesFile: true,
+		}),
 		altsrc.NewStringFlag(cli.StringFlag{
 			Name:   "project",
 			Usage:  "Google Cloud Platform project",
