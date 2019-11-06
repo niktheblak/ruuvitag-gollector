@@ -25,7 +25,6 @@ var logger *zap.Logger
 func run(c *cli.Context) error {
 	appCreds := c.GlobalString("application_credentials") 
 	if appCreds != "" {
-		log.Printf("Setting GOOGLE_APPLICATION_CREDENTIALS=%s", appCreds)
 		if err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", appCreds); err != nil {
 			return err
 		}
