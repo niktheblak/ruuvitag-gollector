@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	cloud.google.com/go/pubsub v1.0.1
+	github.com/avast/retry-go v2.4.2+incompatible
 	github.com/go-ble/ble v0.0.0-20190521171521-147700f13610
 	github.com/influxdata/influxdb1-client v0.0.0-20190809212627-fc22c7df067e
 	github.com/mattn/go-colorable v0.0.9 // indirect

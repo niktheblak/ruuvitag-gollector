@@ -9,6 +9,7 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/evenminutes"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
+	"github.com/avast/retry-go"
 	"go.uber.org/zap"
 )
 
@@ -245,7 +246,10 @@ func (s *Scanner) export(ctx context.Context, m sensor.Data) error {
 	defer cancel()
 	for _, e := range s.Exporters {
 		s.logger.Info("Exporting measurement", zap.String("exporter", e.Name()))
-		if err := e.Export(ctx, m); err != nil {
+		err := retry.Do(func() error {
+			return e.Export(ctx, m)
+		})
+		if err != nil {
 			return err
 		}
 	}
