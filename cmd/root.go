@@ -30,9 +30,7 @@ var rootCmd = &cobra.Command{
 	PersistentPreRunE: run,
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		if logger != nil {
-			if err := logger.Sync(); err != nil {
-				log.Printf("Error while syncing logger: %v", err)
-			}
+			logger.Sync()
 		}
 		if scn != nil {
 			scn.Close()
