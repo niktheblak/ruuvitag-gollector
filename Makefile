@@ -5,7 +5,7 @@ all:
 	make install
 
 build:
-	go build -o ruuvitag-gollector cmd/collector/main.go
+	go build -o ruuvitag-gollector main.go
 
 install:
 	cp ruuvitag-gollector ~/bin/

@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/avast/retry-go"
 	"github.com/go-ble/ble"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/evenminutes"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
-	"github.com/avast/retry-go"
 	"go.uber.org/zap"
 )
 
@@ -26,10 +26,14 @@ type Scanner struct {
 }
 
 func New(logger *zap.Logger, peripherals map[string]string) *Scanner {
+	peripheralMap := make(map[string]string)
+	for addr, name := range peripherals {
+		peripheralMap[ble.NewAddr(addr).String()] = name
+	}
 	return &Scanner{
 		Quit:        make(chan int, 1),
 		logger:      logger,
-		peripherals: peripherals,
+		peripherals: peripheralMap,
 		dev:         defaultDeviceCreator{},
 		ble:         defaultBLEScanner{},
 	}
@@ -215,14 +219,14 @@ func (s *Scanner) doExport(ctx context.Context, measurements chan sensor.Data, d
 
 func (s *Scanner) handler(ch chan sensor.Data) func(ble.Advertisement) {
 	return func(a ble.Advertisement) {
-		s.logger.Debug("Read sensor data from device", zap.String("addr", a.Addr().String()))
+		addr := a.Addr().String()
+		s.logger.Debug("Read sensor data from device", zap.String("addr", addr))
 		data := a.ManufacturerData()
 		sensorData, err := sensor.Parse(data)
 		if err != nil {
 			s.logInvalidData(data, err)
 			return
 		}
-		addr := a.Addr().String()
 		sensorData.Addr = addr
 		sensorData.Name = s.peripherals[addr]
 		sensorData.Timestamp = time.Now()
