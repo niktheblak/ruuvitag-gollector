@@ -20,6 +20,10 @@ var collectCmd = &cobra.Command{
 	},
 }
 
+func init() {
+	rootCmd.AddCommand(collectCmd)
+}
+
 func runOnce(scn *scanner.Scanner) error {
 	logger.Info("Scanning once")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

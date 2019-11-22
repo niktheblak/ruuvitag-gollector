@@ -11,33 +11,34 @@ import (
 	"github.com/spf13/viper"
 )
 
-var scanContinuously bool
-var scanInterval time.Duration
-
-// daemonCmd represents the daemon command
 var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "Collect measurements from specified RuuviTags continuously",
 	Run: func(cmd *cobra.Command, args []string) {
 		logger.Info("Starting ruuvitag-gollector")
-		runAsDaemon(scn, scanInterval)
+		interval := viper.GetDuration("interval")
+		if viper.GetBool("continuous") {
+			interval = 0
+		}
+		runAsDaemon(scn, interval)
 	},
 }
 
 func init() {
-	daemonCmd.Flags().BoolVar(&scanContinuously, "continuous", false, "Scan for measurements continuously")
-	daemonCmd.Flags().DurationVar(&scanInterval, "interval", 60*time.Second, "Wait time between RuuviTag device scans")
+	daemonCmd.Flags().Bool("continuous", false, "Scan for measurements continuously")
+	daemonCmd.Flags().Duration("interval", 60*time.Second, "Wait time between RuuviTag device scans")
 
-	viper.BindPFlag("continuous", rootCmd.PersistentFlags().Lookup("continuous"))
-	viper.BindPFlag("interval", rootCmd.PersistentFlags().Lookup("interval"))
+	viper.BindPFlags(daemonCmd.Flags())
+
+	rootCmd.AddCommand(daemonCmd)
 }
 
 func runAsDaemon(scn *scanner.Scanner, scanInterval time.Duration) {
 	ctx := context.Background()
-	if scanContinuously {
-		scn.ScanContinuously(ctx)
-	} else {
+	if scanInterval > 0 {
 		scn.ScanWithInterval(ctx, scanInterval)
+	} else {
+		scn.ScanContinuously(ctx)
 	}
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)

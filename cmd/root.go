@@ -27,6 +27,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:               "ruuvitag-gollector",
 	Short:             "Collects measurements from RuuviTag sensors",
+	SilenceUsage:      true,
 	PersistentPreRunE: run,
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		if logger != nil {
@@ -71,9 +72,6 @@ func init() {
 	if err := viper.BindPFlags(rootCmd.PersistentFlags()); err != nil {
 		log.Fatal(err)
 	}
-
-	rootCmd.AddCommand(collectCmd)
-	rootCmd.AddCommand(daemonCmd)
 }
 
 func initConfig() {
