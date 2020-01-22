@@ -97,7 +97,6 @@ func initConfig() {
 }
 
 func run(cmd *cobra.Command, args []string) error {
-	fmt.Printf("Config: %v\n", viper.AllSettings())
 	creds := viper.GetString("gcp.credentials")
 	if creds != "" {
 		if err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", creds); err != nil {
