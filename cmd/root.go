@@ -55,19 +55,19 @@ func init() {
 	rootCmd.PersistentFlags().String("device", "default", "HCL device to use")
 	rootCmd.PersistentFlags().BoolP("console", "c", false, "Print measurements to console")
 
-	rootCmd.PersistentFlags().Bool("influxdb", false, "Store measurements to InfluxDB")
-	rootCmd.PersistentFlags().String("influxdb_addr", "", "InfluxDB address with protocol, host and port")
-	rootCmd.PersistentFlags().String("influxdb_database", "", "InfluxDB database to use ")
-	rootCmd.PersistentFlags().String("influxdb_measurement", "", "InfluxDB measurement name")
-	rootCmd.PersistentFlags().String("influxdb_username", "", "InfluxDB username")
-	rootCmd.PersistentFlags().String("influxdb_password", "", "InfluxDB password")
+	rootCmd.PersistentFlags().Bool("influxdb.enabled", false, "Store measurements to InfluxDB")
+	rootCmd.PersistentFlags().String("influxdb.addr", "", "InfluxDB address with protocol, host and port")
+	rootCmd.PersistentFlags().String("influxdb.database", "", "InfluxDB database to use ")
+	rootCmd.PersistentFlags().String("influxdb.measurement", "", "InfluxDB measurement name")
+	rootCmd.PersistentFlags().String("influxdb.username", "", "InfluxDB username")
+	rootCmd.PersistentFlags().String("influxdb.password", "", "InfluxDB password")
 
-	rootCmd.PersistentFlags().Bool("gcp_stackdriver", false, "Send logs to Google Stackdriver")
-	rootCmd.PersistentFlags().String("gcp_credentials", "", "Google Cloud application credentials file")
-	rootCmd.MarkFlagFilename("gcp_credentials", "json")
-	rootCmd.PersistentFlags().String("gcp_project", "", "Google Cloud Platform project")
-	rootCmd.PersistentFlags().Bool("gcp_pubsub", false, "Send measurements to Google Pub/Sub")
-	rootCmd.PersistentFlags().String("gcp_pubsub_topic", "", "Google Pub/Sub topic to use")
+	rootCmd.PersistentFlags().Bool("gcp.stackdriver.enabled", false, "Send logs to Google Stackdriver")
+	rootCmd.PersistentFlags().String("gcp.credentials", "", "Google Cloud application credentials file")
+	rootCmd.MarkFlagFilename("gcp.credentials", "json")
+	rootCmd.PersistentFlags().String("gcp.project", "", "Google Cloud Platform project")
+	rootCmd.PersistentFlags().Bool("gcp.pubsub.enabled", false, "Send measurements to Google Pub/Sub")
+	rootCmd.PersistentFlags().String("gcp.pubsub.topic", "", "Google Pub/Sub topic to use")
 
 	if err := viper.BindPFlags(rootCmd.PersistentFlags()); err != nil {
 		log.Fatal(err)
@@ -97,14 +97,15 @@ func initConfig() {
 }
 
 func run(cmd *cobra.Command, args []string) error {
-	creds := viper.GetString("gcp_credentials")
+	fmt.Printf("Config: %v\n", viper.AllSettings())
+	creds := viper.GetString("gcp.credentials")
 	if creds != "" {
 		if err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", creds); err != nil {
 			return err
 		}
 	}
-	if viper.GetBool("gcp_stackdriver") {
-		project := viper.GetString("gcp_project")
+	if viper.GetBool("gcp.stackdriver.enabled") {
+		project := viper.GetString("gcp.project")
 		if project == "" {
 			return fmt.Errorf("Google Cloud Platform project must be specified")
 		}
@@ -127,30 +128,30 @@ func run(cmd *cobra.Command, args []string) error {
 	if viper.GetBool("console") {
 		exporters = append(exporters, console.Exporter{})
 	}
-	if viper.GetBool("influxdb") {
-		addr := viper.GetString("influxdb_addr")
+	if viper.GetBool("influxdb.enabled") {
+		addr := viper.GetString("influxdb.addr")
 		if addr == "" {
 			return fmt.Errorf("InfluxDB address must be specified")
 		}
 		influx, err := influxdb.New(influxdb.Config{
 			Addr:        addr,
-			Database:    viper.GetString("influxdb_database"),
-			Measurement: viper.GetString("influxdb_measurement"),
-			Username:    viper.GetString("influxdb_username"),
-			Password:    viper.GetString("influxdb_password"),
+			Database:    viper.GetString("influxdb.database"),
+			Measurement: viper.GetString("influxdb.measurement"),
+			Username:    viper.GetString("influxdb.username"),
+			Password:    viper.GetString("influxdb.password"),
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create InfluxDB reporter: %w", err)
 		}
 		exporters = append(exporters, influx)
 	}
-	if viper.GetBool("gcp_pubsub") {
+	if viper.GetBool("gcp.pubsub.enabled") {
 		ctx := context.Background()
-		project := viper.GetString("gcp_project")
+		project := viper.GetString("gcp.project")
 		if project == "" {
 			return fmt.Errorf("Google Cloud Platform project must be specified")
 		}
-		topic := viper.GetString("gcp_pubsub_topic")
+		topic := viper.GetString("gcp.pubsub.topic")
 		if topic == "" {
 			return fmt.Errorf("Google Pub/Sub topic must be specified")
 		}
