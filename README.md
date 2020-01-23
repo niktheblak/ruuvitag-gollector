@@ -12,7 +12,7 @@ Install the `ruuvitag-gollector` binary into your local `$HOME/go/bin` with:
 go install
 ```
 
-Then copy the example configuration file `example.yaml` to `$HOME/.ruuvitag-gollector.yaml`
+Then copy the example configuration file `example-config.yaml` to `$HOME/.ruuvitag-gollector.yaml`
 and fill your preferred configuration values. For reference of possible configuration
 values, run `ruuvitag-gollector -h`.
 

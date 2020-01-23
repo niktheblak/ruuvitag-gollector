@@ -1,0 +1,25 @@
+interval: 5m
+console: true
+device: default
+
+ruuvitags:
+  "CC:CA:7E:52:CC:34": Backyard
+  "FB:E1:B7:04:95:EE": Upstairs
+  "E8:E0:C6:0B:B8:C5": Downstairs
+
+influxdb:
+  enabled: false
+  host: http://localhost:8086
+  database: ruuvitag
+  measurement: ruuvitag
+  username: root
+  password: root
+
+gcp:
+  credentials: /home/pi/credentials.json
+  project: ruuvitag-gollector
+  stackdriver:
+    enabled: false
+  pubsub:
+    enabled: false
+    topic: ruuvitag-measurements
