@@ -17,16 +17,12 @@ var daemonCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		logger.Info("Starting ruuvitag-gollector")
 		interval := viper.GetDuration("interval")
-		if viper.GetBool("continuous") {
-			interval = 0
-		}
 		runAsDaemon(scn, interval)
 	},
 }
 
 func init() {
-	daemonCmd.Flags().Bool("continuous", false, "Scan for measurements continuously")
-	daemonCmd.Flags().Duration("interval", 60*time.Second, "Wait time between RuuviTag device scans")
+	daemonCmd.Flags().Duration("interval", 60*time.Second, "Wait time between RuuviTag device scans, 0 to scan continuously")
 
 	viper.BindPFlags(daemonCmd.Flags())
 
