@@ -10,6 +10,7 @@ import (
 	"github.com/niktheblak/gcloudzap"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/dynamodb"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/influxdb"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/pubsub"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
@@ -159,6 +160,19 @@ func run(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to create Google Pub/Sub reporter: %w", err)
 		}
 		exporters = append(exporters, ps)
+	}
+	if viper.GetBool("aws.dynamodb.enabled") {
+		exp, err := dynamodb.New(dynamodb.Config{
+			Table:           viper.GetString("aws.dynamodb.table"),
+			Region:          viper.GetString("aws.region"),
+			AccessKeyID:     viper.GetString("aws.access_key_id"),
+			SecretAccessKey: viper.GetString("aws.secret_access_key"),
+			SessionToken:    viper.GetString("aws.session_token"),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create AWS DynamoDB reporter: %w", err)
+		}
+		exporters = append(exporters, exp)
 	}
 	scn.Exporters = exporters
 	device := viper.GetString("device")

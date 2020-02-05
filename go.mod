@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go v0.49.0 // indirect
 	cloud.google.com/go/pubsub v1.1.0
 	github.com/avast/retry-go v2.4.2+incompatible
+	github.com/aws/aws-sdk-go v1.28.10
 	github.com/go-ble/ble v0.0.0-20190521171521-147700f13610
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9 // indirect
 	github.com/google/go-cmp v0.3.1 // indirect
@@ -18,6 +19,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/niktheblak/gcloudzap v0.1.2
 	github.com/pelletier/go-toml v1.6.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/raff/goble v0.0.0-20190909174656-72afc67d6a99 // indirect
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cobra v0.0.5
@@ -29,9 +31,9 @@ require (
 	go.uber.org/atomic v1.5.1 // indirect
 	go.uber.org/multierr v1.4.0 // indirect
 	go.uber.org/zap v1.13.0
-	golang.org/x/net v0.0.0-20191119073136-fc4aabc6c914 // indirect
+	golang.org/x/net v0.0.0-20200202094626-16171245cfb2 // indirect
 	golang.org/x/sys v0.0.0-20191120155948-bd437916bb0e // indirect
-	golang.org/x/tools v0.0.0-20191121040551-947d4aa89328 // indirect
+	golang.org/x/tools v0.0.0-20200204230316-67a4523381ef // indirect
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11 // indirect
 	google.golang.org/grpc v1.25.1 // indirect
 	gopkg.in/yaml.v2 v2.2.7 // indirect
