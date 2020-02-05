@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -11,6 +12,36 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
+
+type AWSData struct {
+	Addr            string    `dynamodbav:"Addr"`
+	Name            string    `dynamodbav:"Name"`
+	Temperature     float64   `dynamodbav:"Temperature"`
+	Humidity        float64   `dynamodbav:"Humidity"`
+	Pressure        float64   `dynamodbav:"Pressure"`
+	Battery         int       `dynamodbav:"Battery"`
+	AccelerationX   int       `dynamodbav:"AccelerationX"`
+	AccelerationY   int       `dynamodbav:"AccelerationY"`
+	AccelerationZ   int       `dynamodbav:"AccelerationZ"`
+	MovementCounter int       `dynamodbav:"MovementCounter"`
+	Timestamp       time.Time `dynamodbav:"Timestamp"`
+}
+
+func From(data sensor.Data) AWSData {
+	return AWSData{
+		Addr:            data.Addr,
+		Name:            data.Name,
+		Temperature:     data.Temperature,
+		Humidity:        data.Humidity,
+		Pressure:        data.Pressure,
+		Battery:         data.Battery,
+		AccelerationX:   data.AccelerationX,
+		AccelerationY:   data.AccelerationY,
+		AccelerationZ:   data.AccelerationZ,
+		MovementCounter: data.MovementCounter,
+		Timestamp:       data.Timestamp,
+	}
+}
 
 type Config struct {
 	Table           string
@@ -48,7 +79,7 @@ func (e *dynamoDBExporter) Name() string {
 }
 
 func (e *dynamoDBExporter) Export(ctx context.Context, data sensor.Data) error {
-	item, err := dynamodbattribute.MarshalMap(data)
+	item, err := dynamodbattribute.MarshalMap(From(data))
 	if err != nil {
 		return err
 	}
