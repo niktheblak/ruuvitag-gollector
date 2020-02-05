@@ -60,8 +60,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolP("console", "c", false, "Print measurements to console")
 
 	rootCmd.PersistentFlags().Bool("influxdb.enabled", false, "Store measurements to InfluxDB")
-	rootCmd.PersistentFlags().String("influxdb.addr", "", "InfluxDB address with protocol, host and port")
-	rootCmd.PersistentFlags().String("influxdb.database", "", "InfluxDB database to use ")
+	rootCmd.PersistentFlags().String("influxdb.addr", "http://localhost:8086", "InfluxDB address with protocol, host and port")
+	rootCmd.PersistentFlags().String("influxdb.database", "", "InfluxDB database to use")
 	rootCmd.PersistentFlags().String("influxdb.measurement", "", "InfluxDB measurement name")
 	rootCmd.PersistentFlags().String("influxdb.username", "", "InfluxDB username")
 	rootCmd.PersistentFlags().String("influxdb.password", "", "InfluxDB password")
@@ -72,6 +72,15 @@ func init() {
 	rootCmd.PersistentFlags().String("gcp.project", "", "Google Cloud Platform project")
 	rootCmd.PersistentFlags().Bool("gcp.pubsub.enabled", false, "Send measurements to Google Pub/Sub")
 	rootCmd.PersistentFlags().String("gcp.pubsub.topic", "", "Google Pub/Sub topic to use")
+
+	rootCmd.PersistentFlags().String("aws.region", "us-east-2", "AWS region")
+	rootCmd.PersistentFlags().String("aws.access_key_id", "", "AWS access key ID")
+	rootCmd.PersistentFlags().String("aws.secret_access_key", "", "AWS secret access key")
+	rootCmd.PersistentFlags().String("aws.session_token", "", "AWS session token")
+	rootCmd.PersistentFlags().Bool("aws.dynamodb.enabled", false, "Store measurements to AWS DynamoDB")
+	rootCmd.PersistentFlags().String("aws.dynamodb.table", "", "AWS DynamoDB table name")
+	rootCmd.PersistentFlags().Bool("aws.sqs.enabled", false, "Send measurements to AWS SQS")
+	rootCmd.PersistentFlags().String("aws.sqs.queue", "", "AWS SQS queue name")
 
 	if err := viper.BindPFlags(rootCmd.PersistentFlags()); err != nil {
 		log.Fatal(err)
