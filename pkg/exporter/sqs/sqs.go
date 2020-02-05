@@ -60,11 +60,11 @@ func (e *sqsExporter) Export(ctx context.Context, data sensor.Data) error {
 	}
 	input := &awssqs.SendMessageInput{
 		MessageAttributes: map[string]*awssqs.MessageAttributeValue{
-			"Mac": {
+			"mac": {
 				DataType:    aws.String("String"),
 				StringValue: aws.String(data.Addr),
 			},
-			"Name": {
+			"name": {
 				DataType:    aws.String("String"),
 				StringValue: aws.String(data.Name),
 			},
