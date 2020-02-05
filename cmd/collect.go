@@ -25,6 +25,9 @@ func init() {
 }
 
 func runOnce(scn *scanner.Scanner) error {
+	if err := scn.Init(device); err != nil {
+		return err
+	}
 	logger.Info("Scanning once")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

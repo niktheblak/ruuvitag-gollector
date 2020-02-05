@@ -21,9 +21,11 @@ import (
 )
 
 var (
-	logger  *zap.Logger
-	scn     *scanner.Scanner
-	cfgFile string
+	logger    *zap.Logger
+	scn       *scanner.Scanner
+	ruuviTags map[string]string
+	cfgFile   string
+	device    string
 )
 
 var rootCmd = &cobra.Command{
@@ -122,7 +124,7 @@ func run(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to create logger: %w", err)
 		}
 	}
-	ruuviTags := viper.GetStringMapString("ruuvitags")
+	ruuviTags = viper.GetStringMapString("ruuvitags")
 	logger.Info("RuuviTags", zap.Any("ruuvitags", ruuviTags))
 	scn = scanner.New(logger, ruuviTags)
 	var exporters []exporter.Exporter
@@ -189,10 +191,6 @@ func run(cmd *cobra.Command, args []string) error {
 		exporters = append(exporters, exp)
 	}
 	scn.Exporters = exporters
-	device := viper.GetString("device")
-	logger.Info("Initializing new device", zap.String("device", device))
-	if err := scn.Init(device); err != nil {
-		return err
-	}
+	device = viper.GetString("device")
 	return nil
 }

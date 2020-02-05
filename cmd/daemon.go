@@ -9,6 +9,7 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 var daemonCmd = &cobra.Command{
@@ -30,6 +31,9 @@ func init() {
 }
 
 func runAsDaemon(scn *scanner.Scanner, scanInterval time.Duration) {
+	if err := scn.Init(device); err != nil {
+		logger.Fatal("Failed to initialize device", zap.Error(err))
+	}
 	ctx := context.Background()
 	if scanInterval > 0 {
 		scn.ScanWithInterval(ctx, scanInterval)
