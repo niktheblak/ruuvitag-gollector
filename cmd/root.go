@@ -13,6 +13,7 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/dynamodb"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/influxdb"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/pubsub"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/sqs"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -141,7 +142,7 @@ func run(cmd *cobra.Command, args []string) error {
 			Password:    viper.GetString("influxdb.password"),
 		})
 		if err != nil {
-			return fmt.Errorf("failed to create InfluxDB reporter: %w", err)
+			return fmt.Errorf("failed to create InfluxDB exporter: %w", err)
 		}
 		exporters = append(exporters, influx)
 	}
@@ -157,7 +158,7 @@ func run(cmd *cobra.Command, args []string) error {
 		}
 		ps, err := pubsub.New(ctx, project, topic)
 		if err != nil {
-			return fmt.Errorf("failed to create Google Pub/Sub reporter: %w", err)
+			return fmt.Errorf("failed to create Google Pub/Sub exporter: %w", err)
 		}
 		exporters = append(exporters, ps)
 	}
@@ -170,7 +171,20 @@ func run(cmd *cobra.Command, args []string) error {
 			SessionToken:    viper.GetString("aws.session_token"),
 		})
 		if err != nil {
-			return fmt.Errorf("failed to create AWS DynamoDB reporter: %w", err)
+			return fmt.Errorf("failed to create AWS DynamoDB exporter: %w", err)
+		}
+		exporters = append(exporters, exp)
+	}
+	if viper.GetBool("aws.sqs.enabled") {
+		exp, err := sqs.New(sqs.Config{
+			Queue:           viper.GetString("aws.sqs.queue"),
+			Region:          viper.GetString("aws.region"),
+			AccessKeyID:     viper.GetString("aws.access_key_id"),
+			SecretAccessKey: viper.GetString("aws.secret_access_key"),
+			SessionToken:    viper.GetString("aws.session_token"),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create AWS SQS exporter: %w", err)
 		}
 		exporters = append(exporters, exp)
 	}
