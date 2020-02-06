@@ -14,7 +14,8 @@ import (
 )
 
 type Config struct {
-	Queue           string
+	QueueName       string
+	QueueURL        string
 	Region          string
 	AccessKeyID     string
 	SecretAccessKey string
@@ -24,7 +25,7 @@ type Config struct {
 type sqsExporter struct {
 	sess     *session.Session
 	sqs      sqsiface.SQSAPI
-	queueUrl *string
+	queueUrl string
 }
 
 func New(cfg Config) (exporter.Exporter, error) {
@@ -37,16 +38,22 @@ func New(cfg Config) (exporter.Exporter, error) {
 		return nil, err
 	}
 	sqs := awssqs.New(sess)
-	queueUrl, err := sqs.GetQueueUrl(&awssqs.GetQueueUrlInput{
-		QueueName: aws.String(cfg.Queue),
-	})
-	if err != nil {
-		return nil, err
+	var queueUrl string
+	if cfg.QueueURL == "" {
+		resp, err := sqs.GetQueueUrl(&awssqs.GetQueueUrlInput{
+			QueueName: aws.String(cfg.QueueName),
+		})
+		if err != nil {
+			return nil, err
+		}
+		queueUrl = *resp.QueueUrl
+	} else {
+		queueUrl = cfg.QueueURL
 	}
 	return &sqsExporter{
 		sess:     sess,
 		sqs:      sqs,
-		queueUrl: queueUrl.QueueUrl,
+		queueUrl: queueUrl,
 	}, nil
 }
 
@@ -71,7 +78,7 @@ func (e *sqsExporter) Export(ctx context.Context, data sensor.Data) error {
 			},
 		},
 		MessageBody: aws.String(string(body)),
-		QueueUrl:    e.queueUrl,
+		QueueUrl:    aws.String(e.queueUrl),
 	}
 	_, err = e.sqs.SendMessageWithContext(ctx, input)
 	if err != nil {

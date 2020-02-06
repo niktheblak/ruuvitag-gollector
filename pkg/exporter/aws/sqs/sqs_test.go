@@ -30,7 +30,7 @@ func (m *mockSQSClient) SendMessageWithContext(ctx aws.Context, input *sqs.SendM
 func TestExport(t *testing.T) {
 	exp := &sqsExporter{
 		sqs:      &mockSQSClient{t: t},
-		queueUrl: aws.String("http://localhost/test_queue"),
+		queueUrl: "http://localhost/test_queue",
 	}
 	ctx := context.Background()
 	data := sensor.Data{

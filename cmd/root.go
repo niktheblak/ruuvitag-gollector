@@ -80,7 +80,8 @@ func init() {
 	rootCmd.PersistentFlags().Bool("aws.dynamodb.enabled", false, "Store measurements to AWS DynamoDB")
 	rootCmd.PersistentFlags().String("aws.dynamodb.table", "", "AWS DynamoDB table name")
 	rootCmd.PersistentFlags().Bool("aws.sqs.enabled", false, "Send measurements to AWS SQS")
-	rootCmd.PersistentFlags().String("aws.sqs.queue", "", "AWS SQS queue name")
+	rootCmd.PersistentFlags().String("aws.sqs.queue.name", "", "AWS SQS queue name")
+	rootCmd.PersistentFlags().String("aws.sqs.queue.url", "", "AWS SQS queue URL")
 
 	if err := viper.BindPFlags(rootCmd.PersistentFlags()); err != nil {
 		log.Fatal(err)
@@ -174,8 +175,12 @@ func run(cmd *cobra.Command, args []string) error {
 		exporters = append(exporters, ps)
 	}
 	if viper.GetBool("aws.dynamodb.enabled") {
+		table := viper.GetString("aws.dynamodb.table")
+		if table == "" {
+			return fmt.Errorf("DynamoDB table name must be specified")
+		}
 		exp, err := dynamodb.New(dynamodb.Config{
-			Table:           viper.GetString("aws.dynamodb.table"),
+			Table:           table,
 			Region:          viper.GetString("aws.region"),
 			AccessKeyID:     viper.GetString("aws.access_key_id"),
 			SecretAccessKey: viper.GetString("aws.secret_access_key"),
@@ -187,8 +192,14 @@ func run(cmd *cobra.Command, args []string) error {
 		exporters = append(exporters, exp)
 	}
 	if viper.GetBool("aws.sqs.enabled") {
+		queueName := viper.GetString("aws.sqs.queue.name")
+		queueURL := viper.GetString("aws.sqs.queue.url")
+		if queueName == "" && queueURL == "" {
+			return fmt.Errorf("AWS SQS queue name or queue URL must be specified")
+		}
 		exp, err := sqs.New(sqs.Config{
-			Queue:           viper.GetString("aws.sqs.queue"),
+			QueueName:       queueName,
+			QueueURL:        queueURL,
 			Region:          viper.GetString("aws.region"),
 			AccessKeyID:     viper.GetString("aws.access_key_id"),
 			SecretAccessKey: viper.GetString("aws.secret_access_key"),
