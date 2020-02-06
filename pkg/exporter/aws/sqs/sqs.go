@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	awssqs "github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
@@ -22,7 +23,7 @@ type Config struct {
 
 type sqsExporter struct {
 	sess     *session.Session
-	sqs      *awssqs.SQS
+	sqs      sqsiface.SQSAPI
 	queueUrl *string
 }
 
