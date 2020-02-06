@@ -58,6 +58,7 @@ func init() {
 	rootCmd.PersistentFlags().StringToString("ruuvitags", nil, "RuuviTag addresses and names to use")
 	rootCmd.PersistentFlags().String("device", "default", "HCL device to use")
 	rootCmd.PersistentFlags().BoolP("console", "c", false, "Print measurements to console")
+	rootCmd.PersistentFlags().String("loglevel", "info", "Log level")
 
 	rootCmd.PersistentFlags().Bool("influxdb.enabled", false, "Store measurements to InfluxDB")
 	rootCmd.PersistentFlags().String("influxdb.addr", "http://localhost:8086", "InfluxDB address with protocol, host and port")
@@ -128,8 +129,23 @@ func run(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to create Stackdriver logger: %w", err)
 		}
 	} else {
+		logLevel := viper.GetString("loglevel")
+		if logLevel == "" {
+			logLevel = "info"
+		}
+		var zapLogLevel zap.AtomicLevel
+		if err := zapLogLevel.UnmarshalText([]byte(logLevel)); err != nil {
+			return err
+		}
+		cfg := zap.Config{
+			Level:            zapLogLevel,
+			Encoding:         "console",
+			EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
+			OutputPaths:      []string{"stdout"},
+			ErrorOutputPaths: []string{"stderr"},
+		}
 		var err error
-		logger, err = zap.NewDevelopment()
+		logger, err = cfg.Build()
 		if err != nil {
 			return fmt.Errorf("failed to create logger: %w", err)
 		}
