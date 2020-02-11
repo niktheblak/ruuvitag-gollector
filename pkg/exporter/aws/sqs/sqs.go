@@ -32,7 +32,6 @@ func New(cfg Config) (exporter.Exporter, error) {
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String(cfg.Region),
 		Credentials: credentials.NewStaticCredentials(cfg.AccessKeyID, cfg.SecretAccessKey, cfg.SessionToken),
-		MaxRetries:  aws.Int(3),
 	})
 	if err != nil {
 		return nil, err
