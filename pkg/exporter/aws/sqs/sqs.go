@@ -39,7 +39,9 @@ func New(cfg Config) (exporter.Exporter, error) {
 	}
 	sqs := awssqs.New(sess)
 	var queueUrl string
-	if cfg.QueueURL == "" {
+	if cfg.QueueURL != "" {
+		queueUrl = cfg.QueueURL
+	} else {
 		resp, err := sqs.GetQueueUrl(&awssqs.GetQueueUrlInput{
 			QueueName: aws.String(cfg.QueueName),
 		})
@@ -47,8 +49,6 @@ func New(cfg Config) (exporter.Exporter, error) {
 			return nil, err
 		}
 		queueUrl = *resp.QueueUrl
-	} else {
-		queueUrl = cfg.QueueURL
 	}
 	return &sqsExporter{
 		sess:     sess,
