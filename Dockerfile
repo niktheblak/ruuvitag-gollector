@@ -1,7 +1,6 @@
 FROM golang:1
 
+VOLUME /go/src/app
 WORKDIR /go/src/app
-ADD . /go/src/app
 ENV GOOS=linux
-RUN go test ./...
-RUN go build -o /go/bin/app
+ENTRYPOINT ["go"]
