@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-sdk-go v1.29.8
 	github.com/go-ble/ble v0.0.0-20200120171844-0a73a9da88eb
 	github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d
+	github.com/lib/pq v1.3.0
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/niktheblak/gcloudzap v0.1.2

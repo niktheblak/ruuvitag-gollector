@@ -14,6 +14,7 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/gcp/pubsub"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/influxdb"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/postgres"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -223,6 +224,16 @@ func run(cmd *cobra.Command, args []string) error {
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create AWS SQS exporter: %w", err)
+		}
+		exporters = append(exporters, exp)
+	}
+	if viper.GetBool("postgres.enabled") {
+		ctx := context.Background()
+		connStr := viper.GetString("postgres.conn")
+		table := viper.GetString("postgres.table")
+		exp, err := postgres.New(ctx, connStr, table)
+		if err != nil {
+			return fmt.Errorf("failed to create PostgreSQL exporter: %w", err)
 		}
 		exporters = append(exporters, exp)
 	}
