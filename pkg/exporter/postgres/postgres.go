@@ -45,16 +45,16 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`, table))
 	}, nil
 }
 
-func (p postgresExporter) Name() string {
+func (p *postgresExporter) Name() string {
 	return "Postgres"
 }
 
-func (p postgresExporter) Export(ctx context.Context, data sensor.Data) error {
+func (p *postgresExporter) Export(ctx context.Context, data sensor.Data) error {
 	_, err := p.insertStmt.ExecContext(ctx, data.Addr, data.Name, data.Timestamp, data.Temperature, data.Humidity, data.Pressure, data.AccelerationX, data.AccelerationY, data.AccelerationZ, data.MovementCounter, data.Battery)
 	return err
 }
 
-func (p postgresExporter) Close() error {
+func (p *postgresExporter) Close() error {
 	p.insertStmt.Close()
 	return p.db.Close()
 }
