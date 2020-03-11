@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/niktheblak/gcloudzap"
@@ -13,6 +14,7 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/aws/sqs"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/gcp/pubsub"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/http"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/influxdb"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/postgres"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
@@ -84,6 +86,10 @@ func init() {
 	rootCmd.PersistentFlags().Bool("aws.sqs.enabled", false, "Send measurements to AWS SQS")
 	rootCmd.PersistentFlags().String("aws.sqs.queue.name", "", "AWS SQS queue name")
 	rootCmd.PersistentFlags().String("aws.sqs.queue.url", "", "AWS SQS queue URL")
+
+	rootCmd.PersistentFlags().Bool("http.enabled", false, "Send measurements as JSON to a HTTP endpoint")
+	rootCmd.PersistentFlags().String("http.url", "", "HTTP receiver URL")
+	rootCmd.PersistentFlags().String("http.token", "", "HTTP receiver authorization token")
 
 	if err := viper.BindPFlags(rootCmd.PersistentFlags()); err != nil {
 		log.Fatal(err)
@@ -234,6 +240,15 @@ func run(cmd *cobra.Command, args []string) error {
 		exp, err := postgres.New(ctx, connStr, table)
 		if err != nil {
 			return fmt.Errorf("failed to create PostgreSQL exporter: %w", err)
+		}
+		exporters = append(exporters, exp)
+	}
+	if viper.GetBool("http.enabled") {
+		url := viper.GetString("http.url")
+		token := viper.GetString("http.token")
+		exp, err := http.New(url, token, 10*time.Second)
+		if err != nil {
+			return fmt.Errorf("failed to create HTTP exporter: %w", err)
 		}
 		exporters = append(exporters, exp)
 	}
