@@ -101,16 +101,11 @@ func initConfig() {
 		viper.SetConfigFile(cfgFile)
 	} else {
 		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+		if err == nil {
+			viper.AddConfigPath(home)
 		}
-
-		viper.AddConfigPath(home)
 		viper.SetConfigName(".ruuvitag-gollector")
 	}
-
-	viper.SetEnvPrefix("ruuvitag")
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
