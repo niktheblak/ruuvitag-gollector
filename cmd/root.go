@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/go-homedir"
@@ -104,13 +105,12 @@ func initConfig() {
 		if err == nil {
 			viper.AddConfigPath(home)
 		}
-		viper.SetConfigName(".ruuvitag-gollector")
+		viper.AddConfigPath(".")
+		viper.SetConfigName("ruuvitag-gollector.yaml")
 	}
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
-
-	if err := viper.ReadInConfig(); err == nil {
-		log.Printf("Using config file: %s", viper.ConfigFileUsed())
-	}
+	viper.ReadInConfig()
 }
 
 func run(cmd *cobra.Command, args []string) error {
