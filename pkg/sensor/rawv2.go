@@ -3,6 +3,9 @@ package sensor
 import (
 	"bytes"
 	"encoding/binary"
+
+	"github.com/niktheblak/ruuvitag-gollector/pkg/dewpoint"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/temperature"
 )
 
 /* Payload:
@@ -57,6 +60,7 @@ func ParseSensorFormat5(data []byte) (sd Data, err error) {
 	}
 	sd.Temperature = float64(result.Temperature) * 0.005
 	sd.Humidity = float64(result.Humidity) / 400.0
+	sd.DewPoint, _ = dewpoint.Calculate(sd.Temperature, temperature.Celsius, sd.Humidity)
 	sd.Pressure = float64(int(result.Pressure)+50000) / 100.0
 	sd.AccelerationX = int(result.AccelerationX)
 	sd.AccelerationY = int(result.AccelerationY)

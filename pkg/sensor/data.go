@@ -9,6 +9,7 @@ type Data struct {
 	Name            string    `json:"name"`
 	Temperature     float64   `json:"temperature"`
 	Humidity        float64   `json:"humidity"`
+	DewPoint        float64   `json:"dew_point,omitempty"`
 	Pressure        float64   `json:"pressure"`
 	Battery         int       `json:"battery"`
 	AccelerationX   int       `json:"acceleration_x"`
