@@ -17,7 +17,7 @@ func TestReport(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		msg, err := ioutil.ReadAll(r.Body)
 		require.NoError(t, err)
-		assert.Equal(t, ",mac=CC:CA:7E:52:CC:34,name=Backyard acceleration_x=0i,acceleration_y=0i,acceleration_z=0i,battery=50i,humidity=45,pressure=1002,temperature=22.1 1569924000000000000\n", string(msg))
+		assert.Equal(t, ",mac=CC:CA:7E:52:CC:34,name=Backyard acceleration_x=0i,acceleration_y=0i,acceleration_z=0i,battery=50i,dew_point=9.6,humidity=45,pressure=1002,temperature=22.1 1569924000000000000\n", string(msg))
 		w.WriteHeader(http.StatusNoContent)
 		_, err = w.Write([]byte(""))
 		require.NoError(t, err)
@@ -33,6 +33,7 @@ func TestReport(t *testing.T) {
 		Name:          "Backyard",
 		Temperature:   22.1,
 		Humidity:      45.0,
+		DewPoint:      9.6,
 		Pressure:      1002.0,
 		Battery:       50,
 		AccelerationX: 0,
