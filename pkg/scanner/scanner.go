@@ -42,6 +42,7 @@ func New(logger *zap.Logger, peripherals map[string]string) *Scanner {
 // ScanContinuously scans and reports measurements immediately as they are received
 func (s *Scanner) ScanContinuously(ctx context.Context) {
 	s.logger.Info("Listening for measurements")
+	ctx, cancel := context.WithCancel(ctx)
 	meas := s.Measurements(ctx)
 	go s.doExportContinuously(ctx, meas)
 	go func() {
@@ -49,6 +50,7 @@ func (s *Scanner) ScanContinuously(ctx context.Context) {
 		case <-s.Quit:
 		case <-ctx.Done():
 		}
+		cancel()
 		s.Stop()
 	}()
 }
@@ -181,7 +183,10 @@ func (s *Scanner) doScan(ctx context.Context) {
 func (s *Scanner) doExportContinuously(ctx context.Context, measurements chan sensor.Data) {
 	for {
 		select {
-		case m := <-measurements:
+		case m, ok := <-measurements:
+			if !ok {
+				return
+			}
 			if err := s.export(ctx, m); err != nil {
 				s.logger.Error("Failed to report measurement", zap.Error(err))
 			}
