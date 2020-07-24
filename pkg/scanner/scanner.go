@@ -99,7 +99,7 @@ func (s *Scanner) ScanOnce(ctx context.Context) error {
 func (s *Scanner) Measurements(ctx context.Context) chan sensor.Data {
 	ch := make(chan sensor.Data, 128)
 	go func() {
-		err := s.ble.Scan(ctx, false, s.handler(ch), s.filter)
+		err := s.ble.Scan(ctx, true, s.handler(ch), s.filter)
 		switch err {
 		case context.Canceled:
 		case context.DeadlineExceeded:
