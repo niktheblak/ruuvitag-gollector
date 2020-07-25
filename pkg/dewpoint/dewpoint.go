@@ -1,6 +1,7 @@
 package dewpoint
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/temperature"
@@ -39,18 +40,18 @@ const (
 // Calculate calculates dew point from the given temperature and relative humidity (percent)
 func Calculate(temp float64, unit temperature.Unit, humidity float64) (float64, error) {
 	tempInK := temperature.Convert(temp, unit, temperature.Kelvin)
+	if tempInK < MinTemperature || tempInK > MaxTemperature {
+		return 0, fmt.Errorf("temperature %f %v out of range", temp, unit)
+	}
 	dpInK, err := Solve(pvs, humidity/100.0*pvs(tempInK), tempInK)
 	return temperature.Convert(dpInK, temperature.Kelvin, unit), err
 }
 
 func pvs(tempInK float64) float64 {
-	if tempInK < MinTemperature || tempInK > MaxTemperature {
-		panic("Temperature out of range!")
-	} else if tempInK < temperature.CelsiusOffset {
+	if tempInK < temperature.CelsiusOffset {
 		return pvsIce(tempInK)
-	} else {
-		return pvsWater(tempInK)
 	}
+	return pvsWater(tempInK)
 }
 
 func pvsWater(tempInK float64) float64 {
