@@ -139,6 +139,7 @@ func (s *Scanner) Close() {
 	}
 }
 
+// Init initializes scanner using the given device
 func (s *Scanner) Init(device string) error {
 	d, err := s.dev.NewDevice(device)
 	if err != nil {
@@ -229,7 +230,7 @@ func (s *Scanner) handler(ch chan sensor.Data) func(ble.Advertisement) {
 		data := a.ManufacturerData()
 		sensorData, err := sensor.Parse(data)
 		if err != nil {
-			s.logInvalidData(data, err)
+			LogInvalidData(s.logger, data, err)
 			return
 		}
 		sensorData.Addr = addr
@@ -251,10 +252,30 @@ func (s *Scanner) filter(a ble.Advertisement) bool {
 }
 
 func (s *Scanner) export(ctx context.Context, m sensor.Data) error {
+	s.logger.Info("Exporting measurement", zap.Any("data", m))
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	for _, e := range s.Exporters {
-		s.logger.Info("Exporting measurement", zap.String("exporter", e.Name()))
+	return Export(ctx, s.Exporters, m)
+}
+
+// LogInvalidData logs invalid BLE advertisement data
+func LogInvalidData(logger *zap.Logger, data []byte, err error) {
+	var header []byte
+	if len(data) >= 3 {
+		header = data[:3]
+	} else {
+		header = data
+	}
+	logger.Error("Error while parsing RuuviTag data",
+		zap.Int("len", len(data)),
+		zap.Binary("header", header),
+		zap.Error(err),
+	)
+}
+
+// Export exports measurement m to the given exporters, retrying on error
+func Export(ctx context.Context, exporters []exporter.Exporter, m sensor.Data) error {
+	for _, e := range exporters {
 		err := retry.Do(func() error {
 			return e.Export(ctx, m)
 		})
@@ -263,18 +284,4 @@ func (s *Scanner) export(ctx context.Context, m sensor.Data) error {
 		}
 	}
 	return nil
-}
-
-func (s *Scanner) logInvalidData(data []byte, err error) {
-	var header []byte
-	if len(data) >= 3 {
-		header = data[:3]
-	} else {
-		header = data
-	}
-	s.logger.Error("Error while parsing RuuviTag data",
-		zap.Int("len", len(data)),
-		zap.Binary("header", header),
-		zap.Error(err),
-	)
 }
