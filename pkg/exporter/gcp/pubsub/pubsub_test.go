@@ -1,4 +1,4 @@
-// +build integration
+// +build gcp integration
 
 package pubsub
 

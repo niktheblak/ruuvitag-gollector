@@ -5,7 +5,7 @@ all:
 	make install
 
 build:
-	go build -o ruuvitag-gollector main.go
+	go build -tags "influxdb postgresql gcp aws" -o ruuvitag-gollector main.go
 
 install:
 	cp ruuvitag-gollector ~/bin/

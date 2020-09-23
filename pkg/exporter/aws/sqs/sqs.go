@@ -1,3 +1,5 @@
+// +build aws
+
 package sqs
 
 import (
