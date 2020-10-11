@@ -7,9 +7,11 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/go-ble/ble"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/dewpoint"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/evenminutes"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/temperature"
 	"go.uber.org/zap"
 )
 
@@ -236,6 +238,7 @@ func (s *Scanner) handler(ch chan sensor.Data) func(ble.Advertisement) {
 		sensorData.Addr = addr
 		sensorData.Name = s.peripherals[addr]
 		sensorData.Timestamp = time.Now()
+		sensorData.DewPoint, _ = dewpoint.Calculate(sensorData.Temperature, temperature.Celsius, sensorData.Humidity)
 		ch <- sensorData
 	}
 }
