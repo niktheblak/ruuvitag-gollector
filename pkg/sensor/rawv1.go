@@ -43,7 +43,7 @@ func ParseSensorFormat3(data []byte) (sd Data, err error) {
 	sd.Humidity = float64(result.Humidity) / 2.0
 	sd.DewPoint, _ = dewpoint.Calculate(sd.Temperature, temperature.Celsius, sd.Humidity)
 	sd.Pressure = float64(int(result.Pressure)+50000) / 100.0
-	sd.Battery = int(result.BatteryVoltageMv)
+	sd.BatteryVoltage = float64(result.BatteryVoltageMv)
 	sd.AccelerationX = int(result.AccelerationX)
 	sd.AccelerationY = int(result.AccelerationY)
 	sd.AccelerationZ = int(result.AccelerationZ)

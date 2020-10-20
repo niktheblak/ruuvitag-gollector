@@ -1,3 +1,5 @@
+TAGS = influxdb postgresql gcp aws
+
 .PHONY: all build install
 
 all:
@@ -5,13 +7,13 @@ all:
 	make install
 
 build:
-	go build -tags "influxdb postgresql gcp aws" -o ruuvitag-gollector main.go
+	go build -tags "$(TAGS)" -o ruuvitag-gollector main.go
 
 install:
 	cp ruuvitag-gollector ~/bin/
 
 test:
-	go test ./...
+	go test -tags "$(TAGS)" ./...
 
 fmt:
 	go fmt ./...

@@ -43,7 +43,7 @@ type DataFormat5 struct {
 	AccelerationX     int16
 	AccelerationY     int16
 	AccelerationZ     int16
-	BatteryVoltage    uint16
+	Power             uint16
 	MovementCounter   uint8
 	MeasurementNumber uint16
 }
@@ -61,7 +61,15 @@ func ParseSensorFormat5(data []byte) (sd Data, err error) {
 	sd.AccelerationX = int(result.AccelerationX)
 	sd.AccelerationY = int(result.AccelerationY)
 	sd.AccelerationZ = int(result.AccelerationZ)
-	sd.Battery = int(result.BatteryVoltage >> 5)
+	batteryVoltage := int(result.Power >> 5)
+	if batteryVoltage != 2047 {
+		sd.BatteryVoltage = float64(batteryVoltage)/1000.0 + 1.6
+	}
+	txPower := int(result.Power & 0x1F)
+	if txPower != 0x1F {
+		sd.TxPower = txPower - 40
+	}
 	sd.MovementCounter = int(result.MovementCounter)
+	sd.MeasurementNumber = int(result.MeasurementNumber)
 	return
 }

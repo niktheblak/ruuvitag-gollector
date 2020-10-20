@@ -23,9 +23,11 @@ func TestParseRAWv2Data(t *testing.T) {
 	assert.Equal(t, 24.1, data.Temperature)
 	assert.Equal(t, 100.0, data.Humidity)
 	assert.Equal(t, 999.84, data.Pressure)
-	assert.Equal(t, 1155, data.Battery)
+	assert.Equal(t, 2.755, data.BatteryVoltage)
+	assert.Equal(t, -18, data.TxPower)
 	assert.Equal(t, 56, data.AccelerationX)
 	assert.Equal(t, 228, data.AccelerationY)
 	assert.Equal(t, 996, data.AccelerationZ)
 	assert.Equal(t, 65, data.MovementCounter)
+	assert.Equal(t, 44526, data.MeasurementNumber)
 }

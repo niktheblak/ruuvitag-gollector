@@ -48,7 +48,7 @@ func generateMockData(addr, name string, ts time.Time) sensor.Data {
 		Temperature:     21.5,
 		Humidity:        60,
 		Pressure:        1002,
-		Battery:         50,
+		BatteryVoltage:  2.755,
 		AccelerationX:   0,
 		AccelerationY:   0,
 		AccelerationZ:   0,

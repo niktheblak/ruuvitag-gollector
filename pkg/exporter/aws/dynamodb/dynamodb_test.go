@@ -42,7 +42,7 @@ func TestExport(t *testing.T) {
 		Temperature:     21.5,
 		Humidity:        60,
 		Pressure:        1002,
-		Battery:         50,
+		BatteryVoltage:  50,
 		AccelerationX:   0,
 		AccelerationY:   0,
 		AccelerationZ:   0,

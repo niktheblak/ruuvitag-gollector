@@ -52,7 +52,7 @@ func (p *postgresExporter) Name() string {
 }
 
 func (p *postgresExporter) Export(ctx context.Context, data sensor.Data) error {
-	_, err := p.insertStmt.ExecContext(ctx, data.Addr, data.Name, data.Timestamp, data.Temperature, data.Humidity, data.Pressure, data.AccelerationX, data.AccelerationY, data.AccelerationZ, data.MovementCounter, data.Battery)
+	_, err := p.insertStmt.ExecContext(ctx, data.Addr, data.Name, data.Timestamp, data.Temperature, data.Humidity, data.Pressure, data.AccelerationX, data.AccelerationY, data.AccelerationZ, data.MovementCounter, data.BatteryVoltage)
 	return err
 }
 

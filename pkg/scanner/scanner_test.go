@@ -74,7 +74,7 @@ func TestScanOnce(t *testing.T) {
 	assert.Equal(t, 55.0, e.Temperature)
 	assert.Equal(t, 60.0, e.Humidity)
 	assert.Equal(t, 510.0, e.Pressure)
-	assert.Equal(t, 500, e.Battery)
+	assert.Equal(t, 500.0, e.BatteryVoltage)
 }
 
 func TestScanContinuously(t *testing.T) {
@@ -100,7 +100,7 @@ func TestScanContinuously(t *testing.T) {
 	assert.Equal(t, 55.0, e.Temperature)
 	assert.Equal(t, 60.0, e.Humidity)
 	assert.Equal(t, 510.0, e.Pressure)
-	assert.Equal(t, 500, e.Battery)
+	assert.Equal(t, 500.0, e.BatteryVoltage)
 }
 
 func TestScanWithInterval(t *testing.T) {
@@ -151,5 +151,5 @@ func TestScanWithInterval(t *testing.T) {
 	assert.Equal(t, 55.0, e.Temperature)
 	assert.Equal(t, 60.0, e.Humidity)
 	assert.Equal(t, 510.0, e.Pressure)
-	assert.Equal(t, 500, e.Battery)
+	assert.Equal(t, 500.0, e.BatteryVoltage)
 }
