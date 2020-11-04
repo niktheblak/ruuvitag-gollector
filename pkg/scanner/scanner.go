@@ -7,11 +7,9 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/go-ble/ble"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/dewpoint"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/evenminutes"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/temperature"
 	"go.uber.org/zap"
 )
 
@@ -101,7 +99,17 @@ func (s *Scanner) ScanOnce(ctx context.Context) error {
 func (s *Scanner) Measurements(ctx context.Context) chan sensor.Data {
 	ch := make(chan sensor.Data, 128)
 	go func() {
-		err := s.ble.Scan(ctx, true, s.handler(ch), s.filter)
+		err := s.ble.Scan(ctx, true, func(a ble.Advertisement) {
+			addr := a.Addr().String()
+			s.logger.Debug("Read sensor data from device", zap.String("addr", addr))
+			sensorData, err := Read(a)
+			if err != nil {
+				LogInvalidData(s.logger, a.ManufacturerData(), err)
+				return
+			}
+			sensorData.Name = s.peripherals[addr]
+			ch <- sensorData
+		}, s.filter)
 		switch err {
 		case context.Canceled:
 		case context.DeadlineExceeded:
@@ -225,24 +233,6 @@ func (s *Scanner) doExport(ctx context.Context, measurements chan sensor.Data, d
 	}
 }
 
-func (s *Scanner) handler(ch chan sensor.Data) func(ble.Advertisement) {
-	return func(a ble.Advertisement) {
-		addr := a.Addr().String()
-		s.logger.Debug("Read sensor data from device", zap.String("addr", addr))
-		data := a.ManufacturerData()
-		sensorData, err := sensor.Parse(data)
-		if err != nil {
-			LogInvalidData(s.logger, data, err)
-			return
-		}
-		sensorData.Addr = addr
-		sensorData.Name = s.peripherals[addr]
-		sensorData.Timestamp = time.Now()
-		sensorData.DewPoint, _ = dewpoint.Calculate(sensorData.Temperature, temperature.Celsius, sensorData.Humidity)
-		ch <- sensorData
-	}
-}
-
 func (s *Scanner) filter(a ble.Advertisement) bool {
 	if !sensor.IsRuuviTag(a.ManufacturerData()) {
 		return false
@@ -258,27 +248,7 @@ func (s *Scanner) export(ctx context.Context, m sensor.Data) error {
 	s.logger.Info("Exporting measurement", zap.Any("data", m))
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	return Export(ctx, s.Exporters, m)
-}
-
-// LogInvalidData logs invalid BLE advertisement data
-func LogInvalidData(logger *zap.Logger, data []byte, err error) {
-	var header []byte
-	if len(data) >= 3 {
-		header = data[:3]
-	} else {
-		header = data
-	}
-	logger.Error("Error while parsing RuuviTag data",
-		zap.Int("len", len(data)),
-		zap.Binary("header", header),
-		zap.Error(err),
-	)
-}
-
-// Export exports measurement m to the given exporters, retrying on error
-func Export(ctx context.Context, exporters []exporter.Exporter, m sensor.Data) error {
-	for _, e := range exporters {
+	for _, e := range s.Exporters {
 		err := retry.Do(func() error {
 			return e.Export(ctx, m)
 		})
