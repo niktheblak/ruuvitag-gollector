@@ -5,7 +5,6 @@ go 1.13
 require (
 	cloud.google.com/go/logging v1.1.1 // indirect
 	cloud.google.com/go/pubsub v1.8.1
-	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/aws/aws-sdk-go v1.35.11
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-ble/ble v0.0.0-20200407180624-067514cd6e24

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/avast/retry-go"
 	"github.com/go-ble/ble"
 	"go.uber.org/zap"
 
@@ -167,10 +166,7 @@ func (s *Scanner) export(ctx context.Context, m sensor.Data) error {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	for _, e := range s.Exporters {
-		err := retry.Do(func() error {
-			return e.Export(ctx, m)
-		})
-		if err != nil {
+		if err := e.Export(ctx, m); err != nil {
 			return err
 		}
 	}
