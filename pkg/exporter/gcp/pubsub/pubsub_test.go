@@ -1,4 +1,5 @@
-// +build gcp integration
+// +build gcp
+// +build integration
 
 package pubsub
 
@@ -8,8 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 	"github.com/stretchr/testify/require"
+
+	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 
 func TestPublish(t *testing.T) {

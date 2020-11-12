@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
-set -e
+TAGS="influxdb postgresql gcp aws"
 
-docker run -it -v "$(pwd):/go/src/app" ruuvitag-gollector:latest test ./...
+docker run -it --rm -v "$(pwd):/go/src/app" ruuvitag-gollector:latest test -tags "$TAGS" ./...
