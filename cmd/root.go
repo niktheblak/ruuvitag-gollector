@@ -152,6 +152,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 	ruuviTags := viper.GetStringMapString("ruuvitags")
 	logger.Info("RuuviTags", zap.Any("ruuvitags", ruuviTags))
+	peripherals = make(map[string]string)
 	for addr, name := range ruuviTags {
 		peripherals[ble.NewAddr(addr).String()] = name
 	}
