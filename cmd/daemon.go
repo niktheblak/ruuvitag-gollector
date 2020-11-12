@@ -20,18 +20,13 @@ var daemonCmd = &cobra.Command{
 		interval := viper.GetDuration("interval")
 		if interval > 0 {
 			scn := scanner.NewInterval(logger, peripherals)
-			if err := scn.Init(device); err != nil {
-				return err
-			}
-			runWithInterval(scn, interval)
+			scn.Exporters = exporters
+			return runWithInterval(scn, interval)
 		} else {
 			scn := scanner.NewContinuous(logger, peripherals)
-			if err := scn.Init(device); err != nil {
-				return err
-			}
-			runContinuously(scn)
+			scn.Exporters = exporters
+			return runContinuously(scn)
 		}
-		return nil
 	},
 	PostRun: func(cmd *cobra.Command, args []string) {
 		logger.Info("Stopping ruuvitag-gollector")
@@ -46,7 +41,10 @@ func init() {
 	rootCmd.AddCommand(daemonCmd)
 }
 
-func runWithInterval(scn *scanner.Scanner, scanInterval time.Duration) {
+func runWithInterval(scn *scanner.Scanner, scanInterval time.Duration) error {
+	if err := scn.Init(device); err != nil {
+		return err
+	}
 	ctx := context.Background()
 	scn.Scan(ctx, scanInterval)
 	interrupt := make(chan os.Signal, 1)
@@ -56,9 +54,13 @@ func runWithInterval(scn *scanner.Scanner, scanInterval time.Duration) {
 	case <-scn.Quit:
 	}
 	scn.Stop()
+	return nil
 }
 
-func runContinuously(scn *scanner.ContinuousScanner) {
+func runContinuously(scn *scanner.ContinuousScanner) error {
+	if err := scn.Init(device); err != nil {
+		return err
+	}
 	ctx := context.Background()
 	scn.Scan(ctx)
 	interrupt := make(chan os.Signal, 1)
@@ -68,4 +70,5 @@ func runContinuously(scn *scanner.ContinuousScanner) {
 	case <-scn.Quit:
 	}
 	scn.Stop()
+	return nil
 }
