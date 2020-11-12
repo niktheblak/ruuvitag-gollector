@@ -18,7 +18,6 @@ type OnceScanner struct {
 	logger      *zap.Logger
 	device      ble.Device
 	peripherals map[string]string
-	stopped     bool
 	dev         DeviceCreator
 	meas        *Measurements
 }
@@ -42,22 +41,16 @@ func (s *OnceScanner) Scan(ctx context.Context) error {
 	if len(s.peripherals) == 0 {
 		return fmt.Errorf("at least one peripheral must be specified")
 	}
-	if s.stopped {
-		return fmt.Errorf("scanner has already run")
-	}
 	meas := s.meas.Channel(ctx)
 	done := make(chan int, 1)
 	go s.doExport(ctx, meas, done)
 	select {
 	case <-done:
 	}
-	s.logger.Info("Stopping scanner")
-	s.close()
-	s.stopped = true
 	return nil
 }
 
-func (s *OnceScanner) close() {
+func (s *OnceScanner) Close() {
 	if s.device != nil {
 		if err := s.device.Stop(); err != nil {
 			s.logger.Error("Error while stopping device", zap.Error(err))

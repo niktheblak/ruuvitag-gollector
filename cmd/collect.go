@@ -19,9 +19,6 @@ var collectCmd = &cobra.Command{
 		logger.Info("Starting ruuvitag-gollector")
 		scn := scanner.NewOnce(logger, peripherals)
 		scn.Exporters = exporters
-		if err := scn.Init(device); err != nil {
-			return err
-		}
 		return runOnce(scn)
 	},
 }
@@ -31,6 +28,9 @@ func init() {
 }
 
 func runOnce(scn *scanner.OnceScanner) error {
+	if err := scn.Init(device); err != nil {
+		return err
+	}
 	logger.Info("Scanning once")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -43,6 +43,7 @@ func runOnce(scn *scanner.OnceScanner) error {
 	if err := scn.Scan(ctx); err != nil {
 		return fmt.Errorf("failed to scan: %w", err)
 	}
-	logger.Info("Stopping ruuvitag-gollector")
+	logger.Info("Stopping scanner")
+	scn.Close()
 	return nil
 }
