@@ -4,17 +4,17 @@ import (
 	"context"
 	"time"
 
-	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+
+	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 
 var mockCmd = &cobra.Command{
 	Use:   "mock",
 	Short: "Send mock data to configured exporters",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		sendMockMeasurement(scn)
+		sendMockMeasurement()
 		return nil
 	},
 }
@@ -23,15 +23,15 @@ func init() {
 	rootCmd.AddCommand(mockCmd)
 }
 
-func sendMockMeasurement(scn *scanner.Scanner) {
+func sendMockMeasurement() {
 	ts := time.Now()
 	var measurements []sensor.Data
-	for addr, name := range ruuviTags {
+	for addr, name := range peripherals {
 		measurements = append(measurements, generateMockData(addr, name, ts))
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	for _, exporter := range scn.Exporters {
+	for _, exporter := range exporters {
 		logger.Info("Sending mock measurement to exporter", zap.String("exporter", exporter.Name()))
 		for _, data := range measurements {
 			if err := exporter.Export(ctx, data); err != nil {

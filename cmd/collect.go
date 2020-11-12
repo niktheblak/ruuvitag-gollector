@@ -7,8 +7,9 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
 	"github.com/spf13/cobra"
+
+	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
 )
 
 var collectCmd = &cobra.Command{
@@ -16,6 +17,11 @@ var collectCmd = &cobra.Command{
 	Short: "Collect measurements from all specified RuuviTags once",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		logger.Info("Starting ruuvitag-gollector")
+		scn := scanner.NewOnce(logger, peripherals)
+		scn.Exporters = exporters
+		if err := scn.Init(device); err != nil {
+			return err
+		}
 		return runOnce(scn)
 	},
 }
@@ -24,10 +30,7 @@ func init() {
 	rootCmd.AddCommand(collectCmd)
 }
 
-func runOnce(scn *scanner.Scanner) error {
-	if err := scn.Init(device); err != nil {
-		return err
-	}
+func runOnce(scn *scanner.OnceScanner) error {
 	logger.Info("Scanning once")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -36,9 +39,8 @@ func runOnce(scn *scanner.Scanner) error {
 	go func() {
 		<-interrupt
 		cancel()
-		scn.Stop()
 	}()
-	if err := scn.ScanOnce(ctx); err != nil {
+	if err := scn.Scan(ctx); err != nil {
 		return fmt.Errorf("failed to scan: %w", err)
 	}
 	logger.Info("Stopping ruuvitag-gollector")

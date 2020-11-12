@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 
 const (
@@ -52,57 +53,6 @@ func init() {
 	}
 }
 
-func TestScanOnce(t *testing.T) {
-	scn := New(logger, peripherals)
-	exp := new(mockExporter)
-	scn.Exporters = []exporter.Exporter{exp}
-	device := mockDevice{}
-	scn.ble = NewMockBLEScanner(testAdvertisement)
-	scn.dev = mockDeviceCreator{device: device}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	err := scn.Init("default")
-	require.NoError(t, err)
-	err = scn.ScanOnce(ctx)
-	require.NoError(t, err)
-	// Wait a bit for messages to appear in the measurements channel
-	time.Sleep(100 * time.Millisecond)
-	assert.NotEmpty(t, exp.events)
-	e := exp.events[0]
-	assert.Equal(t, "Test", e.Name)
-	assert.Equal(t, testAddr1, e.Addr)
-	assert.Equal(t, 55.0, e.Temperature)
-	assert.Equal(t, 60.0, e.Humidity)
-	assert.Equal(t, 510.0, e.Pressure)
-	assert.Equal(t, 500.0, e.BatteryVoltage)
-}
-
-func TestScanContinuously(t *testing.T) {
-	scn := New(logger, peripherals)
-	defer scn.Close()
-	exp := new(mockExporter)
-	scn.Exporters = []exporter.Exporter{exp}
-	device := mockDevice{}
-	scn.ble = NewMockBLEScanner(testAdvertisement)
-	scn.dev = mockDeviceCreator{device: device}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	err := scn.Init("default")
-	require.NoError(t, err)
-	scn.ScanContinuously(ctx)
-	// Wait a bit for messages to appear in the measurements channel
-	time.Sleep(100 * time.Millisecond)
-	scn.Stop()
-	assert.NotEmpty(t, exp.events)
-	e := exp.events[0]
-	assert.Equal(t, "Test", e.Name)
-	assert.Equal(t, testAddr1, e.Addr)
-	assert.Equal(t, 55.0, e.Temperature)
-	assert.Equal(t, 60.0, e.Humidity)
-	assert.Equal(t, 510.0, e.Pressure)
-	assert.Equal(t, 500.0, e.BatteryVoltage)
-}
-
 func TestScanWithInterval(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
@@ -112,7 +62,7 @@ func TestScanWithInterval(t *testing.T) {
 		testAddr2: "Upstairs",
 		testAddr3: "Downstairs",
 	}
-	scn := New(logger, peripherals)
+	scn := NewInterval(logger, peripherals)
 	defer scn.Close()
 	exp := new(mockExporter)
 	scn.Exporters = []exporter.Exporter{exp}
@@ -121,7 +71,7 @@ func TestScanWithInterval(t *testing.T) {
 	if err := binary.Write(buf, binary.BigEndian, testData); err != nil {
 		panic(err)
 	}
-	scn.ble = NewMockBLEScanner(
+	scn.meas.BLE = NewMockBLEScanner(
 		mockAdvertisement{
 			addr:             testAddr1,
 			manufacturerData: buf.Bytes(),
@@ -140,7 +90,7 @@ func TestScanWithInterval(t *testing.T) {
 	defer cancel()
 	err := scn.Init("default")
 	require.NoError(t, err)
-	scn.ScanWithInterval(ctx, 100*time.Millisecond)
+	scn.Scan(ctx, 100*time.Millisecond)
 	// Wait a bit for messages to appear in the measurements channel
 	time.Sleep(2 * time.Second)
 	scn.Stop()

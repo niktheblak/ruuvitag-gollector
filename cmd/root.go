@@ -8,8 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-ble/ble"
 	"github.com/mitchellh/go-homedir"
 	"github.com/niktheblak/gcloudzap"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
+
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/aws/dynamodb"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/aws/sqs"
@@ -18,18 +23,14 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/http"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/influxdb"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/postgres"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"go.uber.org/zap"
 )
 
 var (
-	logger    *zap.Logger
-	scn       *scanner.Scanner
-	ruuviTags map[string]string
-	cfgFile   string
-	device    string
+	logger      *zap.Logger
+	peripherals map[string]string
+	exporters   []exporter.Exporter
+	cfgFile     string
+	device      string
 )
 
 var rootCmd = &cobra.Command{
@@ -40,9 +41,6 @@ var rootCmd = &cobra.Command{
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		if logger != nil {
 			logger.Sync()
-		}
-		if scn != nil {
-			scn.Close()
 		}
 	},
 }
@@ -152,10 +150,11 @@ func run(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to create logger: %w", err)
 		}
 	}
-	ruuviTags = viper.GetStringMapString("ruuvitags")
+	ruuviTags := viper.GetStringMapString("ruuvitags")
 	logger.Info("RuuviTags", zap.Any("ruuvitags", ruuviTags))
-	scn = scanner.New(logger, ruuviTags)
-	var exporters []exporter.Exporter
+	for addr, name := range ruuviTags {
+		peripherals[ble.NewAddr(addr).String()] = name
+	}
 	if viper.GetBool("console") {
 		exporters = append(exporters, console.Exporter{})
 	}
@@ -247,7 +246,6 @@ func run(cmd *cobra.Command, args []string) error {
 		}
 		exporters = append(exporters, exp)
 	}
-	scn.Exporters = exporters
 	device = viper.GetString("device")
 	return nil
 }

@@ -7,10 +7,11 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/go-ble/ble"
+	"go.uber.org/zap"
+
 	"github.com/niktheblak/ruuvitag-gollector/pkg/evenminutes"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
-	"go.uber.org/zap"
 )
 
 type Scanner struct {
@@ -22,41 +23,26 @@ type Scanner struct {
 	peripherals map[string]string
 	stopped     bool
 	dev         DeviceCreator
-	ble         BLEScanner
+	meas        *Measurements
 }
 
-func New(logger *zap.Logger, peripherals map[string]string) *Scanner {
-	peripheralMap := make(map[string]string)
-	for addr, name := range peripherals {
-		peripheralMap[ble.NewAddr(addr).String()] = name
-	}
+func NewInterval(logger *zap.Logger, peripherals map[string]string) *Scanner {
+	bleScanner := defaultBLEScanner{}
 	return &Scanner{
 		Quit:        make(chan int, 1),
 		logger:      logger,
-		peripherals: peripheralMap,
+		peripherals: peripherals,
 		dev:         defaultDeviceCreator{},
-		ble:         defaultBLEScanner{},
+		meas: &Measurements{
+			BLE:         bleScanner,
+			Peripherals: peripherals,
+			Logger:      logger,
+		},
 	}
 }
 
-// ScanContinuously scans and reports measurements immediately as they are received
-func (s *Scanner) ScanContinuously(ctx context.Context) {
-	s.logger.Info("Listening for measurements")
-	ctx, cancel := context.WithCancel(ctx)
-	meas := s.Measurements(ctx)
-	go s.doExportContinuously(ctx, meas)
-	go func() {
-		select {
-		case <-s.Quit:
-		case <-ctx.Done():
-		}
-		cancel()
-		s.Stop()
-	}()
-}
-
-// ScanWithInterval scans and reports measurements at specified intervals
-func (s *Scanner) ScanWithInterval(ctx context.Context, scanInterval time.Duration) {
+// Scan scans and reports measurements at specified intervals
+func (s *Scanner) Scan(ctx context.Context, scanInterval time.Duration) {
 	if scanInterval == 0 {
 		s.logger.Error("scan interval must be greater than zero")
 		return
@@ -81,45 +67,6 @@ func (s *Scanner) ScanWithInterval(ctx context.Context, scanInterval time.Durati
 		ticker.Stop()
 		s.Stop()
 	}()
-}
-
-// ScanOnce scans all registered peripherals once and quits
-func (s *Scanner) ScanOnce(ctx context.Context) error {
-	if len(s.peripherals) == 0 {
-		return fmt.Errorf("at least one peripheral must be specified")
-	}
-	s.doScan(ctx)
-	s.Stop()
-	return nil
-}
-
-// Measurements creates a channel that will receive measurements read from all registered peripherals.
-// The cancel function should be called after the client is done with receiving measurements or wishes
-// to abort the scan.
-func (s *Scanner) Measurements(ctx context.Context) chan sensor.Data {
-	ch := make(chan sensor.Data, 128)
-	go func() {
-		err := s.ble.Scan(ctx, true, func(a ble.Advertisement) {
-			addr := a.Addr().String()
-			s.logger.Debug("Read sensor data from device", zap.String("addr", addr))
-			sensorData, err := Read(a)
-			if err != nil {
-				LogInvalidData(s.logger, a.ManufacturerData(), err)
-				return
-			}
-			sensorData.Name = s.peripherals[addr]
-			ch <- sensorData
-		}, s.filter)
-		switch err {
-		case context.Canceled:
-		case context.DeadlineExceeded:
-		case nil:
-		default:
-			s.logger.Error("Scan failed", zap.Error(err))
-		}
-		close(ch)
-	}()
-	return ch
 }
 
 // Stop stops all running scans
@@ -180,7 +127,7 @@ func (s *Scanner) listen(ctx context.Context, ticks <-chan time.Time, scanTimeou
 }
 
 func (s *Scanner) doScan(ctx context.Context) {
-	meas := s.Measurements(ctx)
+	meas := s.meas.Channel(ctx)
 	done := make(chan int, 1)
 	go s.doExport(ctx, meas, done)
 	select {
@@ -189,24 +136,6 @@ func (s *Scanner) doScan(ctx context.Context) {
 		done <- 1
 	}
 	close(done)
-}
-
-func (s *Scanner) doExportContinuously(ctx context.Context, measurements chan sensor.Data) {
-	for {
-		select {
-		case m, ok := <-measurements:
-			if !ok {
-				return
-			}
-			if err := s.export(ctx, m); err != nil {
-				s.logger.Error("Failed to report measurement", zap.Error(err))
-			}
-		case <-ctx.Done():
-			return
-		case <-s.Quit:
-			return
-		}
-	}
 }
 
 func (s *Scanner) doExport(ctx context.Context, measurements chan sensor.Data, done chan int) {
@@ -231,17 +160,6 @@ func (s *Scanner) doExport(ctx context.Context, measurements chan sensor.Data, d
 			return
 		}
 	}
-}
-
-func (s *Scanner) filter(a ble.Advertisement) bool {
-	if !sensor.IsRuuviTag(a.ManufacturerData()) {
-		return false
-	}
-	if len(s.peripherals) == 0 {
-		return true
-	}
-	_, ok := s.peripherals[a.Addr().String()]
-	return ok
 }
 
 func (s *Scanner) export(ctx context.Context, m sensor.Data) error {
