@@ -8,7 +8,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
 )
@@ -48,9 +47,6 @@ func init() {
 }
 
 func runWithInterval(scn *scanner.Scanner, scanInterval time.Duration) {
-	if err := scn.Init(device); err != nil {
-		logger.Fatal("Failed to initialize device", zap.Error(err))
-	}
 	ctx := context.Background()
 	scn.Scan(ctx, scanInterval)
 	interrupt := make(chan os.Signal, 1)
@@ -63,9 +59,6 @@ func runWithInterval(scn *scanner.Scanner, scanInterval time.Duration) {
 }
 
 func runContinuously(scn *scanner.ContinuousScanner) {
-	if err := scn.Init(device); err != nil {
-		logger.Fatal("Failed to initialize device", zap.Error(err))
-	}
 	ctx := context.Background()
 	scn.Scan(ctx)
 	interrupt := make(chan os.Signal, 1)
