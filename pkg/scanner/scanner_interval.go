@@ -134,7 +134,6 @@ func (s *Scanner) doScan(ctx context.Context) {
 	case <-s.Quit:
 		done <- 1
 	}
-	close(done)
 }
 
 func (s *Scanner) doExport(ctx context.Context, measurements chan sensor.Data, done chan int) {
