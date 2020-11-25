@@ -15,14 +15,6 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 
-type Config struct {
-	Table           string
-	Region          string
-	AccessKeyID     string
-	SecretAccessKey string
-	SessionToken    string
-}
-
 type dynamoDBExporter struct {
 	sess  *session.Session
 	db    dynamodbiface.DynamoDBAPI

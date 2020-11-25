@@ -15,15 +15,6 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 
-type Config struct {
-	QueueName       string
-	QueueURL        string
-	Region          string
-	AccessKeyID     string
-	SecretAccessKey string
-	SessionToken    string
-}
-
 type sqsExporter struct {
 	sess     *session.Session
 	sqs      sqsiface.SQSAPI
