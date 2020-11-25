@@ -87,7 +87,7 @@ func init() {
 	rootCmd.PersistentFlags().String("aws.sqs.queue.url", "", "AWS SQS queue URL")
 
 	rootCmd.PersistentFlags().Bool("http.enabled", false, "Send measurements as JSON to a HTTP endpoint")
-	rootCmd.PersistentFlags().String("http.url", "", "HTTP receiver URL")
+	rootCmd.PersistentFlags().String("http.addr", "", "HTTP receiver address")
 	rootCmd.PersistentFlags().String("http.token", "", "HTTP receiver authorization token")
 
 	if err := viper.BindPFlags(rootCmd.PersistentFlags()); err != nil {
@@ -239,9 +239,9 @@ func run(cmd *cobra.Command, args []string) error {
 		exporters = append(exporters, exp)
 	}
 	if viper.GetBool("http.enabled") {
-		url := viper.GetString("http.url")
+		addr := viper.GetString("http.addr")
 		token := viper.GetString("http.token")
-		exp, err := http.New(url, token, 10*time.Second)
+		exp, err := http.New(addr, token, 10*time.Second)
 		if err != nil {
 			return fmt.Errorf("failed to create HTTP exporter: %w", err)
 		}
