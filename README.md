@@ -6,10 +6,13 @@ Supports the RAWv2 format emitted by RuuviTags with 2.x firmware.
 
 ## Setup
 
-Install the `ruuvitag-gollector` binary into your local `$HOME/go/bin` with:
+Compile and install the `ruuvitag-gollector` binary:
 
 ```bash
-go get -u github.com/niktheblak/ruuvitag-gollector
+git clone https://github.com/niktheblak/ruuvitag-gollector.git
+cd ruuvitag-gollector
+make build
+make install
 ```
 
 Then copy the example configuration file `example-config.yaml` to `$HOME/.ruuvitag-gollector.yaml`
