@@ -76,7 +76,7 @@ func initConfig() {
 			viper.AddConfigPath(home)
 		}
 		viper.AddConfigPath(".")
-		viper.SetConfigName("ruuvitag-gollector.yaml")
+		viper.SetConfigName("ruuvitag-gollector")
 	}
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
