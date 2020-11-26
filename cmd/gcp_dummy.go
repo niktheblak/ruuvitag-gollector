@@ -5,9 +5,9 @@ package cmd
 import "github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 
 func initStackdriverLogging() error {
-	return nil
+	return ErrNotEnabled
 }
 
 func addPubSubExporter(exporters *[]exporter.Exporter) error {
-	return nil
+	return ErrNotEnabled
 }

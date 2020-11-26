@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -17,6 +18,8 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/http"
 )
+
+var ErrNotEnabled = errors.New("this exporter is not included in the build")
 
 var (
 	logger      *zap.Logger

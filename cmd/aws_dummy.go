@@ -5,9 +5,9 @@ package cmd
 import "github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 
 func addDynamoDBExporter(exporters *[]exporter.Exporter) error {
-	return nil
+	return ErrNotEnabled
 }
 
 func addSQSExporter(exporters *[]exporter.Exporter) error {
-	return nil
+	return ErrNotEnabled
 }
