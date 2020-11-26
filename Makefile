@@ -1,4 +1,4 @@
-TAGS = influxdb postgresql gcp aws
+TAGS = influxdb postgres gcp aws
 
 .PHONY: all build install
 

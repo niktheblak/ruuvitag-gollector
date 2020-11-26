@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
@@ -10,19 +9,13 @@ import (
 
 	"github.com/go-ble/ble"
 	"github.com/mitchellh/go-homedir"
-	"github.com/niktheblak/gcloudzap"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/aws/dynamodb"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/aws/sqs"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/gcp/pubsub"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/http"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/influxdb"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/postgres"
 )
 
 var (
@@ -62,30 +55,6 @@ func init() {
 	rootCmd.PersistentFlags().BoolP("console", "c", false, "Print measurements to console")
 	rootCmd.PersistentFlags().String("loglevel", "info", "Log level")
 
-	rootCmd.PersistentFlags().Bool("influxdb.enabled", false, "Store measurements to InfluxDB")
-	rootCmd.PersistentFlags().String("influxdb.addr", "http://localhost:8086", "InfluxDB address with protocol, host and port")
-	rootCmd.PersistentFlags().String("influxdb.database", "", "InfluxDB database to use")
-	rootCmd.PersistentFlags().String("influxdb.measurement", "", "InfluxDB measurement name")
-	rootCmd.PersistentFlags().String("influxdb.username", "", "InfluxDB username")
-	rootCmd.PersistentFlags().String("influxdb.password", "", "InfluxDB password")
-
-	rootCmd.PersistentFlags().Bool("gcp.stackdriver.enabled", false, "Send logs to Google Stackdriver")
-	rootCmd.PersistentFlags().String("gcp.credentials", "", "Google Cloud application credentials file")
-	rootCmd.MarkFlagFilename("gcp.credentials", "json")
-	rootCmd.PersistentFlags().String("gcp.project", "", "Google Cloud Platform project")
-	rootCmd.PersistentFlags().Bool("gcp.pubsub.enabled", false, "Send measurements to Google Pub/Sub")
-	rootCmd.PersistentFlags().String("gcp.pubsub.topic", "", "Google Pub/Sub topic to use")
-
-	rootCmd.PersistentFlags().String("aws.region", "us-east-2", "AWS region")
-	rootCmd.PersistentFlags().String("aws.access_key_id", "", "AWS access key ID")
-	rootCmd.PersistentFlags().String("aws.secret_access_key", "", "AWS secret access key")
-	rootCmd.PersistentFlags().String("aws.session_token", "", "AWS session token")
-	rootCmd.PersistentFlags().Bool("aws.dynamodb.enabled", false, "Store measurements to AWS DynamoDB")
-	rootCmd.PersistentFlags().String("aws.dynamodb.table", "", "AWS DynamoDB table name")
-	rootCmd.PersistentFlags().Bool("aws.sqs.enabled", false, "Send measurements to AWS SQS")
-	rootCmd.PersistentFlags().String("aws.sqs.queue.name", "", "AWS SQS queue name")
-	rootCmd.PersistentFlags().String("aws.sqs.queue.url", "", "AWS SQS queue URL")
-
 	rootCmd.PersistentFlags().Bool("http.enabled", false, "Send measurements as JSON to a HTTP endpoint")
 	rootCmd.PersistentFlags().String("http.addr", "", "HTTP receiver address")
 	rootCmd.PersistentFlags().String("http.token", "", "HTTP receiver authorization token")
@@ -119,13 +88,7 @@ func run(cmd *cobra.Command, args []string) error {
 		}
 	}
 	if viper.GetBool("gcp.stackdriver.enabled") {
-		project := viper.GetString("gcp.project")
-		if project == "" {
-			return fmt.Errorf("Google Cloud Platform project must be specified")
-		}
-		var err error
-		logger, err = gcloudzap.NewProduction(project, "ruuvitag-gollector")
-		if err != nil {
+		if err := initStackdriverLogging(); err != nil {
 			return fmt.Errorf("failed to create Stackdriver logger: %w", err)
 		}
 	} else {
@@ -160,83 +123,29 @@ func run(cmd *cobra.Command, args []string) error {
 		exporters = append(exporters, console.Exporter{})
 	}
 	if viper.GetBool("influxdb.enabled") {
-		addr := viper.GetString("influxdb.addr")
-		if addr == "" {
-			return fmt.Errorf("InfluxDB address must be specified")
-		}
-		influx, err := influxdb.New(influxdb.Config{
-			Addr:        addr,
-			Database:    viper.GetString("influxdb.database"),
-			Measurement: viper.GetString("influxdb.measurement"),
-			Username:    viper.GetString("influxdb.username"),
-			Password:    viper.GetString("influxdb.password"),
-		})
-		if err != nil {
+		if err := addInfluxDBExporter(&exporters); err != nil {
 			return fmt.Errorf("failed to create InfluxDB exporter: %w", err)
 		}
-		exporters = append(exporters, influx)
 	}
 	if viper.GetBool("gcp.pubsub.enabled") {
-		ctx := context.Background()
-		project := viper.GetString("gcp.project")
-		if project == "" {
-			return fmt.Errorf("Google Cloud Platform project must be specified")
-		}
-		topic := viper.GetString("gcp.pubsub.topic")
-		if topic == "" {
-			return fmt.Errorf("Google Pub/Sub topic must be specified")
-		}
-		ps, err := pubsub.New(ctx, project, topic)
-		if err != nil {
+		if err := addPubSubExporter(&exporters); err != nil {
 			return fmt.Errorf("failed to create Google Pub/Sub exporter: %w", err)
 		}
-		exporters = append(exporters, ps)
 	}
 	if viper.GetBool("aws.dynamodb.enabled") {
-		table := viper.GetString("aws.dynamodb.table")
-		if table == "" {
-			return fmt.Errorf("DynamoDB table name must be specified")
-		}
-		exp, err := dynamodb.New(dynamodb.Config{
-			Table:           table,
-			Region:          viper.GetString("aws.region"),
-			AccessKeyID:     viper.GetString("aws.access_key_id"),
-			SecretAccessKey: viper.GetString("aws.secret_access_key"),
-			SessionToken:    viper.GetString("aws.session_token"),
-		})
-		if err != nil {
+		if err := addDynamoDBExporter(&exporters); err != nil {
 			return fmt.Errorf("failed to create AWS DynamoDB exporter: %w", err)
 		}
-		exporters = append(exporters, exp)
 	}
 	if viper.GetBool("aws.sqs.enabled") {
-		queueName := viper.GetString("aws.sqs.queue.name")
-		queueURL := viper.GetString("aws.sqs.queue.url")
-		if queueName == "" && queueURL == "" {
-			return fmt.Errorf("AWS SQS queue name or queue URL must be specified")
-		}
-		exp, err := sqs.New(sqs.Config{
-			QueueName:       queueName,
-			QueueURL:        queueURL,
-			Region:          viper.GetString("aws.region"),
-			AccessKeyID:     viper.GetString("aws.access_key_id"),
-			SecretAccessKey: viper.GetString("aws.secret_access_key"),
-			SessionToken:    viper.GetString("aws.session_token"),
-		})
-		if err != nil {
+		if err := addSQSExporter(&exporters); err != nil {
 			return fmt.Errorf("failed to create AWS SQS exporter: %w", err)
 		}
-		exporters = append(exporters, exp)
 	}
 	if viper.GetBool("postgres.enabled") {
-		ctx := context.Background()
-		connStr := viper.GetString("postgres.conn")
-		table := viper.GetString("postgres.table")
-		exp, err := postgres.New(ctx, connStr, table)
-		if err != nil {
+		if err := addPostgresExporter(&exporters); err != nil {
 			return fmt.Errorf("failed to create PostgreSQL exporter: %w", err)
 		}
-		exporters = append(exporters, exp)
 	}
 	if viper.GetBool("http.enabled") {
 		addr := viper.GetString("http.addr")
