@@ -7,9 +7,10 @@ import (
 	"fmt"
 
 	"github.com/niktheblak/gcloudzap"
+	"github.com/spf13/viper"
+
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/gcp/pubsub"
-	"github.com/spf13/viper"
 )
 
 func init() {
@@ -43,7 +44,7 @@ func addPubSubExporter(exporters *[]exporter.Exporter) error {
 	}
 	ps, err := pubsub.New(ctx, project, topic)
 	if err != nil {
-		return fmt.Errorf("failed to create Google Pub/Sub exporter: %w", err)
+		return err
 	}
 	*exporters = append(*exporters, ps)
 	return nil

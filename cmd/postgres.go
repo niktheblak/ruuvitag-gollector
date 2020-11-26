@@ -4,11 +4,11 @@ package cmd
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/spf13/viper"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/postgres"
-	"github.com/spf13/viper"
 )
 
 func init() {
@@ -23,7 +23,7 @@ func addPostgresExporter(exporters *[]exporter.Exporter) error {
 	table := viper.GetString("postgres.table")
 	exp, err := postgres.New(ctx, connStr, table)
 	if err != nil {
-		return fmt.Errorf("failed to create PostgreSQL exporter: %w", err)
+		return err
 	}
 	*exporters = append(*exporters, exp)
 	return nil

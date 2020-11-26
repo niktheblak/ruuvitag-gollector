@@ -5,10 +5,11 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/spf13/viper"
+
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/aws/dynamodb"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/aws/sqs"
-	"github.com/spf13/viper"
 )
 
 func init() {

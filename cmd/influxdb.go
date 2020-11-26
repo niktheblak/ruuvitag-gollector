@@ -5,9 +5,10 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/spf13/viper"
+
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/influxdb"
-	"github.com/spf13/viper"
 )
 
 func init() {
@@ -32,7 +33,7 @@ func addInfluxDBExporter(exporters *[]exporter.Exporter) error {
 		Password:    viper.GetString("influxdb.password"),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create InfluxDB exporter: %w", err)
+		return nil
 	}
 	*exporters = append(*exporters, influx)
 	return nil
