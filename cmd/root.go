@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
@@ -105,10 +106,23 @@ func run(cmd *cobra.Command, args []string) error {
 		}
 		cfg := zap.Config{
 			Level:            zapLogLevel,
+			DisableCaller:    true,
 			Encoding:         "console",
-			EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
 			OutputPaths:      []string{"stdout"},
 			ErrorOutputPaths: []string{"stderr"},
+			EncoderConfig: zapcore.EncoderConfig{
+				TimeKey:          zapcore.OmitKey,
+				LevelKey:         "L",
+				NameKey:          zapcore.OmitKey,
+				CallerKey:        zapcore.OmitKey,
+				FunctionKey:      zapcore.OmitKey,
+				MessageKey:       "M",
+				StacktraceKey:    "S",
+				LineEnding:       zapcore.DefaultLineEnding,
+				EncodeLevel:      zapcore.CapitalLevelEncoder,
+				EncodeDuration:   zapcore.StringDurationEncoder,
+				ConsoleSeparator: " ",
+			},
 		}
 		var err error
 		logger, err = cfg.Build()
