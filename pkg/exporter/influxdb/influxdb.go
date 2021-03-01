@@ -4,33 +4,38 @@ package influxdb
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
-	influx "github.com/influxdata/influxdb1-client/v2"
+	"github.com/influxdata/influxdb-client-go/v2"
+	"github.com/influxdata/influxdb-client-go/v2/api"
+
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 
 type influxdbExporter struct {
-	client      influx.Client
-	database    string
+	client      influxdb2.Client
+	writeAPI    api.WriteAPIBlocking
 	measurement string
 }
 
-func New(cfg Config) (exporter.Exporter, error) {
-	client, err := influx.NewHTTPClient(influx.HTTPConfig{
-		Addr:     cfg.Addr,
-		Username: cfg.Username,
-		Password: cfg.Password,
-	})
-	if err != nil {
-		return nil, err
+func New(cfg Config) exporter.Exporter {
+	token := cfg.Token
+	if token == "" {
+		token = fmt.Sprintf("%s:%s", cfg.Username, cfg.Password)
 	}
+	client := influxdb2.NewClient(cfg.Addr, token)
+	bucket := cfg.Bucket
+	if bucket == "" {
+		bucket = cfg.Database
+	}
+	writeAPI := client.WriteAPIBlocking(cfg.Org, bucket)
 	return &influxdbExporter{
 		client:      client,
-		database:    cfg.Database,
+		writeAPI:    writeAPI,
 		measurement: cfg.Measurement,
-	}, nil
+	}
 }
 
 func (e *influxdbExporter) Name() string {
@@ -38,14 +43,7 @@ func (e *influxdbExporter) Name() string {
 }
 
 func (e *influxdbExporter) Export(ctx context.Context, data sensor.Data) error {
-	conf := influx.BatchPointsConfig{
-		Database: e.database,
-	}
-	bp, err := influx.NewBatchPoints(conf)
-	if err != nil {
-		return err
-	}
-	point, err := influx.NewPoint(e.measurement, map[string]string{
+	point := influxdb2.NewPoint(e.measurement, map[string]string{
 		"mac":  strings.ToUpper(data.Addr),
 		"name": data.Name,
 	}, map[string]interface{}{
@@ -61,10 +59,10 @@ func (e *influxdbExporter) Export(ctx context.Context, data sensor.Data) error {
 		"movement_counter":   data.MovementCounter,
 		"measurement_number": data.MeasurementNumber,
 	}, data.Timestamp)
-	bp.AddPoint(point)
-	return e.client.Write(bp)
+	return e.writeAPI.WritePoint(ctx, point)
 }
 
 func (e *influxdbExporter) Close() error {
-	return e.client.Close()
+	e.client.Close()
+	return nil
 }
