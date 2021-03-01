@@ -1,4 +1,4 @@
-FROM golang:1
+FROM golang:1.16
 
 VOLUME /go/src/app
 WORKDIR /go/src/app
