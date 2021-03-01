@@ -5,7 +5,7 @@ TAGS="influxdb postgresql gcp aws"
 docker run \
   -it \
   --rm \
-  --network ruuvitag \
   -v "$(pwd):/go/src/app" \
+  --network ruuvitag \
   ruuvitag-gollector:latest \
-  test -tags "$TAGS" ./...
+  run -tags "$TAGS" main.go mock --config ruuvitag-gollector.yaml
