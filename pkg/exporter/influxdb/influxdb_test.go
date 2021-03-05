@@ -5,45 +5,86 @@ package influxdb
 
 import (
 	"context"
-	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
-	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/influxdata/influxdb-client-go/v2/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 
-func TestReport(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		msg, err := ioutil.ReadAll(r.Body)
-		require.NoError(t, err)
-		assert.Equal(t, ",mac=CC:CA:7E:52:CC:34,name=Backyard acceleration_x=0i,acceleration_y=0i,acceleration_z=0i,battery_voltage=2.755,dew_point=9.6,humidity=45,measurement_number=0i,movement_counter=0i,pressure=1002,temperature=22.1,tx_power=0i 1569924000000000000\n", string(msg))
-		w.WriteHeader(http.StatusNoContent)
-		_, err = w.Write([]byte(""))
-		require.NoError(t, err)
-	}))
-	defer srv.Close()
-	exporter := New(Config{
-		Addr:     srv.URL,
-		Username: "test",
-		Password: "test",
-		Database: "test",
-	})
-	err := exporter.Export(context.Background(), sensor.Data{
-		Addr:           "CC:CA:7E:52:CC:34",
-		Name:           "Backyard",
-		Temperature:    22.1,
-		Humidity:       45.0,
-		DewPoint:       9.6,
-		Pressure:       1002.0,
-		BatteryVoltage: 2.755,
-		AccelerationX:  0,
-		AccelerationY:  0,
-		AccelerationZ:  0,
-		Timestamp:      time.Date(2019, time.October, 1, 10, 0, 0, 0, time.UTC),
+const queryTmpl = `from(bucket:"%s")
+|> range(start:-5m)
+|> filter(fn:(r) =>
+     r._measurement == "test" and
+     r.name == "Backyard"
+)`
+
+func TestExporter(t *testing.T) {
+	addr := os.Getenv("INFLUXDB_HOST")
+	token := os.Getenv("INFLUXDB_TOKEN")
+	client := influxdb2.NewClient(addr, token)
+	defer client.Close()
+	ctx := context.Background()
+	org, err := client.OrganizationsAPI().FindOrganizationByName(ctx, "test")
+	require.NoError(t, err)
+	bucket, err := client.BucketsAPI().FindBucketByName(ctx, "test")
+	require.NoError(t, err)
+	auth, err := client.AuthorizationsAPI().CreateAuthorizationWithOrgID(ctx, *org.Id, []domain.Permission{
+		{
+			Action: domain.PermissionActionRead,
+			Resource: domain.Resource{
+				Id:    bucket.Id,
+				OrgID: org.Id,
+				Type:  domain.ResourceTypeBuckets,
+			},
+		},
+		{
+			Action: domain.PermissionActionWrite,
+			Resource: domain.Resource{
+				Id:    bucket.Id,
+				OrgID: org.Id,
+				Type:  domain.ResourceTypeBuckets,
+			},
+		},
 	})
 	require.NoError(t, err)
+	t.Run("TestReport", func(t *testing.T) {
+		exporter := New(Config{
+			Addr:        addr,
+			Org:         org.Name,
+			Token:       *auth.Token,
+			Bucket:      bucket.Name,
+			Measurement: "test",
+		})
+		err := exporter.Export(context.Background(), sensor.Data{
+			Addr:           "CC:CA:7E:52:CC:34",
+			Name:           "Backyard",
+			Temperature:    22.1,
+			Humidity:       45.0,
+			DewPoint:       9.6,
+			Pressure:       1002.0,
+			BatteryVoltage: 2.755,
+			AccelerationX:  0,
+			AccelerationY:  0,
+			AccelerationZ:  0,
+			Timestamp:      time.Now(),
+		})
+		require.NoError(t, err)
+		exporter.Close()
+		res, err := client.QueryAPI(org.Name).Query(ctx, fmt.Sprintf(queryTmpl, bucket.Name))
+		require.NoError(t, err)
+		ok := res.Next()
+		require.True(t, ok)
+		for ok && res.Record().Field() != "temperature" {
+			ok = res.Next()
+		}
+		assert.Equal(t, 22.1, res.Record().Value())
+		res.Close()
+	})
 }

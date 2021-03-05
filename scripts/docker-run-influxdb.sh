@@ -6,12 +6,11 @@ docker run \
   --name influxdb \
   --network ruuvitag \
   -p 8086:8086 \
-  -e INFLUXDB_DB=ruuvitag \
-  -e INFLUXDB_ADMIN_ENABLED=true \
-  -e INFLUXDB_HTTP_AUTH_ENABLED=true \
+  -e DOCKER_INFLUXDB_INIT_MODE=setup \
+  -e DOCKER_INFLUXDB_INIT_USERNAME=admin \
+  -e DOCKER_INFLUXDB_INIT_PASSWORD=ChangeMeAdminPassword \
+  -e DOCKER_INFLUXDB_INIT_ORG=bitnik \
+  -e DOCKER_INFLUXDB_INIT_BUCKET=ruuvitag \
+  -e DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=ChangeMeAdminToken \
   -e INFLUXDB_REPORTING_DISABLED=true \
-  -e INFLUXDB_ADMIN_USER=admin \
-  -e INFLUXDB_ADMIN_PASSWORD=Flux_Docker_Temp_Change_Me \
-  -e INFLUXDB_USER=user \
-  -e INFLUXDB_USER_PASSWORD=changeme \
-  influxdb:1.8
+  influxdb:2.0

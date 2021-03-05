@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  influxdb:
+    image: influxdb:2.0
+    container_name: influxdb
+    ports:
+      - 8086:8086
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: IntegrationTestAdminPassword
+      DOCKER_INFLUXDB_INIT_ORG: test
+      DOCKER_INFLUXDB_INIT_BUCKET: test
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: IntegrationTestAdminToken
+
+  ruuvitag-gollector:
+    build:
+      context: ../
+    container_name: ruuvitag-gollector
+    volumes:
+      - "../:/go/src/app"
+    environment:
+      WAIT_HOSTS: influxdb:8086
+      WAIT_HOSTS_TIMEOUT: 60
+      WAIT_BEFORE_HOSTS: 5
+      WAIT_AFTER_HOSTS: 2
+      INFLUXDB_HOST: http://influxdb:8086
+      INFLUXDB_TOKEN: IntegrationTestAdminToken
+    entrypoint: [ "/bin/bash" ]
+    command: -c "/wait && /go/src/app/test/integration-test.sh"
