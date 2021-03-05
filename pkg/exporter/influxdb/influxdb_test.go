@@ -1,4 +1,5 @@
 // +build influxdb
+// +build integration_test
 
 package influxdb
 
@@ -25,12 +26,13 @@ func TestReport(t *testing.T) {
 		require.NoError(t, err)
 	}))
 	defer srv.Close()
-	exporter, err := New(Config{
-		Addr: srv.URL,
+	exporter := New(Config{
+		Addr:     srv.URL,
+		Username: "test",
+		Password: "test",
+		Database: "test",
 	})
-	require.NoError(t, err)
-	ctx := context.Background()
-	err = exporter.Export(ctx, sensor.Data{
+	err := exporter.Export(context.Background(), sensor.Data{
 		Addr:           "CC:CA:7E:52:CC:34",
 		Name:           "Backyard",
 		Temperature:    22.1,
