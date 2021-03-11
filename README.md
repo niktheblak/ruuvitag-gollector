@@ -51,6 +51,7 @@ The following exporters are supported for sending measurements:
 - AWS DynamoDB
 - AWS SQS
 - GCP Pub/Sub
+- MQTT
 
 See the command-line help for the arguments needed by each exporter:
 
@@ -109,4 +110,14 @@ http:
   enabled: true
   url: https://my-api.herokuapp.com/receive
   token: MyHerokuToken
+  
+mqtt:
+  enabled: true
+  addr: "ssl://localhost:8883" # tcp://localhost:1883 for non-TLS connections
+  clinet_id: ruuvitag-gollector
+  username: mqtt_user
+  password: my_secret_password
+  ca_file: root_ca.pem
+  auto_reconnect: true
+  reconnect_interval: 30
 ```
