@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-TAGS="influxdb postgresql gcp aws"
+TAGS="influxdb postgresql gcp aws mqtt"
 
 docker run \
   -it \
