@@ -114,7 +114,7 @@ http:
 mqtt:
   enabled: true
   addr: "ssl://localhost:8883" # tcp://localhost:1883 for non-TLS connections
-  clinet_id: ruuvitag-gollector
+  client_id: ruuvitag-gollector
   username: mqtt_user
   password: my_secret_password
   ca_file: root_ca.pem
