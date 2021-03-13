@@ -38,7 +38,7 @@ func addMQTTExporter(exporters *[]exporter.Exporter) error {
 		ReconnectInterval: time.Duration(viper.GetInt("mqtt.reconnect_interval")) * time.Second,
 	})
 	if err != nil {
-		return nil
+		return err
 	}
 	*exporters = append(*exporters, exporter)
 	return nil
