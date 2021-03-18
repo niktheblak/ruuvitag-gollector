@@ -1,4 +1,4 @@
-TAGS = influxdb postgres gcp aws
+TAGS = influxdb postgres gcp aws mqtt
 
 .PHONY: all build install
 

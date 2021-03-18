@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/logging v1.1.1 // indirect
 	cloud.google.com/go/pubsub v1.8.1
 	github.com/aws/aws-sdk-go v1.35.11
+	github.com/eclipse/paho.mqtt.golang v1.3.2
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-ble/ble v0.0.0-20200407180624-067514cd6e24
 	github.com/influxdata/influxdb-client-go/v2 v2.2.2

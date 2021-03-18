@@ -173,6 +173,11 @@ func run(cmd *cobra.Command, args []string) error {
 		}
 		exporters = append(exporters, exp)
 	}
+	if viper.GetBool("mqtt.enabled") {
+		if err := addMQTTExporter(&exporters); err != nil {
+			return fmt.Errorf("failed to create MQTT exporter: %w", err)
+		}
+	}
 	device = viper.GetString("device")
 	return nil
 }
