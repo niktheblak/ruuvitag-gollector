@@ -81,7 +81,9 @@ func initConfig() {
 	}
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
-	viper.ReadInConfig()
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func run(cmd *cobra.Command, args []string) error {
