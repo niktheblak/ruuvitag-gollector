@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/go-ble/ble"
-	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -26,7 +24,6 @@ var (
 	logger      *zap.Logger
 	peripherals map[string]string
 	exporters   []exporter.Exporter
-	cfgFile     string
 	device      string
 )
 
