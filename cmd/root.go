@@ -52,8 +52,6 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ruuvitag-gollector.yaml)")
-
 	rootCmd.PersistentFlags().StringToString("ruuvitags", nil, "RuuviTag addresses and names to use")
 	rootCmd.PersistentFlags().String("device", "default", "HCL device to use")
 	rootCmd.PersistentFlags().BoolP("console", "c", false, "Print measurements to console")
@@ -69,18 +67,9 @@ func init() {
 }
 
 func initConfig() {
-	if cfgFile != "" {
-		viper.SetConfigFile(cfgFile)
-	} else {
-		home, err := homedir.Dir()
-		if err == nil {
-			viper.AddConfigPath(home)
-		}
-		viper.AddConfigPath(".")
-		viper.SetConfigName("ruuvitag-gollector")
-	}
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.AutomaticEnv()
+	viper.SetConfigName("config")
+	viper.AddConfigPath("/etc/ruuvitag-gollector/")
+	viper.AddConfigPath("$HOME/.ruuvitag-gollector")
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatal(err)
 	}
