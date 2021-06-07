@@ -3,13 +3,12 @@ module github.com/niktheblak/ruuvitag-gollector
 go 1.16
 
 require (
-	cloud.google.com/go v0.83.0 // indirect
 	cloud.google.com/go/logging v1.4.2 // indirect
 	cloud.google.com/go/pubsub v1.11.0
 	github.com/JuulLabs-OSS/cbgo v0.0.2 // indirect
-	github.com/aws/aws-sdk-go v1.38.55
+	github.com/aws/aws-sdk-go v1.38.56
 	github.com/deepmap/oapi-codegen v1.7.1 // indirect
-	github.com/eclipse/paho.mqtt.golang v1.3.4
+	github.com/eclipse/paho.mqtt.golang v1.3.5
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-ble/ble v0.0.0-20210519192345-b055c211937b
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -33,7 +32,7 @@ require (
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.17.0
 	golang.org/x/net v0.0.0-20210525063256-abc453219eb5 // indirect
-	golang.org/x/sys v0.0.0-20210603125802-9665404d3644 // indirect
-	google.golang.org/genproto v0.0.0-20210604141403-392c879c8b08 // indirect
+	google.golang.org/api v0.48.0 // indirect
+	google.golang.org/genproto v0.0.0-20210607140030-00d4fb20b1ae // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 )
