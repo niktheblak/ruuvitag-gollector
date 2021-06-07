@@ -1,6 +1,6 @@
 module github.com/niktheblak/ruuvitag-gollector
 
-go 1.13
+go 1.16
 
 require (
 	cloud.google.com/go v0.83.0 // indirect
