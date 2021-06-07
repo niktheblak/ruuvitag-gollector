@@ -15,7 +15,7 @@ make build
 make install
 ```
 
-Then copy the example configuration file `example-config.yaml` to `$HOME/ruuvitag-gollector.yaml`
+Then copy the example configuration file `configs/example-config.yaml` to `$HOME/.ruuvitag-gollector/config.yaml` or `/etc/ruuvitag-gollector/config.yaml` if you're installing the collector globally.
 and fill your preferred configuration values. For reference of possible configuration
 values, run `ruuvitag-gollector -h`.
 
