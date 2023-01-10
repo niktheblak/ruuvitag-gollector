@@ -1,4 +1,4 @@
-// +build mqtt
+//go:build mqtt
 
 package mqtt
 
@@ -9,9 +9,10 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"io/ioutil"
 	"strings"
+
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"

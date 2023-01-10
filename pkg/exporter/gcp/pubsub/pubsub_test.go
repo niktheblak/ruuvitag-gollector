@@ -1,5 +1,4 @@
-// +build gcp
-// +build integration
+//go:build gcp && integration_test
 
 package pubsub
 

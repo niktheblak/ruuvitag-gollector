@@ -1,4 +1,4 @@
-// +build gcp
+//go:build gcp
 
 package pubsub
 
@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"cloud.google.com/go/pubsub"
+
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )

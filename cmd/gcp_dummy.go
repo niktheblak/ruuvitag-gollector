@@ -1,4 +1,4 @@
-// +build !gcp
+//go:build !gcp
 
 package cmd
 

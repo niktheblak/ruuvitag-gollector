@@ -1,5 +1,4 @@
-// +build influxdb
-// +build integration_test
+//go:build influxdb && integration_test
 
 package influxdb
 

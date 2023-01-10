@@ -1,4 +1,4 @@
-// +build !mqtt
+//go:build !mqtt
 
 package cmd
 

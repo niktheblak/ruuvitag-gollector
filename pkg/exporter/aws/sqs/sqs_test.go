@@ -1,4 +1,4 @@
-// +build aws
+//go:build aws
 
 package sqs
 
@@ -11,9 +11,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 
 type mockSQSClient struct {

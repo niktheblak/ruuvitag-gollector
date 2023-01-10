@@ -1,4 +1,4 @@
-// +build !influxdb
+//go:build !influxdb
 
 package cmd
 

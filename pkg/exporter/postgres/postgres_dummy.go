@@ -1,4 +1,4 @@
-// +build !postgres
+//go:build !postgres
 
 package postgres
 
