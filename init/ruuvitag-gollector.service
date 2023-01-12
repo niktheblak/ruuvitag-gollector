@@ -8,8 +8,8 @@ StartLimitIntervalSec=90
 Type=simple
 Restart=always
 RestartSec=1
-User=pi
-ExecStart=/home/pi/bin/run-ruuvitag-gollector.sh
+User=root
+ExecStart=/usr/local/bin/ruuvitag-gollector daemon
 
 [Install]
 WantedBy=multi-user.target
