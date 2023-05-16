@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/influxdb"
@@ -28,7 +29,7 @@ func addInfluxDBExporter(exporters *[]exporter.Exporter) error {
 	if addr == "" {
 		return fmt.Errorf("InfluxDB address must be specified")
 	}
-	influx := influxdb.New(influxdb.Config{
+	cfg := influxdb.Config{
 		Addr:        addr,
 		Org:         viper.GetString("influxdb.org"),
 		Bucket:      viper.GetString("influxdb.bucket"),
@@ -37,7 +38,9 @@ func addInfluxDBExporter(exporters *[]exporter.Exporter) error {
 		Token:       viper.GetString("influxdb.token"),
 		Username:    viper.GetString("influxdb.username"),
 		Password:    viper.GetString("influxdb.password"),
-	})
+	}
+	logger.Info("Connecting to InfluxDB", zap.String("addr", cfg.Addr), zap.String("org", cfg.Org), zap.String("bucket", cfg.Bucket), zap.String("database", cfg.Database), zap.String("measurement", cfg.Measurement))
+	influx := influxdb.New(cfg)
 	*exporters = append(*exporters, influx)
 	return nil
 }
