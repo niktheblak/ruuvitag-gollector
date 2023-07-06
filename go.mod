@@ -8,7 +8,7 @@ require (
 	github.com/JuulLabs-OSS/cbgo v0.0.2 // indirect
 	github.com/aws/aws-sdk-go v1.44.271
 	github.com/deepmap/oapi-codegen v1.12.4 // indirect
-	github.com/eclipse/paho.mqtt.golang v1.4.2
+	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-ble/ble v0.0.0-20230130210458-dd4b07d15402
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
