@@ -29,7 +29,7 @@ require (
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.3
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.24.0
+	go.uber.org/zap v1.25.0
 	golang.org/x/net v0.10.0 // indirect
 	google.golang.org/api v0.124.0 // indirect
 	google.golang.org/genproto v0.0.0-20230524185152-1884fd1fac28 // indirect
