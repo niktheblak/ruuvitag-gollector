@@ -5,12 +5,11 @@ package cmd
 import (
 	"database/sql"
 	"fmt"
-
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"go.uber.org/zap"
+	"log/slog"
 
 	_ "github.com/lib/pq"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	pexp "github.com/niktheblak/ruuvitag-gollector/pkg/exporter/postgres"
 )
@@ -21,7 +20,7 @@ var postgresSchemaCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		conn := viper.GetString("postgres.conn")
 		table := viper.GetString("postgres.table")
-		logger.Info("Creating schema", zap.String("conn", conn), zap.String("table", table))
+		logger.LogAttrs(nil, slog.LevelInfo, "Creating schema", slog.String("conn", conn), slog.String("table", table))
 		schema := fmt.Sprintf(pexp.SchemaTmpl, table)
 		db, err := sql.Open("postgres", conn)
 		if err != nil {

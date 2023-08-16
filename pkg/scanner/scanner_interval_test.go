@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"io"
+	"log/slog"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
@@ -38,11 +39,11 @@ var (
 		testAddr1: "Test",
 	}
 	testAdvertisement mockAdvertisement
-	logger            *zap.Logger
+	logger            *slog.Logger
 )
 
 func init() {
-	logger = zap.NewNop()
+	logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	buf := new(bytes.Buffer)
 	if err := binary.Write(buf, binary.BigEndian, testData); err != nil {
 		panic(err)

@@ -1,13 +1,15 @@
 package scanner
 
 import (
+	"context"
+	"log/slog"
 	"time"
 
 	"github.com/go-ble/ble"
+
 	"github.com/niktheblak/ruuvitag-gollector/pkg/dewpoint"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/temperature"
-	"go.uber.org/zap"
 )
 
 // Read reads sensor data from advertisement
@@ -22,16 +24,16 @@ func Read(a ble.Advertisement) (sd sensor.Data, err error) {
 }
 
 // LogInvalidData logs invalid BLE advertisement data
-func LogInvalidData(logger *zap.Logger, data []byte, err error) {
+func LogInvalidData(ctx context.Context, logger *slog.Logger, data []byte, err error) {
 	var header []byte
 	if len(data) >= 3 {
 		header = data[:3]
 	} else {
 		header = data
 	}
-	logger.Error("Error while parsing RuuviTag data",
-		zap.Int("len", len(data)),
-		zap.Binary("header", header),
-		zap.Error(err),
+	logger.LogAttrs(ctx, slog.LevelError, "Error while parsing RuuviTag data",
+		slog.Int("len", len(data)),
+		slog.Any("header", header),
+		slog.Any("error", err),
 	)
 }

@@ -3,10 +3,10 @@ package scanner
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/go-ble/ble"
-	"go.uber.org/zap"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
@@ -16,7 +16,7 @@ type ContinuousScanner struct {
 	Exporters []exporter.Exporter
 	Quit      chan int
 
-	logger      *zap.Logger
+	logger      *slog.Logger
 	device      ble.Device
 	peripherals map[string]string
 	stopped     bool
@@ -24,7 +24,7 @@ type ContinuousScanner struct {
 	meas        *Measurements
 }
 
-func NewContinuous(logger *zap.Logger, peripherals map[string]string) *ContinuousScanner {
+func NewContinuous(logger *slog.Logger, peripherals map[string]string) *ContinuousScanner {
 	bleScanner := defaultBLEScanner{}
 	return &ContinuousScanner{
 		Quit:        make(chan int, 1),
@@ -72,12 +72,12 @@ func (s *ContinuousScanner) Close() {
 	}
 	if s.device != nil {
 		if err := s.device.Stop(); err != nil {
-			s.logger.Error("Error while stopping device", zap.Error(err))
+			s.logger.LogAttrs(nil, slog.LevelError, "Error while stopping device", slog.Any("error", err))
 		}
 	}
 	for _, e := range s.Exporters {
 		if err := e.Close(); err != nil {
-			s.logger.Error("Failed to close exporter", zap.String("exporter", e.Name()), zap.Error(err))
+			s.logger.LogAttrs(nil, slog.LevelError, "Failed to close exporter", slog.String("exporter", e.Name()), slog.Any("error", err))
 		}
 	}
 }
@@ -90,7 +90,7 @@ func (s *ContinuousScanner) Init(device string) error {
 	}
 	s.device = d
 	if len(s.peripherals) > 0 {
-		s.logger.Info("Reading from peripherals", zap.Any("peripherals", s.peripherals))
+		s.logger.LogAttrs(nil, slog.LevelInfo, "Reading from peripherals", slog.Any("peripherals", s.peripherals))
 	} else {
 		s.logger.Info("Reading from all nearby BLE peripherals")
 	}
@@ -105,7 +105,7 @@ func (s *ContinuousScanner) exportContinuously(ctx context.Context, measurements
 				return
 			}
 			if err := s.export(ctx, m); err != nil {
-				s.logger.Error("Failed to report measurement", zap.Error(err))
+				s.logger.LogAttrs(ctx, slog.LevelError, "Failed to report measurement", slog.Any("error", err))
 			}
 		case <-ctx.Done():
 			return
@@ -116,7 +116,7 @@ func (s *ContinuousScanner) exportContinuously(ctx context.Context, measurements
 }
 
 func (s *ContinuousScanner) export(ctx context.Context, m sensor.Data) error {
-	s.logger.Info("Exporting measurement", zap.Any("data", m))
+	s.logger.LogAttrs(ctx, slog.LevelInfo, "Exporting measurement", slog.Any("data", m))
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	for _, e := range s.Exporters {

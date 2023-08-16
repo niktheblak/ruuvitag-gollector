@@ -4,9 +4,9 @@ package cmd
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/influxdb"
@@ -39,7 +39,7 @@ func addInfluxDBExporter(exporters *[]exporter.Exporter) error {
 		Username:    viper.GetString("influxdb.username"),
 		Password:    viper.GetString("influxdb.password"),
 	}
-	logger.Info("Connecting to InfluxDB", zap.String("addr", cfg.Addr), zap.String("org", cfg.Org), zap.String("bucket", cfg.Bucket), zap.String("database", cfg.Database), zap.String("measurement", cfg.Measurement))
+	logger.LogAttrs(nil, slog.LevelInfo, "Connecting to InfluxDB", slog.String("addr", cfg.Addr), slog.String("org", cfg.Org), slog.String("bucket", cfg.Bucket), slog.String("database", cfg.Database), slog.String("measurement", cfg.Measurement))
 	influx := influxdb.New(cfg)
 	*exporters = append(*exporters, influx)
 	return nil

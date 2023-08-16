@@ -4,14 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"time"
 
 	"github.com/go-ble/ble"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
@@ -21,7 +20,7 @@ import (
 var ErrNotEnabled = errors.New("this exporter is not included in the build")
 
 var (
-	logger      *zap.Logger
+	logger      *slog.Logger
 	peripherals map[string]string
 	exporters   []exporter.Exporter
 	device      string
@@ -32,13 +31,6 @@ var rootCmd = &cobra.Command{
 	Short:             "Collects measurements from RuuviTag sensors",
 	SilenceUsage:      true,
 	PersistentPreRunE: run,
-	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		if logger != nil {
-			if err := logger.Sync(); err != nil {
-				log.Println(err)
-			}
-		}
-	},
 }
 
 func Execute() {
@@ -49,6 +41,8 @@ func Execute() {
 }
 
 func init() {
+	logger = slog.Default()
+
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringToString("ruuvitags", nil, "RuuviTag addresses and names to use")
@@ -61,7 +55,7 @@ func init() {
 	rootCmd.PersistentFlags().String("http.token", "", "HTTP receiver authorization token")
 
 	if err := viper.BindPFlags(rootCmd.PersistentFlags()); err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 }
 
@@ -70,58 +64,31 @@ func initConfig() {
 	viper.AddConfigPath("/etc/ruuvitag-gollector/")
 	viper.AddConfigPath("$HOME/.ruuvitag-gollector")
 	if err := viper.ReadInConfig(); err != nil {
-		log.Fatal(err)
+		logger.LogAttrs(nil, slog.LevelError, "Could not read config", slog.String("file", viper.ConfigFileUsed()), slog.Any("error", err))
+		os.Exit(1)
 	}
+	logger.LogAttrs(nil, slog.LevelInfo, "Read config from file", slog.String("file", viper.ConfigFileUsed()))
 }
 
-func run(cmd *cobra.Command, args []string) error {
+func run(_ *cobra.Command, _ []string) error {
 	creds := viper.GetString("gcp.credentials")
 	if creds != "" {
 		if err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", creds); err != nil {
 			return err
 		}
 	}
-	if viper.GetBool("gcp.stackdriver.enabled") {
-		if err := initStackdriverLogging(); err != nil {
-			return fmt.Errorf("failed to create Stackdriver logger: %w", err)
-		}
-	} else {
-		logLevel := viper.GetString("loglevel")
-		if logLevel == "" {
-			logLevel = "info"
-		}
-		var zapLogLevel zap.AtomicLevel
-		if err := zapLogLevel.UnmarshalText([]byte(logLevel)); err != nil {
-			return err
-		}
-		cfg := zap.Config{
-			Level:            zapLogLevel,
-			DisableCaller:    true,
-			Encoding:         "console",
-			OutputPaths:      []string{"stdout"},
-			ErrorOutputPaths: []string{"stderr"},
-			EncoderConfig: zapcore.EncoderConfig{
-				TimeKey:          zapcore.OmitKey,
-				LevelKey:         "L",
-				NameKey:          zapcore.OmitKey,
-				CallerKey:        zapcore.OmitKey,
-				FunctionKey:      zapcore.OmitKey,
-				MessageKey:       "M",
-				StacktraceKey:    "S",
-				LineEnding:       zapcore.DefaultLineEnding,
-				EncodeLevel:      zapcore.CapitalLevelEncoder,
-				EncodeDuration:   zapcore.StringDurationEncoder,
-				ConsoleSeparator: " ",
-			},
-		}
-		var err error
-		logger, err = cfg.Build()
-		if err != nil {
-			return fmt.Errorf("failed to create logger: %w", err)
-		}
+	logLevel := viper.GetString("loglevel")
+	if logLevel == "" {
+		logLevel = "info"
 	}
+	var programLevel = new(slog.LevelVar)
+	if err := programLevel.UnmarshalText([]byte(logLevel)); err != nil {
+		return err
+	}
+	h := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: programLevel})
+	logger = slog.New(h)
 	ruuviTags := viper.GetStringMapString("ruuvitags")
-	logger.Info("RuuviTags", zap.Any("ruuvitags", ruuviTags))
+	logger.LogAttrs(nil, slog.LevelInfo, "RuuviTags", slog.Any("ruuvitags", ruuviTags))
 	peripherals = make(map[string]string)
 	for addr, name := range ruuviTags {
 		peripherals[ble.NewAddr(addr).String()] = name

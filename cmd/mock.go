@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
@@ -32,10 +32,10 @@ func sendMockMeasurement() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	for _, exporter := range exporters {
-		logger.Info("Sending mock measurement to exporter", zap.String("exporter", exporter.Name()))
+		logger.LogAttrs(ctx, slog.LevelInfo, "Sending mock measurement to exporter", slog.String("exporter", exporter.Name()))
 		for _, data := range measurements {
 			if err := exporter.Export(ctx, data); err != nil {
-				logger.Error("Failed to export measurement", zap.Error(err))
+				logger.LogAttrs(ctx, slog.LevelError, "Failed to export measurement", slog.Any("error", err))
 			}
 		}
 	}

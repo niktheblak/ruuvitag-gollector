@@ -3,10 +3,10 @@ package scanner
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/go-ble/ble"
-	"go.uber.org/zap"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
@@ -15,14 +15,14 @@ import (
 type OnceScanner struct {
 	Exporters []exporter.Exporter
 
-	logger      *zap.Logger
+	logger      *slog.Logger
 	device      ble.Device
 	peripherals map[string]string
 	dev         DeviceCreator
 	meas        *Measurements
 }
 
-func NewOnce(logger *zap.Logger, peripherals map[string]string) *OnceScanner {
+func NewOnce(logger *slog.Logger, peripherals map[string]string) *OnceScanner {
 	bleScanner := defaultBLEScanner{}
 	return &OnceScanner{
 		logger:      logger,
@@ -53,12 +53,12 @@ func (s *OnceScanner) Scan(ctx context.Context) error {
 func (s *OnceScanner) Close() {
 	if s.device != nil {
 		if err := s.device.Stop(); err != nil {
-			s.logger.Error("Error while stopping device", zap.Error(err))
+			s.logger.LogAttrs(nil, slog.LevelError, "Error while stopping device", slog.Any("error", err))
 		}
 	}
 	for _, e := range s.Exporters {
 		if err := e.Close(); err != nil {
-			s.logger.Error("Failed to close exporter", zap.String("exporter", e.Name()), zap.Error(err))
+			s.logger.LogAttrs(nil, slog.LevelError, "Failed to close exporter", slog.String("exporter", e.Name()), slog.Any("error", err))
 		}
 	}
 }
@@ -70,7 +70,7 @@ func (s *OnceScanner) Init(device string) error {
 	}
 	s.device = d
 	if len(s.peripherals) > 0 {
-		s.logger.Info("Reading from peripherals", zap.Any("peripherals", s.peripherals))
+		s.logger.LogAttrs(nil, slog.LevelInfo, "Reading from peripherals", slog.Any("peripherals", s.peripherals))
 	} else {
 		s.logger.Info("Reading from all nearby BLE peripherals")
 	}
@@ -88,7 +88,7 @@ func (s *OnceScanner) doExport(ctx context.Context, measurements chan sensor.Dat
 			}
 			seenPeripherals[m.Addr] = true
 			if err := s.export(ctx, m); err != nil {
-				s.logger.Error("Failed to report measurement", zap.Error(err))
+				s.logger.LogAttrs(ctx, slog.LevelError, "Failed to report measurement", slog.Any("error", err))
 			}
 			if len(s.peripherals) > 0 && ContainsKeys(s.peripherals, seenPeripherals) {
 				done <- 1
@@ -102,7 +102,7 @@ func (s *OnceScanner) doExport(ctx context.Context, measurements chan sensor.Dat
 }
 
 func (s *OnceScanner) export(ctx context.Context, m sensor.Data) error {
-	s.logger.Info("Exporting measurement", zap.Any("data", m))
+	s.logger.LogAttrs(ctx, slog.LevelInfo, "Exporting measurement", slog.Any("data", m))
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	for _, e := range s.Exporters {

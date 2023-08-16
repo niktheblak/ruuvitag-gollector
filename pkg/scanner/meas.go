@@ -2,9 +2,9 @@ package scanner
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/go-ble/ble"
-	"go.uber.org/zap"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
@@ -14,7 +14,7 @@ const BufferSize = 128
 type Measurements struct {
 	BLE         BLEScanner
 	Peripherals map[string]string
-	Logger      *zap.Logger
+	Logger      *slog.Logger
 }
 
 // Channel creates a channel that will receive measurements read from all registered peripherals.
@@ -22,16 +22,16 @@ type Measurements struct {
 // to abort the scan.
 func (s *Measurements) Channel(ctx context.Context) chan sensor.Data {
 	if s.Logger == nil {
-		s.Logger = zap.NewNop()
+		s.Logger = slog.Default()
 	}
 	ch := make(chan sensor.Data, BufferSize)
 	go func() {
 		err := s.BLE.Scan(ctx, true, func(a ble.Advertisement) {
 			addr := a.Addr().String()
-			s.Logger.Debug("Read sensor data from device", zap.String("addr", addr))
+			s.Logger.LogAttrs(ctx, slog.LevelDebug, "Read sensor data from device", slog.String("addr", addr))
 			sensorData, err := Read(a)
 			if err != nil {
-				LogInvalidData(s.Logger, a.ManufacturerData(), err)
+				LogInvalidData(ctx, s.Logger, a.ManufacturerData(), err)
 				return
 			}
 			sensorData.Name = s.Peripherals[addr]
@@ -42,7 +42,7 @@ func (s *Measurements) Channel(ctx context.Context) chan sensor.Data {
 		case context.DeadlineExceeded:
 		case nil:
 		default:
-			s.Logger.Error("Scan failed", zap.Error(err))
+			s.Logger.LogAttrs(ctx, slog.LevelError, "Scan failed", slog.Any("error", err))
 		}
 		close(ch)
 	}()

@@ -3,10 +3,10 @@ package scanner
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/go-ble/ble"
-	"go.uber.org/zap"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/evenminutes"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
@@ -17,7 +17,7 @@ type Scanner struct {
 	Exporters []exporter.Exporter
 	Quit      chan int
 
-	logger      *zap.Logger
+	logger      *slog.Logger
 	device      ble.Device
 	peripherals map[string]string
 	stopped     bool
@@ -25,7 +25,7 @@ type Scanner struct {
 	meas        *Measurements
 }
 
-func NewInterval(logger *zap.Logger, peripherals map[string]string) *Scanner {
+func NewInterval(logger *slog.Logger, peripherals map[string]string) *Scanner {
 	bleScanner := defaultBLEScanner{}
 	return &Scanner{
 		Quit:        make(chan int, 1),
@@ -43,12 +43,12 @@ func NewInterval(logger *zap.Logger, peripherals map[string]string) *Scanner {
 // Scan scans and reports measurements at specified intervals
 func (s *Scanner) Scan(ctx context.Context, scanInterval time.Duration) {
 	if scanInterval == 0 {
-		s.logger.Error("scan interval must be greater than zero")
+		s.logger.LogAttrs(ctx, slog.LevelError, "Scan interval must be greater than zero", slog.Duration("interval", scanInterval))
 		return
 	}
 	go func() {
 		delay := evenminutes.Until(time.Now(), scanInterval)
-		s.logger.Info("Sleeping", zap.String("until", time.Now().Add(delay).String()))
+		s.logger.LogAttrs(ctx, slog.LevelInfo, "Sleeping until", slog.Time("time", time.Now().Add(delay)))
 		firstRun := time.After(delay)
 		select {
 		case <-firstRun:
@@ -57,7 +57,7 @@ func (s *Scanner) Scan(ctx context.Context, scanInterval time.Duration) {
 		case <-s.Quit:
 			return
 		}
-		s.logger.Info("Scanning measurements", zap.Duration("interval", scanInterval))
+		s.logger.LogAttrs(ctx, slog.LevelInfo, "Scanning measurements", slog.Duration("interval", scanInterval))
 		ticker := time.NewTicker(scanInterval)
 		firstCtx, cancel := context.WithTimeout(ctx, scanInterval)
 		s.doScan(firstCtx)
@@ -85,12 +85,12 @@ func (s *Scanner) Close() {
 	}
 	if s.device != nil {
 		if err := s.device.Stop(); err != nil {
-			s.logger.Error("Error while stopping device", zap.Error(err))
+			s.logger.Error("Error while stopping device", "error", err)
 		}
 	}
 	for _, e := range s.Exporters {
 		if err := e.Close(); err != nil {
-			s.logger.Error("Failed to close exporter", zap.String("exporter", e.Name()), zap.Error(err))
+			s.logger.LogAttrs(nil, slog.LevelError, "Failed to close exporter", slog.String("exporter", e.Name()), slog.Any("error", err))
 		}
 	}
 }
@@ -103,7 +103,7 @@ func (s *Scanner) Init(device string) error {
 	}
 	s.device = d
 	if len(s.peripherals) > 0 {
-		s.logger.Info("Reading from peripherals", zap.Any("peripherals", s.peripherals))
+		s.logger.LogAttrs(nil, slog.LevelInfo, "Reading from peripherals", slog.Any("peripherals", s.peripherals))
 	} else {
 		s.logger.Info("Reading from all nearby BLE peripherals")
 	}
@@ -147,7 +147,7 @@ func (s *Scanner) doExport(ctx context.Context, measurements chan sensor.Data, d
 			}
 			seenPeripherals[m.Addr] = true
 			if err := s.export(ctx, m); err != nil {
-				s.logger.Error("Failed to report measurement", zap.Error(err))
+				s.logger.Error("Failed to report measurement", "error", err)
 			}
 			if len(s.peripherals) > 0 && ContainsKeys(s.peripherals, seenPeripherals) {
 				done <- 1
@@ -161,7 +161,7 @@ func (s *Scanner) doExport(ctx context.Context, measurements chan sensor.Data, d
 }
 
 func (s *Scanner) export(ctx context.Context, m sensor.Data) error {
-	s.logger.Info("Exporting measurement", zap.Any("data", m))
+	s.logger.LogAttrs(ctx, slog.LevelInfo, "Exporting measurement", slog.Any("measurement", m))
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	for _, e := range s.Exporters {
