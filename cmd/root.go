@@ -64,10 +64,10 @@ func initConfig() {
 	viper.AddConfigPath("/etc/ruuvitag-gollector/")
 	viper.AddConfigPath("$HOME/.ruuvitag-gollector")
 	if err := viper.ReadInConfig(); err != nil {
-		logger.LogAttrs(nil, slog.LevelError, "Could not read config", slog.String("file", viper.ConfigFileUsed()), slog.Any("error", err))
-		os.Exit(1)
+		logger.LogAttrs(nil, slog.LevelInfo, "Config file does not exist, using only command line arguments", slog.String("file", viper.ConfigFileUsed()))
+	} else {
+		logger.LogAttrs(nil, slog.LevelInfo, "Read config from file", slog.String("file", viper.ConfigFileUsed()))
 	}
-	logger.LogAttrs(nil, slog.LevelInfo, "Read config from file", slog.String("file", viper.ConfigFileUsed()))
 }
 
 func run(_ *cobra.Command, _ []string) error {
@@ -88,6 +88,10 @@ func run(_ *cobra.Command, _ []string) error {
 	h := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: programLevel})
 	logger = slog.New(h)
 	ruuviTags := viper.GetStringMapString("ruuvitags")
+	if len(ruuviTags) == 0 {
+		logger.LogAttrs(nil, slog.LevelError, "At least one RuuviTag address must be specified")
+		os.Exit(1)
+	}
 	logger.LogAttrs(nil, slog.LevelInfo, "RuuviTags", slog.Any("ruuvitags", ruuviTags))
 	peripherals = make(map[string]string)
 	for addr, name := range ruuviTags {
