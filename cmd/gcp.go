@@ -14,9 +14,6 @@ import (
 
 func init() {
 	rootCmd.PersistentFlags().String("gcp.credentials", "", "Google Cloud application credentials file")
-	if err := rootCmd.MarkFlagFilename("gcp.credentials", "json"); err != nil {
-		panic(err)
-	}
 	rootCmd.PersistentFlags().String("gcp.project", "", "Google Cloud Platform project")
 	rootCmd.PersistentFlags().Bool("gcp.pubsub.enabled", false, "Send measurements to Google Pub/Sub")
 	rootCmd.PersistentFlags().String("gcp.pubsub.topic", "", "Google Pub/Sub topic to use")
