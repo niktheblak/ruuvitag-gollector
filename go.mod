@@ -11,7 +11,7 @@ require (
 	github.com/deepmap/oapi-codegen v1.13.4 // indirect
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
-	github.com/go-ble/ble v0.0.0-20230130210458-dd4b07d15402
+	github.com/go-ble/ble v0.0.0-20240122180141-8c5522f54333
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/influxdata/influxdb-client-go/v2 v2.12.3
 	github.com/influxdata/line-protocol v0.0.0-20210922203350-b1ad95c89adf // indirect
