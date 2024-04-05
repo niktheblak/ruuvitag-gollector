@@ -37,8 +37,7 @@ influxdb:
   addr: http://localhost:8086
   database: ruuvitag
   measurement: ruuvitag
-  username: root
-  password: root
+  token: abc123
 ```
 
 For a complete configuration example, see [example config](#complete-example-configuration).
@@ -86,9 +85,10 @@ ruuvitags:
 
 influxdb:
   enabled: true
-  host: http://localhost:8086
+  addr: http://localhost:8086
   database: ruuvitag
-  measurement: ruuvitag_measurement
+  measurement: ruuvitag
+  token: abc123
 
 aws:
   access_key_id: MYAWSAKKESSKEY

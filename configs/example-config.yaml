@@ -8,18 +8,15 @@ ruuvitags:
   "E8:E0:C6:0B:B8:C5": Downstairs
 
 influxdb:
-  enabled: false
-  host: http://localhost:8086
+  enabled: true
+  addr: http://localhost:8086
   database: ruuvitag
   measurement: ruuvitag
-  username: root
-  password: root
+  token: abc123
 
 gcp:
   credentials: /home/pi/credentials.json
-  project: ruuvitag-gollector
-  stackdriver:
-    enabled: false
+  project: ruuvitag
   pubsub:
-    enabled: false
+    enabled: true
     topic: ruuvitag-measurements
