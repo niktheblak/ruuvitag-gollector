@@ -143,7 +143,6 @@ func (e *influxdbExporter) Export(ctx context.Context, data sensor.Data) error {
 		"movement_counter":   data.MovementCounter,
 		"measurement_number": data.MeasurementNumber,
 	}, data.Timestamp)
-	fmt.Printf("e: %+v", e)
 	return e.WritePoint(ctx, point)
 }
 
