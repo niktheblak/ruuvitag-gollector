@@ -61,6 +61,7 @@ func init() {
 
 func initConfig() {
 	viper.SetConfigName("config")
+	viper.AddConfigPath(".")
 	viper.AddConfigPath("/etc/ruuvitag-gollector/")
 	viper.AddConfigPath("$HOME/.ruuvitag-gollector")
 	if err := viper.ReadInConfig(); err != nil {
