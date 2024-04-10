@@ -27,10 +27,11 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:               "ruuvitag-gollector",
-	Short:             "Collects measurements from RuuviTag sensors",
-	SilenceUsage:      true,
-	PersistentPreRunE: run,
+	Use:                "ruuvitag-gollector",
+	Short:              "Collects measurements from RuuviTag sensors",
+	SilenceUsage:       true,
+	PersistentPreRunE:  run,
+	PersistentPostRunE: shutdown,
 }
 
 func Execute() {
@@ -141,5 +142,15 @@ func run(_ *cobra.Command, _ []string) error {
 		}
 	}
 	device = viper.GetString("device")
+	return nil
+}
+
+func shutdown(_ *cobra.Command, _ []string) error {
+	logger.Info("Shutting down")
+	for _, exp := range exporters {
+		if err := exp.Close(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
