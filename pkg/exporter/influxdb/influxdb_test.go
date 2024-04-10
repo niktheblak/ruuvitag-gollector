@@ -54,14 +54,15 @@ func TestExporter(t *testing.T) {
 	})
 	require.NoError(t, err)
 	t.Run("TestReport", func(t *testing.T) {
-		exporter := New(Config{
+		exporter, err := New(Config{
 			Addr:        addr,
 			Org:         org.Name,
 			Token:       *auth.Token,
 			Bucket:      bucket.Name,
 			Measurement: "test",
-		})
-		err := exporter.Export(context.Background(), sensor.Data{
+		}, nil)
+		require.NoError(t, err)
+		err = exporter.Export(context.Background(), sensor.Data{
 			Addr:           "CC:CA:7E:52:CC:34",
 			Name:           "Backyard",
 			Temperature:    22.1,
@@ -75,7 +76,8 @@ func TestExporter(t *testing.T) {
 			Timestamp:      time.Now(),
 		})
 		require.NoError(t, err)
-		exporter.Close()
+		err = exporter.Close()
+		require.NoError(t, err)
 		res, err := client.QueryAPI(org.Name).Query(ctx, fmt.Sprintf(queryTmpl, bucket.Name))
 		require.NoError(t, err)
 		ok := res.Next()
@@ -84,6 +86,7 @@ func TestExporter(t *testing.T) {
 			ok = res.Next()
 		}
 		assert.Equal(t, 22.1, res.Record().Value())
-		res.Close()
+		err = res.Close()
+		require.NoError(t, err)
 	})
 }

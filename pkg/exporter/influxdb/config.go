@@ -1,12 +1,16 @@
 package influxdb
 
+import (
+	"time"
+)
+
 type Config struct {
-	Addr        string
-	Org         string
-	Bucket      string
-	Database    string
-	Measurement string
-	Token       string
-	Username    string
-	Password    string
+	Addr          string
+	Org           string
+	Bucket        string
+	Measurement   string
+	Token         string
+	Async         bool
+	BatchSize     int
+	FlushInterval time.Duration
 }

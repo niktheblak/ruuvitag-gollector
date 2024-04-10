@@ -17,11 +17,11 @@ func init() {
 	rootCmd.PersistentFlags().String("influxdb.addr", "http://localhost:8086", "InfluxDB address with protocol, host and port")
 	rootCmd.PersistentFlags().String("influxdb.org", "", "InfluxDB organization")
 	rootCmd.PersistentFlags().String("influxdb.bucket", "", "InfluxDB bucket")
-	rootCmd.PersistentFlags().String("influxdb.database", "", "InfluxDB database (1.x)")
 	rootCmd.PersistentFlags().String("influxdb.measurement", "", "InfluxDB measurement name")
 	rootCmd.PersistentFlags().String("influxdb.token", "", "InfluxDB token")
-	rootCmd.PersistentFlags().String("influxdb.username", "", "InfluxDB username (1.x)")
-	rootCmd.PersistentFlags().String("influxdb.password", "", "InfluxDB password (1.x)")
+	rootCmd.PersistentFlags().Bool("influxdb.async", false, "Write measurements asynchronously")
+	rootCmd.PersistentFlags().Int("influxdb.batch_size", 0, "InfluxDB client batch size")
+	rootCmd.PersistentFlags().Duration("influxdb.flush_interval", 0, "InfluxDB client flush interval")
 }
 
 func addInfluxDBExporter(exporters *[]exporter.Exporter) error {
@@ -30,17 +30,20 @@ func addInfluxDBExporter(exporters *[]exporter.Exporter) error {
 		return fmt.Errorf("InfluxDB address must be specified")
 	}
 	cfg := influxdb.Config{
-		Addr:        addr,
-		Org:         viper.GetString("influxdb.org"),
-		Bucket:      viper.GetString("influxdb.bucket"),
-		Database:    viper.GetString("influxdb.database"),
-		Measurement: viper.GetString("influxdb.measurement"),
-		Token:       viper.GetString("influxdb.token"),
-		Username:    viper.GetString("influxdb.username"),
-		Password:    viper.GetString("influxdb.password"),
+		Addr:          addr,
+		Org:           viper.GetString("influxdb.org"),
+		Bucket:        viper.GetString("influxdb.bucket"),
+		Measurement:   viper.GetString("influxdb.measurement"),
+		Token:         viper.GetString("influxdb.token"),
+		Async:         viper.GetBool("influxdb.async"),
+		BatchSize:     viper.GetInt("influxdb.batch_size"),
+		FlushInterval: viper.GetDuration("influxdb.flush_interval"),
 	}
-	logger.LogAttrs(nil, slog.LevelInfo, "Connecting to InfluxDB", slog.String("addr", cfg.Addr), slog.String("org", cfg.Org), slog.String("bucket", cfg.Bucket), slog.String("database", cfg.Database), slog.String("measurement", cfg.Measurement))
-	influx := influxdb.New(cfg)
+	logger.LogAttrs(nil, slog.LevelInfo, "Connecting to InfluxDB", slog.String("addr", cfg.Addr), slog.String("org", cfg.Org), slog.String("bucket", cfg.Bucket), slog.String("measurement", cfg.Measurement), slog.Bool("async", cfg.Async), slog.Int("batch_size", cfg.BatchSize), slog.Duration("flush_interval", cfg.FlushInterval))
+	influx, err := influxdb.New(cfg, logger)
+	if err != nil {
+		return err
+	}
 	*exporters = append(*exporters, influx)
 	return nil
 }
