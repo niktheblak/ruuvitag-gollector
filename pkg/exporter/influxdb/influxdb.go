@@ -100,6 +100,8 @@ func New(cfg Config, logger *slog.Logger) (exporter.Exporter, error) {
 			},
 			writeAPI: client.WriteAPI(cfg.Org, bucket),
 		}
+		exp.influxdbExporter.pointWriter = exp
+		exp.Closer = exp
 		exp.writeAPI.SetWriteFailedCallback(func(batch string, error http2.Error, retryAttempts uint) bool {
 			logger.Error("Failed to write batch to InfluxDB", slog.String("batch", batch), slog.String("error", error.Error()), slog.Int("retry attempts", int(retryAttempts)))
 			return retryAttempts <= 3
@@ -114,6 +116,8 @@ func New(cfg Config, logger *slog.Logger) (exporter.Exporter, error) {
 			},
 			writeAPIBlocking: client.WriteAPIBlocking(cfg.Org, bucket),
 		}
+		exp.influxdbExporter.pointWriter = exp
+		exp.Closer = exp
 		return exp, nil
 	}
 }
@@ -139,6 +143,7 @@ func (e *influxdbExporter) Export(ctx context.Context, data sensor.Data) error {
 		"movement_counter":   data.MovementCounter,
 		"measurement_number": data.MeasurementNumber,
 	}, data.Timestamp)
+	fmt.Printf("e: %+v", e)
 	return e.WritePoint(ctx, point)
 }
 
