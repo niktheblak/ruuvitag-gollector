@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 
+	commonsensor "github.com/niktheblak/ruuvitag-common/pkg/sensor"
+
 	"github.com/niktheblak/ruuvitag-gollector/pkg/dewpoint"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/temperature"
 )
@@ -32,7 +34,7 @@ func ParseTemperature(t uint8, f uint8) float64 {
 	return temp
 }
 
-func ParseSensorFormat3(data []byte) (sd Data, err error) {
+func ParseSensorFormat3(data []byte) (sd commonsensor.Data, err error) {
 	reader := bytes.NewReader(data)
 	var result DataFormat3
 	err = binary.Read(reader, binary.BigEndian, &result)

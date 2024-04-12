@@ -3,7 +3,7 @@ package exporter
 import (
 	"context"
 
-	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
+	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 )
 
 type NoOp struct {

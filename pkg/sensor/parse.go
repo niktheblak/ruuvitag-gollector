@@ -3,9 +3,11 @@ package sensor
 import (
 	"encoding/binary"
 	"fmt"
+
+	commonsensor "github.com/niktheblak/ruuvitag-common/pkg/sensor"
 )
 
-func Parse(data []byte) (sensorData Data, err error) {
+func Parse(data []byte) (sensorData commonsensor.Data, err error) {
 	if !IsRuuviTag(data) {
 		err = fmt.Errorf("not a RuuviTag device")
 		return

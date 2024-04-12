@@ -1,8 +1,6 @@
 module github.com/niktheblak/ruuvitag-gollector
 
-go 1.22
-
-toolchain go1.22.0
+go 1.22.2
 
 require (
 	cloud.google.com/go/pubsub v1.37.0
@@ -53,6 +51,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mgutz/logxi v0.0.0-20161027140823-aebf8a7d67ab // indirect
+	github.com/niktheblak/ruuvitag-common v1.0.0 // indirect
 	github.com/oapi-codegen/runtime v1.1.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

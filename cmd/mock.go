@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
+	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 )
 
 var mockCmd = &cobra.Command{

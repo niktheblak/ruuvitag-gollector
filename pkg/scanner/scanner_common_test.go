@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/go-ble/ble"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
+	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 )
 
 type mockDevice struct {

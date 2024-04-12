@@ -14,8 +14,9 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 
+	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
+
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 
 type mqttExporter struct {

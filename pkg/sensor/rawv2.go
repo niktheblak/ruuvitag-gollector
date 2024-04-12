@@ -3,9 +3,13 @@ package sensor
 import (
 	"bytes"
 	"encoding/binary"
+
+	commonsensor "github.com/niktheblak/ruuvitag-common/pkg/sensor"
 )
 
-/* Payload:
+/*
+	Payload:
+
 Byte    Value Range			Explanation
 ---------------------------------------
 0 		05 					Format type code
@@ -48,7 +52,7 @@ type DataFormat5 struct {
 	MeasurementNumber uint16
 }
 
-func ParseSensorFormat5(data []byte) (sd Data, err error) {
+func ParseSensorFormat5(data []byte) (sd commonsensor.Data, err error) {
 	reader := bytes.NewReader(data)
 	var result DataFormat5
 	err = binary.Read(reader, binary.BigEndian, &result)

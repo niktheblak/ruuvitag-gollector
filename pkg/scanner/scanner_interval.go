@@ -8,9 +8,10 @@ import (
 
 	"github.com/go-ble/ble"
 
+	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
+
 	"github.com/niktheblak/ruuvitag-gollector/pkg/evenminutes"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 
 type Scanner struct {

@@ -11,8 +11,9 @@ import (
 
 	"cloud.google.com/go/pubsub"
 
+	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
+
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 
 type pubsubExporter struct {

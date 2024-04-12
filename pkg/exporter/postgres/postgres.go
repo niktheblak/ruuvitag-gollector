@@ -7,8 +7,9 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
+
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 
 	_ "github.com/lib/pq"
 )
