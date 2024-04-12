@@ -58,6 +58,8 @@ func init() {
 	if err := viper.BindPFlags(rootCmd.PersistentFlags()); err != nil {
 		panic(err)
 	}
+
+	viper.SetDefault("loglevel", "info")
 }
 
 func initConfig() {
@@ -66,9 +68,9 @@ func initConfig() {
 	viper.AddConfigPath("/etc/ruuvitag-gollector/")
 	viper.AddConfigPath("$HOME/.ruuvitag-gollector")
 	if err := viper.ReadInConfig(); err != nil {
-		logger.LogAttrs(nil, slog.LevelInfo, "Config file does not exist, using only command line arguments", slog.String("file", viper.ConfigFileUsed()))
+		slog.Default().LogAttrs(nil, slog.LevelInfo, "Config file does not exist, using only command line arguments", slog.String("file", viper.ConfigFileUsed()))
 	} else {
-		logger.LogAttrs(nil, slog.LevelInfo, "Read config from file", slog.String("file", viper.ConfigFileUsed()))
+		slog.Default().LogAttrs(nil, slog.LevelInfo, "Read config from file", slog.String("file", viper.ConfigFileUsed()))
 	}
 }
 
@@ -79,15 +81,11 @@ func run(_ *cobra.Command, _ []string) error {
 			return err
 		}
 	}
-	logLevel := viper.GetString("loglevel")
-	if logLevel == "" {
-		logLevel = "info"
-	}
-	var programLevel = new(slog.LevelVar)
-	if err := programLevel.UnmarshalText([]byte(logLevel)); err != nil {
+	var logLevel = new(slog.LevelVar)
+	if err := logLevel.UnmarshalText([]byte(viper.GetString("loglevel"))); err != nil {
 		return err
 	}
-	h := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: programLevel})
+	h := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
 	logger = slog.New(h)
 	ruuviTags := viper.GetStringMapString("ruuvitags")
 	if len(ruuviTags) == 0 {
