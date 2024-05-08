@@ -3,9 +3,9 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-ble/ble"
@@ -20,6 +20,7 @@ import (
 var ErrNotEnabled = errors.New("this exporter is not included in the build")
 
 var (
+	cfgFile     string
 	logger      *slog.Logger
 	peripherals map[string]string
 	exporters   []exporter.Exporter
@@ -27,16 +28,24 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:                "ruuvitag-gollector",
-	Short:              "Collects measurements from RuuviTag sensors",
-	SilenceUsage:       true,
-	PersistentPreRunE:  run,
-	PersistentPostRunE: shutdown,
+	Use:               "ruuvitag-gollector",
+	Short:             "Collects measurements from RuuviTag sensors",
+	SilenceUsage:      true,
+	PersistentPreRunE: preRun,
+	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+		logger.Info("Shutting down")
+		for _, exp := range exporters {
+			if err := exp.Close(); err != nil {
+				return err
+			}
+		}
+		return nil
+	},
 }
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		log.Println(err)
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }
@@ -46,8 +55,9 @@ func init() {
 
 	cobra.OnInitialize(initConfig)
 
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file path")
 	rootCmd.PersistentFlags().StringToString("ruuvitags", nil, "RuuviTag addresses and names to use")
-	rootCmd.PersistentFlags().String("device", "default", "HCL device to use")
+	rootCmd.PersistentFlags().String("device", "", "HCL device to use")
 	rootCmd.PersistentFlags().BoolP("console", "c", false, "Print measurements to console")
 	rootCmd.PersistentFlags().String("loglevel", "info", "Log level")
 
@@ -55,26 +65,32 @@ func init() {
 	rootCmd.PersistentFlags().String("http.addr", "", "HTTP receiver address")
 	rootCmd.PersistentFlags().String("http.token", "", "HTTP receiver authorization token")
 
-	if err := viper.BindPFlags(rootCmd.PersistentFlags()); err != nil {
-		panic(err)
-	}
+	cobra.CheckErr(viper.BindPFlags(rootCmd.PersistentFlags()))
 
 	viper.SetDefault("loglevel", "info")
+	viper.SetDefault("device", "default")
 }
 
 func initConfig() {
-	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("/etc/ruuvitag-gollector/")
-	viper.AddConfigPath("$HOME/.ruuvitag-gollector")
+	if cfgFile != "" {
+		// Use config file from the flag.
+		viper.SetConfigFile(cfgFile)
+	} else {
+		viper.SetConfigName("config")
+		viper.AddConfigPath(".")
+		viper.AddConfigPath("$HOME/.ruuvitag-gollector")
+		viper.AddConfigPath("/etc/ruuvitag-gollector/")
+	}
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	if err := viper.ReadInConfig(); err != nil {
-		slog.Default().LogAttrs(nil, slog.LevelInfo, "Config file does not exist, using only command line arguments", slog.String("file", viper.ConfigFileUsed()))
+		slog.Default().LogAttrs(nil, slog.LevelInfo, "Config file not found, using only command line arguments", slog.String("file", viper.ConfigFileUsed()))
 	} else {
 		slog.Default().LogAttrs(nil, slog.LevelInfo, "Read config from file", slog.String("file", viper.ConfigFileUsed()))
 	}
 }
 
-func run(_ *cobra.Command, _ []string) error {
+func preRun(_ *cobra.Command, _ []string) error {
 	creds := viper.GetString("gcp.credentials")
 	if creds != "" {
 		if err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", creds); err != nil {
@@ -89,8 +105,7 @@ func run(_ *cobra.Command, _ []string) error {
 	logger = slog.New(h)
 	ruuviTags := viper.GetStringMapString("ruuvitags")
 	if len(ruuviTags) == 0 {
-		logger.LogAttrs(nil, slog.LevelError, "At least one RuuviTag address must be specified")
-		os.Exit(1)
+		return fmt.Errorf("at least one RuuviTag address must be specified")
 	}
 	logger.LogAttrs(nil, slog.LevelInfo, "RuuviTags", slog.Any("ruuvitags", ruuviTags))
 	peripherals = make(map[string]string)
@@ -140,15 +155,5 @@ func run(_ *cobra.Command, _ []string) error {
 		}
 	}
 	device = viper.GetString("device")
-	return nil
-}
-
-func shutdown(_ *cobra.Command, _ []string) error {
-	logger.Info("Shutting down")
-	for _, exp := range exporters {
-		if err := exp.Close(); err != nil {
-			return err
-		}
-	}
 	return nil
 }
