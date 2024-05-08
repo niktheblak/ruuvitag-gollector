@@ -83,10 +83,18 @@ func initConfig() {
 	}
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	if err := viper.ReadInConfig(); err != nil {
-		slog.Default().LogAttrs(nil, slog.LevelInfo, "Config file not found, using only command line arguments", slog.String("file", viper.ConfigFileUsed()))
+	configErr := viper.ReadInConfig()
+	var logLevel = new(slog.LevelVar)
+	if err := logLevel.UnmarshalText([]byte(viper.GetString("loglevel"))); err != nil {
+		fmt.Printf("Error parsing log level: %s\n", err)
+		os.Exit(1)
+	}
+	h := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
+	logger = slog.New(h)
+	if configErr != nil {
+		logger.LogAttrs(nil, slog.LevelInfo, "Config file not found, using only command line arguments", slog.String("file", viper.ConfigFileUsed()))
 	} else {
-		slog.Default().LogAttrs(nil, slog.LevelInfo, "Read config from file", slog.String("file", viper.ConfigFileUsed()))
+		logger.LogAttrs(nil, slog.LevelInfo, "Read config from file", slog.String("file", viper.ConfigFileUsed()))
 	}
 }
 
@@ -97,12 +105,6 @@ func preRun(_ *cobra.Command, _ []string) error {
 			return err
 		}
 	}
-	var logLevel = new(slog.LevelVar)
-	if err := logLevel.UnmarshalText([]byte(viper.GetString("loglevel"))); err != nil {
-		return err
-	}
-	h := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
-	logger = slog.New(h)
 	ruuviTags := viper.GetStringMapString("ruuvitags")
 	if len(ruuviTags) == 0 {
 		return fmt.Errorf("at least one RuuviTag address must be specified")

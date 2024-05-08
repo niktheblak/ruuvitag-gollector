@@ -36,7 +36,7 @@ var daemonCmd = &cobra.Command{
 func init() {
 	daemonCmd.Flags().Duration("interval", 60*time.Second, "Wait time between RuuviTag device scans, 0 to scan continuously")
 
-	viper.BindPFlags(daemonCmd.Flags())
+	cobra.CheckErr(viper.BindPFlags(daemonCmd.Flags()))
 
 	rootCmd.AddCommand(daemonCmd)
 }
