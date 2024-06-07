@@ -156,6 +156,11 @@ func preRun(_ *cobra.Command, _ []string) error {
 			return fmt.Errorf("failed to create MQTT exporter: %w", err)
 		}
 	}
+	if viper.GetBool("timescaledb.enabled") {
+		if err := addTimescaleDBExporter(&exporters); err != nil {
+			return fmt.Errorf("failed to create TimescaleDB exporter: %w", err)
+		}
+	}
 	device = viper.GetString("device")
 	return nil
 }
