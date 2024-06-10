@@ -5,7 +5,6 @@ package timescaledb
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
@@ -16,8 +15,24 @@ import (
 )
 
 const (
-	CreateExtensionTmpl = `CREATE EXTENSION IF NOT EXISTS timescaledb`
-	CreateSchemaTmpl    = `CREATE TABLE %s (
+	insertTemplate = `INSERT INTO %s (
+        time,
+        mac,
+        name,
+        temperature,
+        humidity,
+        pressure,
+        acceleration_x,
+        acceleration_y,
+        acceleration_z,
+        movement_counter,
+        battery,
+        measurement_number)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
+
+	createExtensionStatement = `CREATE EXTENSION IF NOT EXISTS timescaledb`
+
+	createSchemaTemplate = `CREATE TABLE %s (
 		time TIMESTAMPTZ NOT NULL,
 		mac MACADDR NOT NULL,
 		name TEXT,
@@ -30,38 +45,23 @@ const (
 		movement_counter INTEGER,
 		battery DOUBLE PRECISION,
 		measurement_number INTEGER)`
-	CreateHyperTableTmpl = `SELECT create_hypertable('%s', by_range('time'))`
+
+	createHyperTableTemplate = `SELECT create_hypertable('%s', by_range('time'))`
 )
 
 type timescaleDBExporter struct {
-	db         *sql.DB
-	insertStmt *sql.Stmt
+	db    *sql.DB
+	table string
 }
 
-func New(ctx context.Context, connStr, table string) (exporter.Exporter, error) {
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		return nil, err
-	}
-	insertStmt, err := db.PrepareContext(ctx, fmt.Sprintf(`INSERT INTO %s (mac,
-        name,
-        ts,
-        temperature,
-        humidity,
-        pressure,
-        acceleration_x,
-        acceleration_y,
-        acceleration_z,
-        movement_counter,
-        battery,
-        measurement_number)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`, table))
+func New(psqlInfo, table string) (exporter.Exporter, error) {
+	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		return nil, err
 	}
 	return &timescaleDBExporter{
-		db:         db,
-		insertStmt: insertStmt,
+		db:    db,
+		table: table,
 	}, nil
 }
 
@@ -70,10 +70,42 @@ func (t *timescaleDBExporter) Name() string {
 }
 
 func (t *timescaleDBExporter) Export(ctx context.Context, data sensor.Data) error {
-	_, err := t.insertStmt.ExecContext(ctx, data.Addr, data.Name, data.Timestamp, data.Temperature, data.Humidity, data.Pressure, data.AccelerationX, data.AccelerationY, data.AccelerationZ, data.MovementCounter, data.BatteryVoltage, data.MeasurementNumber)
+	q := fmt.Sprintf(insertTemplate, t.table)
+	_, err := t.db.ExecContext(
+		ctx,
+		q,
+		data.Timestamp,
+		data.Addr,
+		data.Name,
+		data.Temperature,
+		data.Humidity,
+		data.Pressure,
+		data.AccelerationX,
+		data.AccelerationY,
+		data.AccelerationZ,
+		data.MovementCounter,
+		data.BatteryVoltage,
+		data.MeasurementNumber,
+	)
 	return err
 }
 
+func (t *timescaleDBExporter) InitSchema(ctx context.Context) error {
+	_, err := t.db.ExecContext(ctx, createExtensionStatement, t.table)
+	if err != nil {
+		return err
+	}
+	_, err = t.db.ExecContext(ctx, fmt.Sprintf(createSchemaTemplate, t.table))
+	if err != nil {
+		return err
+	}
+	_, err = t.db.ExecContext(ctx, fmt.Sprintf(createHyperTableTemplate, t.table))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (t *timescaleDBExporter) Close() error {
-	return errors.Join(t.insertStmt.Close(), t.db.Close())
+	return t.db.Close()
 }

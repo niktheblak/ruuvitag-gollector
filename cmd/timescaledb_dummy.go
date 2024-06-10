@@ -1,4 +1,4 @@
-//go:build !postgres
+//go:build !timescaledb
 
 package cmd
 
