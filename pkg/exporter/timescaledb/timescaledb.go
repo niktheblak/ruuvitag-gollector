@@ -27,8 +27,9 @@ const (
         acceleration_z,
         movement_counter,
         battery,
-        measurement_number)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
+        measurement_number
+        dew_point)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
 
 	createExtensionStatement = `CREATE EXTENSION IF NOT EXISTS timescaledb`
 
@@ -44,7 +45,8 @@ const (
 		acceleration_z INTEGER,
 		movement_counter INTEGER,
 		battery DOUBLE PRECISION,
-		measurement_number INTEGER)`
+		measurement_number INTEGER,
+		dew_point DOUBLE PRECISION)`
 
 	createHyperTableTemplate = `SELECT create_hypertable('%s', by_range('time'))`
 )
@@ -86,6 +88,7 @@ func (t *timescaleDBExporter) Export(ctx context.Context, data sensor.Data) erro
 		data.MovementCounter,
 		data.BatteryVoltage,
 		data.MeasurementNumber,
+		data.DewPoint,
 	)
 	return err
 }
