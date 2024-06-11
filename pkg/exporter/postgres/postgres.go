@@ -5,6 +5,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
@@ -14,48 +15,50 @@ import (
 	_ "github.com/lib/pq"
 )
 
-const SchemaTmpl = `CREATE TABLE %s (
-  id BIGSERIAL PRIMARY KEY,
-  mac MACADDR NOT NULL,
-  name TEXT,
-  ts TIMESTAMP NOT NULL,
-  temperature REAL,
-  humidity REAL,
-  pressure REAL,
-  acceleration_x INTEGER,
-  acceleration_y INTEGER,
-  acceleration_z INTEGER,
-  movement_counter INTEGER,
-  battery REAL,
-  measurement_number INTEGER
-)`
+const (
+	insertTemplate = `INSERT INTO %s (
+		mac,
+		name,
+		ts,
+		temperature,
+		humidity,
+		pressure,
+		acceleration_x,
+		acceleration_y,
+		acceleration_z,
+		movement_counter,
+		battery,
+		measurement_number
+	)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
+
+	schemaTemplate = `CREATE TABLE %s (
+		id BIGSERIAL PRIMARY KEY,
+		mac MACADDR NOT NULL,
+		name TEXT,
+		ts TIMESTAMP NOT NULL,
+		temperature REAL,
+		humidity REAL,
+		pressure REAL,
+		acceleration_x INTEGER,
+		acceleration_y INTEGER,
+		acceleration_z INTEGER,
+		movement_counter INTEGER,
+		battery REAL,
+		measurement_number INTEGER)`
+)
 
 type postgresExporter struct {
 	db         *sql.DB
 	insertStmt *sql.Stmt
 }
 
-func New(ctx context.Context, connStr, table string) (exporter.Exporter, error) {
-	db, err := sql.Open("postgres", connStr)
+func New(ctx context.Context, psqlInfo, table string) (exporter.Exporter, error) {
+	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		return nil, err
 	}
-	insertStmt, err := db.PrepareContext(ctx, fmt.Sprintf(`
-INSERT INTO %s (
-  mac,
-  name,
-  ts,
-  temperature,
-  humidity,
-  pressure,
-  acceleration_x,
-  acceleration_y,
-  acceleration_z,
-  movement_counter,
-  battery,
-  measurement_number
-)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`, table))
+	insertStmt, err := db.PrepareContext(ctx, fmt.Sprintf(insertTemplate, table))
 	if err != nil {
 		return nil, err
 	}
@@ -75,6 +78,5 @@ func (p *postgresExporter) Export(ctx context.Context, data sensor.Data) error {
 }
 
 func (p *postgresExporter) Close() error {
-	p.insertStmt.Close()
-	return p.db.Close()
+	return errors.Join(p.insertStmt.Close(), p.db.Close())
 }
