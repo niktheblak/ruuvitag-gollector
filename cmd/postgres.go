@@ -4,27 +4,18 @@ package cmd
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/spf13/viper"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/postgres"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/psql"
 )
 
 func init() {
 	rootCmd.PersistentFlags().Bool("postgres.enabled", false, "enable PostgreSQL exporter")
-	rootCmd.PersistentFlags().String("postgres.host", "", "database host or IP")
-	rootCmd.PersistentFlags().Int("postgres.port", 0, "database port")
-	rootCmd.PersistentFlags().String("postgres.username", "", "database username")
-	rootCmd.PersistentFlags().String("postgres.password", "", "database password")
-	rootCmd.PersistentFlags().String("postgres.database", "", "database name")
-	rootCmd.PersistentFlags().String("postgres.table", "", "table name")
-	rootCmd.PersistentFlags().String("postgres.sslmode", "", "SSL mode")
-	rootCmd.PersistentFlags().String("postgres.sslcert", "", "path to SSL certificate file")
-	rootCmd.PersistentFlags().String("postgres.sslkey", "", "path to SSL key file")
-
-	viper.SetDefault("postgres.port", "5432")
-	viper.SetDefault("postgres.sslmode", "disable")
+	AddPsqlFlags(rootCmd.PersistentFlags(), "postgres")
 }
 
 func addPostgresExporter(exporters *[]exporter.Exporter) error {
@@ -33,8 +24,9 @@ func addPostgresExporter(exporters *[]exporter.Exporter) error {
 	if err != nil {
 		return err
 	}
-	logger.Info("Connecting to PostgreSQL", "connstr", SanitizePassword(psqlInfo))
-	exp, err := postgres.New(ctx, psqlInfo, viper.GetString("postgres.table"))
+	table := viper.GetString("postgres.table")
+	logger.LogAttrs(ctx, slog.LevelInfo, "Connecting to PostgreSQL", slog.String("conn_str", psql.RemovePassword(psqlInfo)), slog.String("table", table))
+	exp, err := postgres.New(ctx, psqlInfo, table, logger)
 	if err != nil {
 		return err
 	}

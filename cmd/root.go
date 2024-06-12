@@ -45,7 +45,7 @@ var rootCmd = &cobra.Command{
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
@@ -65,13 +65,12 @@ func init() {
 	rootCmd.PersistentFlags().String("http.addr", "", "HTTP receiver address")
 	rootCmd.PersistentFlags().String("http.token", "", "HTTP receiver authorization token")
 
-	cobra.CheckErr(viper.BindPFlags(rootCmd.PersistentFlags()))
-
 	viper.SetDefault("loglevel", "info")
 	viper.SetDefault("device", "default")
 }
 
 func initConfig() {
+	cobra.CheckErr(viper.BindPFlags(rootCmd.PersistentFlags()))
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
@@ -86,7 +85,7 @@ func initConfig() {
 	configErr := viper.ReadInConfig()
 	var logLevel = new(slog.LevelVar)
 	if err := logLevel.UnmarshalText([]byte(viper.GetString("loglevel"))); err != nil {
-		fmt.Printf("Error parsing log level: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Error parsing log level: %s\n", err)
 		os.Exit(1)
 	}
 	h := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})

@@ -2,14 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
-
-var passwordRegexp = regexp.MustCompile(`password=\S+\s`)
 
 func CreatePsqlInfoString(prefix string) (psqlInfo string, err error) {
 	var (
@@ -72,6 +70,17 @@ func CreatePsqlInfoString(prefix string) (psqlInfo string, err error) {
 	return
 }
 
-func SanitizePassword(psqlInfo string) string {
-	return passwordRegexp.ReplaceAllString(psqlInfo, "password=[redacted] ")
+func AddPsqlFlags(fs *pflag.FlagSet, prefix string) {
+	fs.String(fmt.Sprintf("%s.host", prefix), "", "database host or IP")
+	fs.Int(fmt.Sprintf("%s.port", prefix), 0, "database port")
+	fs.String(fmt.Sprintf("%s.username", prefix), "", "database username")
+	fs.String(fmt.Sprintf("%s.password", prefix), "", "database password")
+	fs.String(fmt.Sprintf("%s.database", prefix), "", "database name")
+	fs.String(fmt.Sprintf("%s.table", prefix), "", "table name")
+	fs.String(fmt.Sprintf("%s.sslmode", prefix), "", "SSL mode")
+	fs.String(fmt.Sprintf("%s.sslcert", prefix), "", "path to SSL certificate file")
+	fs.String(fmt.Sprintf("%s.sslkey", prefix), "", "path to SSL key file")
+
+	viper.SetDefault(fmt.Sprintf("%s.port", prefix), "5432")
+	viper.SetDefault(fmt.Sprintf("%s.sslmode", prefix), "disable")
 }

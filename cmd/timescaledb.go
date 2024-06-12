@@ -3,35 +3,30 @@
 package cmd
 
 import (
+	"context"
+	"log/slog"
+
 	"github.com/spf13/viper"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/timescaledb"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/psql"
 )
 
 func init() {
 	rootCmd.PersistentFlags().Bool("timescaledb.enabled", false, "enable TimescaleDB exporter")
-	rootCmd.PersistentFlags().String("timescaledb.host", "", "database host or IP")
-	rootCmd.PersistentFlags().Int("timescaledb.port", 0, "database port")
-	rootCmd.PersistentFlags().String("timescaledb.username", "", "database username")
-	rootCmd.PersistentFlags().String("timescaledb.password", "", "database password")
-	rootCmd.PersistentFlags().String("timescaledb.database", "", "database name")
-	rootCmd.PersistentFlags().String("timescaledb.table", "", "table name")
-	rootCmd.PersistentFlags().String("timescaledb.sslmode", "", "SSL mode")
-	rootCmd.PersistentFlags().String("timescaledb.sslcert", "", "path to SSL certificate file")
-	rootCmd.PersistentFlags().String("timescaledb.sslkey", "", "path to SSL key file")
-
-	viper.SetDefault("timescaledb.port", "5432")
-	viper.SetDefault("timescaledb.sslmode", "disable")
+	AddPsqlFlags(rootCmd.PersistentFlags(), "timescaledb")
 }
 
 func addTimescaleDBExporter(exporters *[]exporter.Exporter) error {
+	ctx := context.Background()
 	psqlInfo, err := CreatePsqlInfoString("timescaledb")
 	if err != nil {
 		return err
 	}
-	logger.Info("Connecting to TimescaleDB", "connstr", SanitizePassword(psqlInfo))
-	exp, err := timescaledb.New(psqlInfo, viper.GetString("timescaledb.table"))
+	table := viper.GetString("timescaledb.table")
+	logger.LogAttrs(ctx, slog.LevelInfo, "Connecting to TimescaleDB", slog.String("conn_str", psql.RemovePassword(psqlInfo)), slog.String("table", table))
+	exp, err := timescaledb.New(ctx, psqlInfo, table, logger)
 	if err != nil {
 		return err
 	}

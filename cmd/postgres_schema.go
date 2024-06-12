@@ -3,7 +3,7 @@
 package cmd
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"log/slog"
 
@@ -11,31 +11,32 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	pexp "github.com/niktheblak/ruuvitag-gollector/pkg/exporter/postgres"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/psql"
 )
 
 var postgresSchemaCmd = &cobra.Command{
 	Use:   "postgres-schema",
 	Short: "Create PostgreSQL schema",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		conn := viper.GetString("postgres.conn")
+		ctx := context.Background()
+		psqlInfo, err := CreatePsqlInfoString("postgres")
+		if err != nil {
+			return err
+		}
 		table := viper.GetString("postgres.table")
-		logger.LogAttrs(nil, slog.LevelInfo, "Creating schema", slog.String("conn", conn), slog.String("table", table))
-		schema := fmt.Sprintf(pexp.SchemaTmpl, table)
-		db, err := sql.Open("postgres", conn)
+		logger.LogAttrs(ctx, slog.LevelInfo, "Connecting to PostgreSQL", slog.String("conn_str", psql.RemovePassword(psqlInfo)), slog.String("table", table))
+		exp, err := pexp.New(ctx, psqlInfo, table, logger)
 		if err != nil {
 			return err
 		}
-		defer db.Close()
-		_, err = db.ExecContext(cmd.Context(), schema)
-		if err != nil {
-			return err
+		defer exp.Close()
+		creator, ok := exp.(exporter.SchemaCreator)
+		if !ok {
+			return fmt.Errorf("exporter does not support schema creation")
 		}
-		_, err = db.ExecContext(cmd.Context(), fmt.Sprintf("CREATE INDEX idx_name ON %s(name)", table))
-		if err != nil {
-			return err
-		}
-		return nil
+		return creator.InitSchema(ctx)
 	},
 }
 

@@ -7,10 +7,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
+	"log/slog"
 
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/psql"
 
 	_ "github.com/lib/pq"
 )
@@ -32,7 +35,7 @@ const (
 	)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
 
-	schemaTemplate = `CREATE TABLE %s (
+	createSchemaTemplate = `CREATE TABLE %s (
 		id BIGSERIAL PRIMARY KEY,
 		mac MACADDR NOT NULL,
 		name TEXT,
@@ -51,20 +54,29 @@ const (
 type postgresExporter struct {
 	db         *sql.DB
 	insertStmt *sql.Stmt
+	table      string
+	logger     *slog.Logger
 }
 
-func New(ctx context.Context, psqlInfo, table string) (exporter.Exporter, error) {
+func New(ctx context.Context, psqlInfo, table string, logger *slog.Logger) (exporter.Exporter, error) {
+	if logger == nil {
+		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		return nil, err
 	}
-	insertStmt, err := db.PrepareContext(ctx, fmt.Sprintf(insertTemplate, table))
+	q := fmt.Sprintf(insertTemplate, table)
+	logger.LogAttrs(ctx, slog.LevelDebug, "Preparing insert statement", slog.String("query", psql.TrimQuery(q)))
+	insertStmt, err := db.PrepareContext(ctx, q)
 	if err != nil {
 		return nil, err
 	}
 	return &postgresExporter{
 		db:         db,
 		insertStmt: insertStmt,
+		table:      table,
+		logger:     logger,
 	}, nil
 }
 
@@ -73,7 +85,28 @@ func (p *postgresExporter) Name() string {
 }
 
 func (p *postgresExporter) Export(ctx context.Context, data sensor.Data) error {
-	_, err := p.insertStmt.ExecContext(ctx, data.Addr, data.Name, data.Timestamp, data.Temperature, data.Humidity, data.Pressure, data.AccelerationX, data.AccelerationY, data.AccelerationZ, data.MovementCounter, data.BatteryVoltage, data.MeasurementNumber)
+	_, err := p.insertStmt.ExecContext(
+		ctx,
+		data.Addr,
+		data.Name,
+		data.Timestamp,
+		data.Temperature,
+		data.Humidity,
+		data.Pressure,
+		data.AccelerationX,
+		data.AccelerationY,
+		data.AccelerationZ,
+		data.MovementCounter,
+		data.BatteryVoltage,
+		data.MeasurementNumber,
+	)
+	return err
+}
+
+func (p *postgresExporter) InitSchema(ctx context.Context) error {
+	q := fmt.Sprintf(createSchemaTemplate, p.table)
+	p.logger.LogAttrs(ctx, slog.LevelDebug, "Creating schema", slog.String("query", psql.TrimQuery(q)))
+	_, err := p.db.ExecContext(ctx, q)
 	return err
 }
 
