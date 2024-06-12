@@ -25,8 +25,9 @@ func addPostgresExporter(exporters *[]exporter.Exporter) error {
 		return err
 	}
 	table := viper.GetString("postgres.table")
+	timeColumn := viper.GetString("postgres.column.time")
 	logger.LogAttrs(ctx, slog.LevelInfo, "Connecting to PostgreSQL", slog.String("conn_str", psql.RemovePassword(psqlInfo)), slog.String("table", table))
-	exp, err := postgres.New(ctx, psqlInfo, table, logger)
+	exp, err := postgres.New(ctx, psqlInfo, table, timeColumn, logger)
 	if err != nil {
 		return err
 	}

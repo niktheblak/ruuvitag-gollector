@@ -80,7 +80,11 @@ func AddPsqlFlags(fs *pflag.FlagSet, prefix string) {
 	fs.String(fmt.Sprintf("%s.sslmode", prefix), "", "SSL mode")
 	fs.String(fmt.Sprintf("%s.sslcert", prefix), "", "path to SSL certificate file")
 	fs.String(fmt.Sprintf("%s.sslkey", prefix), "", "path to SSL key file")
+	fs.String(fmt.Sprintf("%s.column.time", prefix), "", "time column name")
+	fs.String(fmt.Sprintf("%s.type", prefix), "", "database type, postgres or timescaledb")
 
 	viper.SetDefault(fmt.Sprintf("%s.port", prefix), "5432")
 	viper.SetDefault(fmt.Sprintf("%s.sslmode", prefix), "disable")
+	viper.SetDefault(fmt.Sprintf("%s.column.time", prefix), "time")
+	viper.SetDefault(fmt.Sprintf("%s.type", prefix), "postgres")
 }
