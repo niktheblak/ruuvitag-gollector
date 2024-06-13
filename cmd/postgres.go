@@ -15,12 +15,12 @@ import (
 
 func init() {
 	rootCmd.PersistentFlags().Bool("postgres.enabled", false, "enable PostgreSQL exporter")
-	psql.AddPsqlFlags(rootCmd.PersistentFlags(), "postgres")
+	psql.AddPsqlFlags(rootCmd.PersistentFlags(), viper.GetViper(), "postgres")
 }
 
 func addPostgresExporter(exporters *[]exporter.Exporter) error {
 	ctx := context.Background()
-	psqlInfo, err := psql.CreatePsqlInfoString("postgres")
+	psqlInfo, err := psql.CreatePsqlInfoString(viper.GetViper(), "postgres")
 	if err != nil {
 		return err
 	}

@@ -22,20 +22,20 @@ func RemovePassword(psqlInfo string) string {
 
 // TrimQuery replaces all whitespace (newlines and repeated spaces) from a string with one space
 func TrimQuery(q string) string {
-	return whitespaceRegexp.ReplaceAllString(q, " ")
+	return strings.TrimSpace(whitespaceRegexp.ReplaceAllString(q, " "))
 }
 
-func CreatePsqlInfoString(prefix string) (psqlInfo string, err error) {
+func CreatePsqlInfoString(vpr *viper.Viper, prefix string) (psqlInfo string, err error) {
 	var (
-		host     = viper.GetString(fmt.Sprintf("%s.host", prefix))
-		port     = viper.GetInt(fmt.Sprintf("%s.port", prefix))
-		username = viper.GetString(fmt.Sprintf("%s.username", prefix))
-		password = viper.GetString(fmt.Sprintf("%s.password", prefix))
-		database = viper.GetString(fmt.Sprintf("%s.database", prefix))
-		table    = viper.GetString(fmt.Sprintf("%s.table", prefix))
-		sslmode  = viper.GetString(fmt.Sprintf("%s.sslmode", prefix))
-		sslcert  = viper.GetString(fmt.Sprintf("%s.sslcert", prefix))
-		sslkey   = viper.GetString(fmt.Sprintf("%s.sslkey", prefix))
+		host     = vpr.GetString(fmt.Sprintf("%s.host", prefix))
+		port     = vpr.GetInt(fmt.Sprintf("%s.port", prefix))
+		username = vpr.GetString(fmt.Sprintf("%s.username", prefix))
+		password = vpr.GetString(fmt.Sprintf("%s.password", prefix))
+		database = vpr.GetString(fmt.Sprintf("%s.database", prefix))
+		table    = vpr.GetString(fmt.Sprintf("%s.table", prefix))
+		sslmode  = vpr.GetString(fmt.Sprintf("%s.sslmode", prefix))
+		sslcert  = vpr.GetString(fmt.Sprintf("%s.sslcert", prefix))
+		sslkey   = vpr.GetString(fmt.Sprintf("%s.sslkey", prefix))
 	)
 	if host == "" {
 		err = fmt.Errorf("PostgreSQL host must be specified")
@@ -86,7 +86,7 @@ func CreatePsqlInfoString(prefix string) (psqlInfo string, err error) {
 	return
 }
 
-func AddPsqlFlags(fs *pflag.FlagSet, prefix string) {
+func AddPsqlFlags(fs *pflag.FlagSet, vpr *viper.Viper, prefix string) {
 	fs.String(fmt.Sprintf("%s.host", prefix), "", "database host or IP")
 	fs.Int(fmt.Sprintf("%s.port", prefix), 0, "database port")
 	fs.String(fmt.Sprintf("%s.username", prefix), "", "database username")
@@ -99,8 +99,8 @@ func AddPsqlFlags(fs *pflag.FlagSet, prefix string) {
 	fs.String(fmt.Sprintf("%s.column.time", prefix), "", "time column name")
 	fs.String(fmt.Sprintf("%s.type", prefix), "", "database type, postgres or timescaledb")
 
-	viper.SetDefault(fmt.Sprintf("%s.port", prefix), "5432")
-	viper.SetDefault(fmt.Sprintf("%s.sslmode", prefix), "disable")
-	viper.SetDefault(fmt.Sprintf("%s.column.time", prefix), "time")
-	viper.SetDefault(fmt.Sprintf("%s.type", prefix), "postgres")
+	vpr.SetDefault(fmt.Sprintf("%s.port", prefix), "5432")
+	vpr.SetDefault(fmt.Sprintf("%s.sslmode", prefix), "disable")
+	vpr.SetDefault(fmt.Sprintf("%s.column.time", prefix), "time")
+	vpr.SetDefault(fmt.Sprintf("%s.type", prefix), "postgres")
 }
