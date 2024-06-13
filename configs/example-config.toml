@@ -1,5 +1,5 @@
-interval = "5m"
-console = true
+interval = "0m"
+console = false
 device = "default"
 
 [ruuvitags]
@@ -9,7 +9,7 @@ device = "default"
 
 [influxdb]
 enabled = true
-addr = "http://localhost:8086"
+addr = "https://eu-central-1-1.aws.cloud2.influxdata.com"
 bucket = "ruuvitag"
 measurement = "ruuvitag"
 token = "abc123"
@@ -17,9 +17,15 @@ async = true
 batch_size = 20
 flush_interval = "5s"
 
-[gcp]
-credentials = "/home/pi/credentials.json"
-project = "ruuvitag"
-[gcp.pubsub]
+[postgres]
 enabled = true
-topic = "ruuvitag-measurements"
+host = "my-instance-name.eu-central-1.aws.neon.tech"
+port = 5432
+database = "ruuvitag"
+username = "myorg@example.com"
+password = "some_secret_password"
+table = "ruuvitag"
+sslmode = "require"
+
+[postgres.column]
+time = "time"

@@ -11,11 +11,11 @@ Compile and install the `ruuvitag-gollector` binary:
 ```bash
 git clone https://github.com/niktheblak/ruuvitag-gollector.git
 cd ruuvitag-gollector
-make build
-make install
+task build
+task install
 ```
 
-Then copy the example configuration file `configs/example-config.yaml` to `$HOME/.ruuvitag-gollector/config.yaml` or `/etc/ruuvitag-gollector/config.yaml` if you're installing the collector globally.
+Then copy the example configuration file `configs/example-config.toml` to `$HOME/.ruuvitag-gollector/config.toml` or `/etc/ruuvitag-gollector/config.toml` if you're installing the collector globally.
 and fill your preferred configuration values. For reference of possible configuration
 values, run `ruuvitag-gollector -h`.
 
@@ -45,7 +45,7 @@ For a complete configuration example, see [example config](#complete-example-con
 The following exporters are supported for sending measurements:
 
 - InfluxDB
-- PostgreSQL
+- PostgreSQL (and TimescaleDB)
 - Webhook, meaning a URL that accepts an HTTP POST request with the measurement as JSON in the request body
 - AWS DynamoDB
 - AWS SQS
@@ -87,15 +87,19 @@ console = false
 
 [influxdb]
 enabled = true
-addr = "http://localhost:8086"
-database = "ruuvitag"
+addr = "https://eu-central-1-1.aws.cloud2.influxdata.com"
+bucket = "ruuvitag"
 measurement = "ruuvitag"
 token = "abc123"
+async = true
+batch_size = 20
+flush_interval = "5s"
 
 [aws]
 access_key_id = "MYAWSAKKESSKEY"
 secret_access_key = "my+aws+secret+key"
 region = "us-east-2"
+
 [aws.dynamodb]
 enabled = true
 table = "ruuvitag"
@@ -105,8 +109,16 @@ queue.url = "https://us-east-2.queue.amazonaws.com/321667262165/measurements"
 
 [postgres]
 enabled = true
-conn = "postgres://postgres:mysecretpassword@postgres/postgres?sslmode=disable"
-table = "measurements"
+host = "my-instance-name.eu-central-1.aws.neon.tech"
+port = 5432
+database = "ruuvitag"
+username = "myorg@example.com"
+password = "some_secret_password"
+table = "ruuvitag"
+sslmode = "require"
+
+[postgres.column]
+time = "time"
 
 [http]
 enabled = true
