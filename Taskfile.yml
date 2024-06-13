@@ -1,0 +1,37 @@
+version: '3'
+
+vars:
+  DOCKER_IMAGE: ruuvitag-gollector
+  TAGS: influxdb,postgres,gcp,aws,mqtt
+
+tasks:
+  build:
+    dir: '{{.USER_WORKING_DIR}}'
+    cmds:
+      - go build -tags '{{.TAGS}}' -o ruuvitag-gollector
+
+  install:
+    dir: '{{.USER_WORKING_DIR}}'
+    cmds: 
+      - sudo cp ruuvitag-gollector /usr/local/bin
+
+  test:
+    dir: '{{.USER_WORKING_DIR}}'
+    cmds:
+      - go test -tags '{{.TAGS}}' ./...
+
+  fmt:
+    dir: '{{.USER_WORKING_DIR}}'
+    cmds:
+      - go fmt ./...
+
+  build-docker:
+    dir: '{{.USER_WORKING_DIR}}'
+    cmds:
+      - docker build -t ruuvitag-gollector:latest .
+
+  test-docker:
+    dir: '{{.USER_WORKING_DIR}}'
+    deps: [build-docker]
+    cmds:
+      - docker run -it --rm -v '{{.USER_WORKING_DIR}}:/go/src/app' ruuvitag-gollector:latest test -tags '{{.TAGS}}' ./...
