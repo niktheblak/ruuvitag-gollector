@@ -87,8 +87,12 @@ func initConfig() {
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	configErr := viper.ReadInConfig()
+	logLevelCfg := viper.GetString("log.level")
+	if logLevelCfg == "" {
+		logLevelCfg = viper.GetString("loglevel")
+	}
 	var logLevel = new(slog.LevelVar)
-	if err := logLevel.UnmarshalText([]byte(viper.GetString("loglevel"))); err != nil {
+	if err := logLevel.UnmarshalText([]byte(logLevelCfg)); err != nil {
 		fmt.Fprintf(os.Stderr, "Invalid log level: %s\n", err)
 		os.Exit(1)
 	}
