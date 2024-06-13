@@ -60,12 +60,16 @@ func init() {
 	rootCmd.PersistentFlags().String("device", "", "HCL device to use")
 	rootCmd.PersistentFlags().BoolP("console", "c", false, "Print measurements to console")
 	rootCmd.PersistentFlags().String("loglevel", "info", "Log level")
+	rootCmd.PersistentFlags().String("log.level", "info", "Log level")
+	rootCmd.PersistentFlags().String("log.format", "text", "Log level")
 
 	rootCmd.PersistentFlags().Bool("http.enabled", false, "Send measurements as JSON to a HTTP endpoint")
 	rootCmd.PersistentFlags().String("http.addr", "", "HTTP receiver address")
 	rootCmd.PersistentFlags().String("http.token", "", "HTTP receiver authorization token")
 
 	viper.SetDefault("loglevel", "info")
+	viper.SetDefault("log.level", "info")
+	viper.SetDefault("log.format", "text")
 	viper.SetDefault("device", "default")
 }
 
@@ -85,11 +89,21 @@ func initConfig() {
 	configErr := viper.ReadInConfig()
 	var logLevel = new(slog.LevelVar)
 	if err := logLevel.UnmarshalText([]byte(viper.GetString("loglevel"))); err != nil {
-		fmt.Fprintf(os.Stderr, "Error parsing log level: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Invalid log level: %s\n", err)
 		os.Exit(1)
 	}
-	h := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
-	logger = slog.New(h)
+	logFormat := viper.GetString("log.format")
+	var logHandler slog.Handler
+	switch logFormat {
+	case "text":
+		logHandler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
+	case "json":
+		logHandler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
+	default:
+		fmt.Fprintf(os.Stderr, "Invalid log format: %s\n", logFormat)
+		os.Exit(1)
+	}
+	logger = slog.New(logHandler)
 	if configErr != nil {
 		logger.LogAttrs(nil, slog.LevelInfo, "Config file not found, using only command line arguments", slog.String("file", viper.ConfigFileUsed()))
 	} else {
