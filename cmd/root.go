@@ -47,6 +47,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file path")
 	rootCmd.PersistentFlags().StringToString("ruuvitags", nil, "RuuviTag addresses and names to use")
+	rootCmd.PersistentFlags().StringToString("columns", nil, "RuuviTag fields to use and their column names")
 	rootCmd.PersistentFlags().String("device", "", "HCL device to use")
 	rootCmd.PersistentFlags().BoolP("console", "c", false, "Print measurements to console")
 	rootCmd.PersistentFlags().String("loglevel", "info", "Log level")
@@ -113,6 +114,7 @@ func createExporters() error {
 		return fmt.Errorf("at least one RuuviTag address must be specified")
 	}
 	logger.LogAttrs(nil, slog.LevelInfo, "RuuviTags", slog.Any("ruuvitags", ruuviTags))
+	columns := viper.GetStringMapString("columns")
 	peripherals = make(map[string]string)
 	for addr, name := range ruuviTags {
 		peripherals[ble.NewAddr(addr).String()] = name
@@ -123,7 +125,7 @@ func createExporters() error {
 	}
 	if viper.GetBool("influxdb.enabled") {
 		logger.Info("Creating InfluxDB exporter")
-		if err := addInfluxDBExporter(&exporters); err != nil {
+		if err := addInfluxDBExporter(&exporters, columns); err != nil {
 			return fmt.Errorf("failed to create InfluxDB exporter: %w", err)
 		}
 	}
@@ -147,7 +149,7 @@ func createExporters() error {
 	}
 	if viper.GetBool("postgres.enabled") {
 		logger.Info("Creating PostgreSQL exporter")
-		if err := addPostgresExporter(&exporters); err != nil {
+		if err := addPostgresExporter(&exporters, columns); err != nil {
 			return fmt.Errorf("failed to create PostgreSQL exporter: %w", err)
 		}
 	}
