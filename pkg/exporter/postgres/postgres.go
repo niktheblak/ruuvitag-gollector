@@ -57,6 +57,9 @@ func New(ctx context.Context, psqlInfo, table, timeColumn string, logger *slog.L
 	q := fmt.Sprintf(insertTemplate, table, timeColumn)
 	logger.LogAttrs(ctx, slog.LevelDebug, "Preparing insert statement", slog.String("query", psql.TrimQuery(q)))
 	insertStmt, err := db.PrepareContext(ctx, q)
+	if err != nil {
+		return nil, err
+	}
 	return &postgresExporter{
 		db:         db,
 		insertStmt: insertStmt,
