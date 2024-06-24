@@ -9,8 +9,8 @@ import (
 )
 
 var printConfigCmd = &cobra.Command{
-	Use:          "print-config",
-	Short:        "Print configuration and exit",
+	Use:          "config",
+	Short:        "Print active configuration",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if viper.ConfigFileUsed() != "" {
@@ -19,12 +19,14 @@ var printConfigCmd = &cobra.Command{
 		keys := viper.AllKeys()
 		sort.Strings(keys)
 		for _, key := range keys {
-			fmt.Printf("%s = %v\n", key, viper.Get(key))
+			if viper.Get(key) != "" {
+				fmt.Printf("%s = %v\n", key, viper.Get(key))
+			}
 		}
 		return nil
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(printConfigCmd)
+	printCmd.AddCommand(printConfigCmd)
 }
