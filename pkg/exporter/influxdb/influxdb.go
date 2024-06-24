@@ -5,7 +5,6 @@ package influxdb
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"io"
 	"log/slog"
 	"strings"
@@ -21,6 +20,20 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
+var defaultColumns = map[string]string{
+	"temperature":        "temperature",
+	"humidity":           "humidity",
+	"dew_point":          "dew_point",
+	"pressure":           "pressure",
+	"battery_voltage":    "battery_voltage",
+	"tx_power":           "tx_power",
+	"acceleration_x":     "acceleration_x",
+	"acceleration_y":     "acceleration_y",
+	"acceleration_z":     "acceleration_z",
+	"movement_counter":   "movement_counter",
+	"measurement_number": "measurement_number",
+}
+
 type pointWriter interface {
 	WritePoint(ctx context.Context, point *write.Point) error
 }
@@ -30,6 +43,7 @@ type influxdbExporter struct {
 	io.Closer
 	client      influxdb2.Client
 	measurement string
+	columns     map[string]string
 	logger      *slog.Logger
 }
 
@@ -66,18 +80,15 @@ func (e *blockingInfluxdbExporter) Close() error {
 	return err
 }
 
-func New(cfg Config, logger *slog.Logger) (exporter.Exporter, error) {
-	if cfg.Addr == "" {
-		return nil, fmt.Errorf("InfluxDB host must be specified")
+func New(cfg Config) (exporter.Exporter, error) {
+	if err := Validate(cfg); err != nil {
+		return nil, err
 	}
-	if cfg.Bucket == "" {
-		return nil, fmt.Errorf("bucket must be specified")
+	if len(cfg.Columns) == 0 {
+		cfg.Columns = defaultColumns
 	}
-	if cfg.Token == "" {
-		return nil, fmt.Errorf("token must be specified")
-	}
-	if logger == nil {
-		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	if cfg.Logger == nil {
+		cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 	opts := influxdb2.DefaultOptions()
 	opts.SetUseGZip(true)
@@ -97,14 +108,15 @@ func New(cfg Config, logger *slog.Logger) (exporter.Exporter, error) {
 			influxdbExporter: influxdbExporter{
 				client:      client,
 				measurement: cfg.Measurement,
-				logger:      logger,
+				columns:     cfg.Columns,
+				logger:      cfg.Logger,
 			},
 			writeAPI: client.WriteAPI(cfg.Org, bucket),
 		}
 		exp.influxdbExporter.pointWriter = exp
 		exp.Closer = exp
 		exp.writeAPI.SetWriteFailedCallback(func(batch string, error http2.Error, retryAttempts uint) bool {
-			logger.Error("Failed to write batch to InfluxDB", slog.String("batch", batch), slog.String("error", error.Error()), slog.Int("retry attempts", int(retryAttempts)))
+			exp.logger.LogAttrs(nil, slog.LevelError, "Failed to write batch to InfluxDB", slog.String("batch", batch), slog.String("error", error.Error()), slog.Int("retry attempts", int(retryAttempts)))
 			return retryAttempts <= 3
 		})
 		return exp, nil
@@ -113,7 +125,8 @@ func New(cfg Config, logger *slog.Logger) (exporter.Exporter, error) {
 			influxdbExporter: influxdbExporter{
 				client:      client,
 				measurement: cfg.Measurement,
-				logger:      logger,
+				columns:     cfg.Columns,
+				logger:      cfg.Logger,
 			},
 			writeAPIBlocking: client.WriteAPIBlocking(cfg.Org, bucket),
 		}
@@ -128,22 +141,41 @@ func (e *influxdbExporter) Name() string {
 }
 
 func (e *influxdbExporter) Export(ctx context.Context, data sensor.Data) error {
+	fields := make(map[string]interface{})
+	for dc := range defaultColumns {
+		cn, ok := e.columns[dc]
+		if !ok {
+			continue
+		}
+		switch dc {
+		case "temperature":
+			fields[cn] = data.Temperature
+		case "humidity":
+			fields[cn] = data.Humidity
+		case "dew_point":
+			fields[cn] = data.DewPoint
+		case "pressure":
+			fields[cn] = data.Pressure
+		case "battery_voltage":
+			fields[cn] = data.BatteryVoltage
+		case "tx_power":
+			fields[cn] = data.TxPower
+		case "acceleration_x":
+			fields[cn] = data.AccelerationX
+		case "acceleration_y":
+			fields[cn] = data.AccelerationY
+		case "acceleration_z":
+			fields[cn] = data.AccelerationZ
+		case "movement_counter":
+			fields[cn] = data.MovementCounter
+		case "measurement_number":
+			fields[cn] = data.MeasurementNumber
+		}
+	}
 	point := influxdb2.NewPoint(e.measurement, map[string]string{
 		"mac":  strings.ToUpper(data.Addr),
 		"name": data.Name,
-	}, map[string]interface{}{
-		"temperature":        data.Temperature,
-		"humidity":           data.Humidity,
-		"dew_point":          data.DewPoint,
-		"pressure":           data.Pressure,
-		"battery_voltage":    data.BatteryVoltage,
-		"tx_power":           data.TxPower,
-		"acceleration_x":     data.AccelerationX,
-		"acceleration_y":     data.AccelerationY,
-		"acceleration_z":     data.AccelerationZ,
-		"movement_counter":   data.MovementCounter,
-		"measurement_number": data.MeasurementNumber,
-	}, data.Timestamp)
+	}, fields, data.Timestamp)
 	return e.WritePoint(ctx, point)
 }
 

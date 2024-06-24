@@ -6,7 +6,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"io"
 	"log/slog"
 
@@ -18,43 +17,37 @@ import (
 	_ "github.com/lib/pq"
 )
 
-const (
-	insertTemplate = `INSERT INTO %s (
-        %s,
-        mac,
-        name,
-        temperature,
-        humidity,
-        pressure,
-        acceleration_x,
-        acceleration_y,
-        acceleration_z,
-        movement_counter,
-        measurement_number,
-        dew_point,
-        battery_voltage,
-        tx_power
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`
-)
+type Config struct {
+	PSQLInfo string
+	Table    string
+	Columns  map[string]string
+	Logger   *slog.Logger
+}
 
 type postgresExporter struct {
 	db         *sql.DB
 	insertStmt *sql.Stmt
 	table      string
+	columns    map[string]string
 	logger     *slog.Logger
 }
 
-func New(ctx context.Context, psqlInfo, table, timeColumn string, logger *slog.Logger) (exporter.Exporter, error) {
-	if logger == nil {
-		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+func New(ctx context.Context, cfg Config) (exporter.Exporter, error) {
+	if cfg.Logger == nil {
+		cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
-	db, err := sql.Open("postgres", psqlInfo)
+	db, err := sql.Open("postgres", cfg.PSQLInfo)
 	if err != nil {
 		return nil, err
 	}
-	q := fmt.Sprintf(insertTemplate, table, timeColumn)
-	logger.LogAttrs(ctx, slog.LevelDebug, "Preparing insert statement", slog.String("query", psql.TrimQuery(q)))
+	if len(cfg.Columns) == 0 {
+		cfg.Columns = psql.DefaultColumns
+	}
+	q, err := psql.RenderInsertQuery(cfg.Table, cfg.Columns)
+	if err != nil {
+		return nil, err
+	}
+	cfg.Logger.LogAttrs(ctx, slog.LevelDebug, "Preparing insert statement", slog.String("query", q))
 	insertStmt, err := db.PrepareContext(ctx, q)
 	if err != nil {
 		return nil, err
@@ -62,8 +55,9 @@ func New(ctx context.Context, psqlInfo, table, timeColumn string, logger *slog.L
 	return &postgresExporter{
 		db:         db,
 		insertStmt: insertStmt,
-		table:      table,
-		logger:     logger,
+		table:      cfg.Table,
+		columns:    cfg.Columns,
+		logger:     cfg.Logger,
 	}, nil
 }
 
@@ -72,23 +66,7 @@ func (t *postgresExporter) Name() string {
 }
 
 func (t *postgresExporter) Export(ctx context.Context, data sensor.Data) error {
-	_, err := t.insertStmt.ExecContext(
-		ctx,
-		data.Timestamp,
-		data.Addr,
-		data.Name,
-		data.Temperature,
-		data.Humidity,
-		data.Pressure,
-		data.AccelerationX,
-		data.AccelerationY,
-		data.AccelerationZ,
-		data.MovementCounter,
-		data.MeasurementNumber,
-		data.DewPoint,
-		data.BatteryVoltage,
-		data.TxPower,
-	)
+	_, err := t.insertStmt.ExecContext(ctx, psql.BuildQuery(t.columns, data)...)
 	return err
 }
 
