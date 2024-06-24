@@ -28,19 +28,9 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:               "ruuvitag-gollector",
-	Short:             "Collects measurements from RuuviTag sensors",
-	SilenceUsage:      true,
-	PersistentPreRunE: preRun,
-	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-		logger.Info("Shutting down")
-		for _, exp := range exporters {
-			if err := exp.Close(); err != nil {
-				return err
-			}
-		}
-		return nil
-	},
+	Use:          "ruuvitag-gollector",
+	Short:        "Collects measurements from RuuviTag sensors",
+	SilenceUsage: true,
 }
 
 func Execute() {
@@ -86,7 +76,7 @@ func initConfig() {
 	}
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	configErr := viper.ReadInConfig()
+	viper.ReadInConfig()
 	logLevelCfg := viper.GetString("log.level")
 	if logLevelCfg == "" {
 		logLevelCfg = viper.GetString("loglevel")
@@ -108,14 +98,13 @@ func initConfig() {
 		os.Exit(1)
 	}
 	logger = slog.New(logHandler)
-	if configErr != nil {
-		logger.LogAttrs(nil, slog.LevelInfo, "Config file not found, using only command line arguments", slog.String("file", viper.ConfigFileUsed()))
-	} else {
-		logger.LogAttrs(nil, slog.LevelInfo, "Read config from file", slog.String("file", viper.ConfigFileUsed()))
-	}
 }
 
-func preRun(_ *cobra.Command, _ []string) error {
+func start() error {
+	if viper.ConfigFileUsed() != "" {
+		logger.LogAttrs(nil, slog.LevelInfo, "Read config from file", slog.String("file", viper.ConfigFileUsed()))
+	}
+	logger.Info("Starting ruuvitag-gollector")
 	creds := viper.GetString("gcp.credentials")
 	if creds != "" {
 		if err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", creds); err != nil {
@@ -183,5 +172,15 @@ func preRun(_ *cobra.Command, _ []string) error {
 	}
 	device = viper.GetString("device")
 	logger.Info("Using device", "device", device)
+	return nil
+}
+
+func stop() error {
+	logger.Info("Stopping ruuvitag-gollector")
+	for _, exp := range exporters {
+		if err := exp.Close(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
