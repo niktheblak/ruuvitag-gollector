@@ -24,7 +24,7 @@ func init() {
 	rootCmd.PersistentFlags().Duration("influxdb.flush_interval", 0, "InfluxDB client flush interval")
 }
 
-func addInfluxDBExporter(exporters *[]exporter.Exporter) error {
+func addInfluxDBExporter(exporters *[]exporter.Exporter, columns map[string]string) error {
 	addr := viper.GetString("influxdb.addr")
 	if addr == "" {
 		return fmt.Errorf("InfluxDB address must be specified")
@@ -38,9 +38,11 @@ func addInfluxDBExporter(exporters *[]exporter.Exporter) error {
 		Async:         viper.GetBool("influxdb.async"),
 		BatchSize:     viper.GetInt("influxdb.batch_size"),
 		FlushInterval: viper.GetDuration("influxdb.flush_interval"),
+		Columns:       columns,
+		Logger:        logger,
 	}
-	logger.LogAttrs(nil, slog.LevelInfo, "Connecting to InfluxDB", slog.String("addr", cfg.Addr), slog.String("org", cfg.Org), slog.String("bucket", cfg.Bucket), slog.String("measurement", cfg.Measurement), slog.Bool("async", cfg.Async), slog.Int("batch_size", cfg.BatchSize), slog.Duration("flush_interval", cfg.FlushInterval))
-	influx, err := influxdb.New(cfg, logger)
+	logger.LogAttrs(nil, slog.LevelInfo, "Connecting to InfluxDB", slog.String("addr", cfg.Addr), slog.String("org", cfg.Org), slog.String("bucket", cfg.Bucket), slog.String("measurement", cfg.Measurement), slog.Bool("async", cfg.Async), slog.Int("batch_size", cfg.BatchSize), slog.Duration("flush_interval", cfg.FlushInterval), slog.Any("columns", columns))
+	influx, err := influxdb.New(cfg)
 	if err != nil {
 		return err
 	}

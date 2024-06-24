@@ -5,24 +5,54 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"text/template"
 
+	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
+var DefaultColumnNames = []string{
+	"time",
+	"mac",
+	"name",
+	"temperature",
+	"humidity",
+	"pressure",
+	"acceleration_x",
+	"acceleration_y",
+	"acceleration_z",
+	"movement_counter",
+	"measurement_number",
+	"dew_point",
+	"battery_voltage",
+	"tx_power",
+}
+
+var DefaultColumns = map[string]string{
+	"time":               "time",
+	"mac":                "mac",
+	"name":               "name",
+	"temperature":        "temperature",
+	"humidity":           "humidity",
+	"pressure":           "pressure",
+	"acceleration_x":     "acceleration_x",
+	"acceleration_y":     "acceleration_y",
+	"acceleration_z":     "acceleration_z",
+	"movement_counter":   "movement_counter",
+	"measurement_number": "measurement_number",
+	"dew_point":          "dew_point",
+	"battery_voltage":    "battery_voltage",
+	"tx_power":           "tx_power",
+}
+
 var (
-	passwordRegexp   = regexp.MustCompile(`password=\S+\s`)
-	whitespaceRegexp = regexp.MustCompile(`\s+`)
+	passwordRegexp = regexp.MustCompile(`password=\S+\s`)
 )
 
 // RemovePassword removes password from a psqlInfo style string
 func RemovePassword(psqlInfo string) string {
 	return passwordRegexp.ReplaceAllString(psqlInfo, "password=[redacted] ")
-}
-
-// TrimQuery replaces all whitespace (newlines and repeated spaces) from a string with one space
-func TrimQuery(q string) string {
-	return strings.TrimSpace(whitespaceRegexp.ReplaceAllString(q, " "))
 }
 
 func CreatePsqlInfoString(vpr *viper.Viper, prefix string) (psqlInfo string, err error) {
@@ -103,4 +133,77 @@ func AddPsqlFlags(fs *pflag.FlagSet, vpr *viper.Viper, prefix string) {
 	vpr.SetDefault(fmt.Sprintf("%s.sslmode", prefix), "disable")
 	vpr.SetDefault(fmt.Sprintf("%s.column.time", prefix), "time")
 	vpr.SetDefault(fmt.Sprintf("%s.type", prefix), "postgres")
+}
+
+func RenderInsertQuery(table string, columns map[string]string) (string, error) {
+	templateBuilder := new(strings.Builder)
+	templateBuilder.WriteString("INSERT INTO ")
+	templateBuilder.WriteString(table)
+	templateBuilder.WriteString("(")
+	var includedColumns []string
+	for _, c := range DefaultColumnNames {
+		_, ok := columns[c]
+		if ok {
+			includedColumns = append(includedColumns, fmt.Sprintf("{{.%s}}", c))
+		}
+	}
+	templateBuilder.WriteString(strings.Join(includedColumns, ","))
+	templateBuilder.WriteString(")")
+	tmpl, err := template.New("insertQuery").Parse(templateBuilder.String())
+	if err != nil {
+		return "", err
+	}
+	builder := new(strings.Builder)
+	if err := tmpl.Execute(builder, columns); err != nil {
+		return "", err
+	}
+	var placeholders []string
+	builder.WriteString(" VALUES (")
+	for i := 1; i < len(columns)+1; i++ {
+		placeholders = append(placeholders, fmt.Sprintf("$%d", i))
+	}
+	builder.WriteString(strings.Join(placeholders, ","))
+	builder.WriteString(")")
+	return builder.String(), nil
+}
+
+func BuildQuery(columns map[string]string, data sensor.Data) []any {
+	var args []any
+	for _, c := range DefaultColumnNames {
+		_, ok := columns[c]
+		if !ok {
+			continue
+		}
+		switch c {
+		case "time":
+			args = append(args, data.Timestamp)
+		case "mac":
+			args = append(args, data.Addr)
+		case "name":
+			args = append(args, data.Name)
+		case "temperature":
+			args = append(args, data.Temperature)
+		case "humidity":
+			args = append(args, data.Humidity)
+		case "pressure":
+			args = append(args, data.Pressure)
+		case "acceleration_x":
+			args = append(args, data.AccelerationX)
+		case "acceleration_y":
+			args = append(args, data.AccelerationY)
+		case "acceleration_z":
+			args = append(args, data.AccelerationZ)
+		case "movement_counter":
+			args = append(args, data.MovementCounter)
+		case "measurement_number":
+			args = append(args, data.MeasurementNumber)
+		case "dew_point":
+			args = append(args, data.DewPoint)
+		case "battery_voltage":
+			args = append(args, data.BatteryVoltage)
+		case "tx_power":
+			args = append(args, data.TxPower)
+		}
+	}
+	return args
 }
