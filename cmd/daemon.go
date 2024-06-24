@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"os"
 	"os/signal"
 	"time"
@@ -16,24 +15,21 @@ import (
 var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "Collect measurements from specified RuuviTags continuously",
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		if err = start(); err != nil {
-			return
-		}
-		defer func() {
-			err = errors.Join(err, stop())
-		}()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Info("Starting ruuvitag-gollector")
 		interval := viper.GetDuration("interval")
 		if interval > 0 {
 			scn := scanner.NewInterval(logger, peripherals)
 			scn.Exporters = exporters
-			err = runWithInterval(scn, interval)
+			return runWithInterval(scn, interval)
 		} else {
 			scn := scanner.NewContinuous(logger, peripherals)
 			scn.Exporters = exporters
-			err = runContinuously(scn)
+			return runContinuously(scn)
 		}
-		return
+	},
+	PostRun: func(cmd *cobra.Command, args []string) {
+		logger.Info("Stopping ruuvitag-gollector")
 	},
 }
 

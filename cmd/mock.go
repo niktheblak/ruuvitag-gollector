@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"time"
 
@@ -14,17 +13,9 @@ import (
 var mockCmd = &cobra.Command{
 	Use:   "mock",
 	Short: "Send mock data to configured exporters",
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		if err = start(); err != nil {
-			return
-		}
-		defer func() {
-			err = errors.Join(err, stop())
-		}()
-		if err = sendMockMeasurement(); err != nil {
-			logger.Error("Failed to export measurement", "error", err)
-		}
-		return
+	RunE: func(cmd *cobra.Command, args []string) error {
+		sendMockMeasurement()
+		return nil
 	},
 }
 
@@ -32,7 +23,7 @@ func init() {
 	rootCmd.AddCommand(mockCmd)
 }
 
-func sendMockMeasurement() error {
+func sendMockMeasurement() {
 	ts := time.Now()
 	var measurements []sensor.Data
 	for addr, name := range peripherals {
@@ -43,13 +34,11 @@ func sendMockMeasurement() error {
 	for _, exporter := range exporters {
 		logger.LogAttrs(ctx, slog.LevelInfo, "Sending mock measurement to exporter", slog.String("exporter", exporter.Name()))
 		for _, data := range measurements {
-			logger.LogAttrs(ctx, slog.LevelDebug, "Sending measurement", slog.String("exporter", exporter.Name()), slog.Any("measurement", data))
 			if err := exporter.Export(ctx, data); err != nil {
-				return err
+				logger.LogAttrs(ctx, slog.LevelError, "Failed to export measurement", slog.Any("error", err))
 			}
 		}
 	}
-	return nil
 }
 
 func generateMockData(addr, name string, ts time.Time) sensor.Data {

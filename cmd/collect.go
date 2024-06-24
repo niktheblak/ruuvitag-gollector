@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -16,17 +15,11 @@ import (
 var collectCmd = &cobra.Command{
 	Use:   "collect",
 	Short: "Collect measurements from all specified RuuviTags once",
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		if err = start(); err != nil {
-			return
-		}
-		defer func() {
-			err = errors.Join(err, stop())
-		}()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Info("Starting ruuvitag-gollector")
 		scn := scanner.NewOnce(logger, peripherals)
 		scn.Exporters = exporters
-		err = runOnce(scn)
-		return
+		return runOnce(scn)
 	},
 }
 
@@ -50,6 +43,7 @@ func runOnce(scn *scanner.OnceScanner) error {
 	if err := scn.Scan(ctx); err != nil {
 		return fmt.Errorf("failed to scan: %w", err)
 	}
+	logger.Info("Stopping scanner")
 	scn.Close()
 	return nil
 }
