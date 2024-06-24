@@ -132,34 +132,41 @@ func preRun(_ *cobra.Command, _ []string) error {
 		peripherals[ble.NewAddr(addr).String()] = name
 	}
 	if viper.GetBool("console") {
+		logger.Info("Creating console exporter")
 		exporters = append(exporters, console.Exporter{})
 	}
 	if viper.GetBool("influxdb.enabled") {
+		logger.Info("Creating InfluxDB exporter")
 		if err := addInfluxDBExporter(&exporters); err != nil {
 			return fmt.Errorf("failed to create InfluxDB exporter: %w", err)
 		}
 	}
 	if viper.GetBool("gcp.pubsub.enabled") {
+		logger.Info("Creating Google Pub/Sub exporter")
 		if err := addPubSubExporter(&exporters); err != nil {
 			return fmt.Errorf("failed to create Google Pub/Sub exporter: %w", err)
 		}
 	}
 	if viper.GetBool("aws.dynamodb.enabled") {
+		logger.Info("Creating AWS DynamoDB exporter")
 		if err := addDynamoDBExporter(&exporters); err != nil {
 			return fmt.Errorf("failed to create AWS DynamoDB exporter: %w", err)
 		}
 	}
 	if viper.GetBool("aws.sqs.enabled") {
+		logger.Info("Creating AWS SQS  exporter")
 		if err := addSQSExporter(&exporters); err != nil {
 			return fmt.Errorf("failed to create AWS SQS exporter: %w", err)
 		}
 	}
 	if viper.GetBool("postgres.enabled") {
+		logger.Info("Creating PostgreSQL exporter")
 		if err := addPostgresExporter(&exporters); err != nil {
 			return fmt.Errorf("failed to create PostgreSQL exporter: %w", err)
 		}
 	}
 	if viper.GetBool("http.enabled") {
+		logger.Info("Creating HTTP exporter")
 		addr := viper.GetString("http.addr")
 		token := viper.GetString("http.token")
 		exp, err := http.New(addr, token, 10*time.Second)
@@ -169,10 +176,12 @@ func preRun(_ *cobra.Command, _ []string) error {
 		exporters = append(exporters, exp)
 	}
 	if viper.GetBool("mqtt.enabled") {
+		logger.Info("Creating MQTT exporter")
 		if err := addMQTTExporter(&exporters); err != nil {
 			return fmt.Errorf("failed to create MQTT exporter: %w", err)
 		}
 	}
 	device = viper.GetString("device")
+	logger.Info("Using device", "device", device)
 	return nil
 }
