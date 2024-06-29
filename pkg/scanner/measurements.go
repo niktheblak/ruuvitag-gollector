@@ -2,6 +2,8 @@ package scanner
 
 import (
 	"context"
+	"errors"
+	"io"
 	"log/slog"
 
 	"github.com/go-ble/ble"
@@ -22,7 +24,7 @@ type Measurements struct {
 // to abort the scan.
 func (s *Measurements) Channel(ctx context.Context) chan sensor.Data {
 	if s.Logger == nil {
-		s.Logger = slog.Default()
+		s.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 	ch := make(chan sensor.Data, BufferSize)
 	go func() {
@@ -37,10 +39,10 @@ func (s *Measurements) Channel(ctx context.Context) chan sensor.Data {
 			sensorData.Name = s.Peripherals[addr]
 			ch <- sensorData
 		}, Filter(s.Peripherals))
-		switch err {
-		case context.Canceled:
-		case context.DeadlineExceeded:
-		case nil:
+		switch {
+		case errors.Is(err, context.Canceled):
+		case errors.Is(err, context.DeadlineExceeded):
+		case err == nil:
 		default:
 			s.Logger.LogAttrs(ctx, slog.LevelError, "Scan failed", slog.Any("error", err))
 		}

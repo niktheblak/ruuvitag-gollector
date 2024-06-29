@@ -16,24 +16,25 @@ import (
 var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "Collect measurements from specified RuuviTags continuously",
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		if err = start(); err != nil {
-			return
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := createExporters(); err != nil {
+			return err
 		}
-		defer func() {
-			err = errors.Join(err, stop())
-		}()
 		interval := viper.GetDuration("interval")
-		if interval > 0 {
-			scn := scanner.NewInterval(logger, peripherals)
-			scn.Exporters = exporters
-			err = runWithInterval(scn, interval)
+		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer cancel()
+		var scn scanner.Scanner
+		var err error
+		if interval == 0 {
+			scn, err = scanner.NewContinuous(device, peripherals, exporters, logger)
 		} else {
-			scn := scanner.NewContinuous(logger, peripherals)
-			scn.Exporters = exporters
-			err = runContinuously(scn)
+			scn, err = scanner.NewInterval(device, peripherals, exporters, logger)
 		}
-		return
+		if err != nil {
+			return err
+		}
+		err = scn.Scan(ctx, interval)
+		return errors.Join(err, scn.Close(), closeExporters())
 	},
 }
 
@@ -43,36 +44,4 @@ func init() {
 	cobra.CheckErr(viper.BindPFlags(daemonCmd.Flags()))
 
 	rootCmd.AddCommand(daemonCmd)
-}
-
-func runWithInterval(scn *scanner.Scanner, scanInterval time.Duration) error {
-	if err := scn.Init(device); err != nil {
-		return err
-	}
-	ctx := context.Background()
-	scn.Scan(ctx, scanInterval)
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
-	select {
-	case <-interrupt:
-	case <-scn.Quit:
-	}
-	scn.Stop()
-	return nil
-}
-
-func runContinuously(scn *scanner.ContinuousScanner) error {
-	if err := scn.Init(device); err != nil {
-		return err
-	}
-	ctx := context.Background()
-	scn.Scan(ctx)
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
-	select {
-	case <-interrupt:
-	case <-scn.Quit:
-	}
-	scn.Stop()
-	return nil
 }

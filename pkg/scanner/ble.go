@@ -13,6 +13,6 @@ type BLEScanner interface {
 type defaultBLEScanner struct {
 }
 
-func (s defaultBLEScanner) Scan(ctx context.Context, allowDup bool, h ble.AdvHandler, f ble.AdvFilter) error {
+func (s *defaultBLEScanner) Scan(ctx context.Context, allowDup bool, h ble.AdvHandler, f ble.AdvFilter) error {
 	return ble.Scan(ctx, allowDup, h, f)
 }

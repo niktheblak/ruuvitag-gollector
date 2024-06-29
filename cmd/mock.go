@@ -14,17 +14,12 @@ import (
 var mockCmd = &cobra.Command{
 	Use:   "mock",
 	Short: "Send mock data to configured exporters",
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		if err = start(); err != nil {
-			return
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := createExporters(); err != nil {
+			return err
 		}
-		defer func() {
-			err = errors.Join(err, stop())
-		}()
-		if err = sendMockMeasurement(); err != nil {
-			logger.Error("Failed to export measurement", "error", err)
-		}
-		return
+		err := sendMockMeasurement()
+		return errors.Join(err, closeExporters())
 	},
 }
 
@@ -43,7 +38,7 @@ func sendMockMeasurement() error {
 	for _, exporter := range exporters {
 		logger.LogAttrs(ctx, slog.LevelInfo, "Sending mock measurement to exporter", slog.String("exporter", exporter.Name()))
 		for _, data := range measurements {
-			logger.LogAttrs(ctx, slog.LevelDebug, "Sending measurement", slog.String("exporter", exporter.Name()), slog.Any("measurement", data))
+			logger.LogAttrs(ctx, slog.LevelDebug, "Exporting measurement", slog.String("exporter", exporter.Name()), slog.Any("data", data))
 			if err := exporter.Export(ctx, data); err != nil {
 				return err
 			}

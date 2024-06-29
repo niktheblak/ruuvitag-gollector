@@ -12,22 +12,33 @@ import (
 )
 
 func TestScanContinuously(t *testing.T) {
-	scn := NewContinuous(logger, peripherals)
-	defer scn.Close()
 	exp := new(mockExporter)
-	scn.Exporters = []exporter.Exporter{exp}
 	device := mockDevice{}
-	bleScanner := NewMockBLEScanner(testAdvertisement)
-	scn.meas.BLE = bleScanner
-	scn.dev = mockDeviceCreator{device: device}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	err := scn.Init("default")
+	scn, err := NewContinuousWithOpts(Config{
+		Exporters:     []exporter.Exporter{exp},
+		DeviceName:    "default",
+		BLEScanner:    NewMockBLEScanner(testAdvertisement),
+		Peripherals:   peripherals,
+		DeviceCreator: mockDeviceCreator{device},
+		Logger:        logger,
+	})
 	require.NoError(t, err)
-	scn.Scan(ctx)
+	defer scn.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	require.NoError(t, err)
+	errs := make(chan error, 1)
+	go func() {
+		if err := scn.Scan(ctx, 0); err != nil {
+			errs <- err
+		}
+		close(errs)
+	}()
 	// Wait a bit for messages to appear in the measurements channel
-	time.Sleep(100 * time.Millisecond)
-	scn.Stop()
+	time.Sleep(2 * time.Second)
+	cancel()
+	require.NoError(t, <-errs)
+	err = scn.Close()
+	require.NoError(t, err)
 	require.NotEmpty(t, exp.events)
 	e := exp.events[0]
 	assert.Equal(t, "Test", e.Name)

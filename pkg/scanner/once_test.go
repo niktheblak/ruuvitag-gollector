@@ -12,20 +12,23 @@ import (
 )
 
 func TestScanOnce(t *testing.T) {
-	scn := NewOnce(logger, peripherals)
 	exp := new(mockExporter)
-	scn.Exporters = []exporter.Exporter{exp}
 	device := mockDevice{}
-	scn.meas.BLE = NewMockBLEScanner(testAdvertisement)
-	scn.dev = mockDeviceCreator{device: device}
-	err := scn.Init("default")
+	scn, err := NewOnceWithOpts(Config{
+		Exporters:     []exporter.Exporter{exp},
+		DeviceName:    "default",
+		BLEScanner:    NewMockBLEScanner(testAdvertisement),
+		Peripherals:   peripherals,
+		DeviceCreator: mockDeviceCreator{device},
+		Logger:        logger,
+	})
 	require.NoError(t, err)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	err = scn.Scan(ctx)
+	err = scn.Scan(ctx, 0)
 	require.NoError(t, err)
-	// Wait a bit for messages to appear in the measurements channel
-	time.Sleep(100 * time.Millisecond)
+	cancel()
+	err = scn.Close()
+	require.NoError(t, err)
 	assert.NotEmpty(t, exp.events)
 	e := exp.events[0]
 	assert.Equal(t, "Test", e.Name)

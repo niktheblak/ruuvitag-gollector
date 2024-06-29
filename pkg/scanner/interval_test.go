@@ -63,16 +63,12 @@ func TestScanWithInterval(t *testing.T) {
 		testAddr2: "Upstairs",
 		testAddr3: "Downstairs",
 	}
-	scn := NewInterval(logger, peripherals)
-	defer scn.Close()
 	exp := new(mockExporter)
-	scn.Exporters = []exporter.Exporter{exp}
-	device := mockDevice{}
 	buf := new(bytes.Buffer)
 	if err := binary.Write(buf, binary.BigEndian, testData); err != nil {
 		panic(err)
 	}
-	scn.meas.BLE = NewMockBLEScanner(
+	bleScanner := NewMockBLEScanner(
 		mockAdvertisement{
 			addr:             testAddr1,
 			manufacturerData: buf.Bytes(),
@@ -86,15 +82,29 @@ func TestScanWithInterval(t *testing.T) {
 			manufacturerData: buf.Bytes(),
 		},
 	)
-	scn.dev = mockDeviceCreator{device: device}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	err := scn.Init("default")
+	device := mockDevice{}
+	scn, err := NewIntervalWithOpts(Config{
+		Exporters:     []exporter.Exporter{exp},
+		DeviceName:    "default",
+		BLEScanner:    bleScanner,
+		Peripherals:   peripherals,
+		DeviceCreator: mockDeviceCreator{device: device},
+		Logger:        logger,
+	})
 	require.NoError(t, err)
-	scn.Scan(ctx, 100*time.Millisecond)
+	defer scn.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	errs := make(chan error, 1)
+	go func() {
+		if err := scn.Scan(ctx, 100*time.Millisecond); err != nil {
+			errs <- err
+		}
+		close(errs)
+	}()
 	// Wait a bit for messages to appear in the measurements channel
 	time.Sleep(2 * time.Second)
-	scn.Stop()
+	cancel()
+	require.NoError(t, <-errs)
 	require.Len(t, exp.events, 3)
 	e := exp.events[0]
 	assert.Equal(t, "Backyard", e.Name)

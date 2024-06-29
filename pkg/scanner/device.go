@@ -12,7 +12,7 @@ type DeviceCreator interface {
 type defaultDeviceCreator struct {
 }
 
-func (c defaultDeviceCreator) NewDevice(impl string) (ble.Device, error) {
+func (c *defaultDeviceCreator) NewDevice(impl string) (ble.Device, error) {
 	d, err := dev.NewDevice(impl)
 	if err != nil {
 		return nil, err

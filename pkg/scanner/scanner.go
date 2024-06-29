@@ -1,0 +1,111 @@
+package scanner
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"log/slog"
+	"sync"
+	"time"
+
+	"github.com/go-ble/ble"
+	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
+
+	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
+)
+
+type Config struct {
+	Exporters     []exporter.Exporter
+	DeviceName    string
+	BLEScanner    BLEScanner
+	Peripherals   map[string]string
+	DeviceCreator DeviceCreator
+	Logger        *slog.Logger
+}
+
+type Scanner interface {
+	io.Closer
+	Scan(ctx context.Context, interval time.Duration) error
+}
+
+type scanner struct {
+	exporters   []exporter.Exporter
+	device      ble.Device
+	peripherals map[string]string
+	dev         DeviceCreator
+	meas        *Measurements
+	logger      *slog.Logger
+}
+
+func (s *scanner) init(device string) error {
+	d, err := s.dev.NewDevice(device)
+	if err != nil {
+		return fmt.Errorf("failed to initialize device %s: %w", device, err)
+	}
+	s.device = d
+	if len(s.peripherals) > 0 {
+		s.logger.LogAttrs(nil, slog.LevelInfo, "Reading from peripherals", slog.Any("peripherals", s.peripherals))
+	} else {
+		s.logger.Info("Reading from all nearby BLE peripherals")
+	}
+	return nil
+}
+
+func (s *scanner) Close() error {
+	if s.device != nil {
+		err := s.device.Stop()
+		s.device = nil
+		return err
+	}
+	return nil
+}
+
+func (s *scanner) doExport(ctx context.Context, measurements chan sensor.Data) {
+	seenPeripherals := make(map[string]bool)
+	for {
+		select {
+		case m, ok := <-measurements:
+			if !ok {
+				return
+			}
+			seenPeripherals[m.Addr] = true
+			if err := s.export(ctx, m); err != nil {
+				s.logger.LogAttrs(ctx, slog.LevelError, "Failed to report measurement", slog.Any("error", err))
+			}
+			if len(s.peripherals) > 0 && ContainsKeys(s.peripherals, seenPeripherals) {
+				return
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (s *scanner) export(ctx context.Context, m sensor.Data) error {
+	if len(s.exporters) == 0 {
+		return fmt.Errorf("no exporters available")
+	}
+	s.logger.LogAttrs(ctx, slog.LevelInfo, "Exporting measurement", slog.Any("measurement", m))
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	wg := new(sync.WaitGroup)
+	wg.Add(len(s.exporters))
+	errs := make(chan error, len(s.exporters))
+	for _, e := range s.exporters {
+		go func() {
+			s.logger.LogAttrs(ctx, slog.LevelDebug, "Exporting measurement", slog.String("exporter", e.Name()))
+			if err := e.Export(ctx, m); err != nil {
+				errs <- err
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	close(errs)
+	var allErrs []error
+	for e := range errs {
+		allErrs = append(allErrs, e)
+	}
+	return errors.Join(allErrs...)
+}

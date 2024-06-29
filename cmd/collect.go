@@ -16,17 +16,18 @@ import (
 var collectCmd = &cobra.Command{
 	Use:   "collect",
 	Short: "Collect measurements from all specified RuuviTags once",
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		if err = start(); err != nil {
-			return
+	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.Info("Starting ruuvitag-gollector")
+		if err := createExporters(); err != nil {
+			return err
 		}
-		defer func() {
-			err = errors.Join(err, stop())
-		}()
-		scn := scanner.NewOnce(logger, peripherals)
-		scn.Exporters = exporters
+		scn, err := scanner.NewOnce(device, peripherals, exporters, logger)
+		if err != nil {
+			return err
+		}
 		err = runOnce(scn)
-		return
+		logger.Info("Stopping ruuvitag-gollector")
+		return errors.Join(err, closeExporters())
 	},
 }
 
@@ -34,22 +35,14 @@ func init() {
 	rootCmd.AddCommand(collectCmd)
 }
 
-func runOnce(scn *scanner.OnceScanner) error {
-	if err := scn.Init(device); err != nil {
-		return err
-	}
+func runOnce(scn scanner.Scanner) error {
 	logger.Info("Scanning once")
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
-	go func() {
-		<-interrupt
-		cancel()
-	}()
-	if err := scn.Scan(ctx); err != nil {
+	ctx, timeoutCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer timeoutCancel()
+	ctx, sigIntCancel := signal.NotifyContext(ctx, os.Interrupt)
+	defer sigIntCancel()
+	if err := scn.Scan(ctx, 0); err != nil {
 		return fmt.Errorf("failed to scan: %w", err)
 	}
-	scn.Close()
-	return nil
+	return scn.Close()
 }

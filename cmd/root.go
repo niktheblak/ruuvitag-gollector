@@ -57,7 +57,6 @@ func init() {
 	rootCmd.PersistentFlags().String("http.addr", "", "HTTP receiver address")
 	rootCmd.PersistentFlags().String("http.token", "", "HTTP receiver authorization token")
 
-	viper.SetDefault("loglevel", "info")
 	viper.SetDefault("log.level", "info")
 	viper.SetDefault("log.format", "text")
 	viper.SetDefault("device", "default")
@@ -76,11 +75,10 @@ func initConfig() {
 	}
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.ReadInConfig()
-	logLevelCfg := viper.GetString("log.level")
-	if logLevelCfg == "" {
-		logLevelCfg = viper.GetString("loglevel")
+	if err := viper.ReadInConfig(); err != nil {
+		// configuration file does not exist; only use CLI args and env
 	}
+	logLevelCfg := viper.GetString("log.level")
 	var logLevel = new(slog.LevelVar)
 	if err := logLevel.UnmarshalText([]byte(logLevelCfg)); err != nil {
 		fmt.Fprintf(os.Stderr, "Invalid log level: %s\n", err)
@@ -100,11 +98,10 @@ func initConfig() {
 	logger = slog.New(logHandler)
 }
 
-func start() error {
+func createExporters() error {
 	if viper.ConfigFileUsed() != "" {
 		logger.LogAttrs(nil, slog.LevelInfo, "Read config from file", slog.String("file", viper.ConfigFileUsed()))
 	}
-	logger.Info("Starting ruuvitag-gollector")
 	creds := viper.GetString("gcp.credentials")
 	if creds != "" {
 		if err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", creds); err != nil {
@@ -175,12 +172,12 @@ func start() error {
 	return nil
 }
 
-func stop() error {
-	logger.Info("Stopping ruuvitag-gollector")
+func closeExporters() error {
+	var errs []error
 	for _, exp := range exporters {
 		if err := exp.Close(); err != nil {
-			return err
+			errs = append(errs, err)
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
