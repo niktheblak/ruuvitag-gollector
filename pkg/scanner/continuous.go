@@ -23,9 +23,9 @@ func NewContinuous(device string, peripherals map[string]string, exporters []exp
 	return NewContinuousWithOpts(Config{
 		Exporters:     exporters,
 		DeviceName:    device,
-		BLEScanner:    &defaultBLEScanner{},
+		BLEScanner:    new(GoBLEScanner),
 		Peripherals:   peripherals,
-		DeviceCreator: &defaultDeviceCreator{},
+		DeviceCreator: new(GoBLEDeviceCreator),
 		Logger:        logger,
 	})
 }

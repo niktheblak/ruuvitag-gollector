@@ -21,9 +21,9 @@ func NewInterval(device string, peripherals map[string]string, exporters []expor
 	return NewContinuousWithOpts(Config{
 		Exporters:     exporters,
 		DeviceName:    device,
-		BLEScanner:    &defaultBLEScanner{},
+		BLEScanner:    new(GoBLEScanner),
 		Peripherals:   peripherals,
-		DeviceCreator: &defaultDeviceCreator{},
+		DeviceCreator: new(GoBLEDeviceCreator),
 		Logger:        logger,
 	})
 }

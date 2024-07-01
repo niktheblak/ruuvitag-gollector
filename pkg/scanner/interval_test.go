@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"io"
-	"log/slog"
 	"testing"
 	"time"
 
@@ -13,46 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
-
-const (
-	testAddr1 = "cc:ca:7e:52:cc:34"
-	testAddr2 = "fb:e1:b7:04:95:ee"
-	testAddr3 = "e8:e0:c6:0b:b8:c5"
-)
-
-var (
-	testData = sensor.DataFormat3{
-		ManufacturerID:      0x9904,
-		DataFormat:          3,
-		Humidity:            120,
-		Temperature:         55,
-		TemperatureFraction: 0,
-		Pressure:            1000,
-		AccelerationX:       0,
-		AccelerationY:       0,
-		AccelerationZ:       0,
-		BatteryVoltageMv:    500,
-	}
-	peripherals = map[string]string{
-		testAddr1: "Test",
-	}
-	testAdvertisement mockAdvertisement
-	logger            *slog.Logger
-)
-
-func init() {
-	logger = slog.New(slog.NewTextHandler(io.Discard, nil))
-	buf := new(bytes.Buffer)
-	if err := binary.Write(buf, binary.BigEndian, testData); err != nil {
-		panic(err)
-	}
-	testAdvertisement = mockAdvertisement{
-		addr:             testAddr1,
-		manufacturerData: buf.Bytes(),
-	}
-}
 
 func TestScanWithInterval(t *testing.T) {
 	if testing.Short() {
@@ -66,7 +25,7 @@ func TestScanWithInterval(t *testing.T) {
 	exp := new(mockExporter)
 	buf := new(bytes.Buffer)
 	if err := binary.Write(buf, binary.BigEndian, testData); err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	bleScanner := NewMockBLEScanner(
 		mockAdvertisement{
@@ -102,7 +61,7 @@ func TestScanWithInterval(t *testing.T) {
 		close(errs)
 	}()
 	// Wait a bit for messages to appear in the measurements channel
-	time.Sleep(2 * time.Second)
+	time.Sleep(500 * time.Millisecond)
 	cancel()
 	require.NoError(t, <-errs)
 	require.Len(t, exp.events, 3)

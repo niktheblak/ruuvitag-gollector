@@ -21,9 +21,9 @@ func NewOnce(device string, peripherals map[string]string, exporters []exporter.
 	return NewOnceWithOpts(Config{
 		Exporters:     exporters,
 		DeviceName:    device,
-		BLEScanner:    &defaultBLEScanner{},
+		BLEScanner:    &GoBLEScanner{},
 		Peripherals:   peripherals,
-		DeviceCreator: &defaultDeviceCreator{},
+		DeviceCreator: &GoBLEDeviceCreator{},
 		Logger:        logger,
 	})
 }

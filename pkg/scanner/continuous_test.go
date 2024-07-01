@@ -34,7 +34,7 @@ func TestScanContinuously(t *testing.T) {
 		close(errs)
 	}()
 	// Wait a bit for messages to appear in the measurements channel
-	time.Sleep(2 * time.Second)
+	time.Sleep(500 * time.Millisecond)
 	cancel()
 	require.NoError(t, <-errs)
 	err = scn.Close()

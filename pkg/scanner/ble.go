@@ -10,9 +10,9 @@ type BLEScanner interface {
 	Scan(ctx context.Context, allowDup bool, h ble.AdvHandler, f ble.AdvFilter) error
 }
 
-type defaultBLEScanner struct {
+type GoBLEScanner struct {
 }
 
-func (s *defaultBLEScanner) Scan(ctx context.Context, allowDup bool, h ble.AdvHandler, f ble.AdvFilter) error {
+func (s *GoBLEScanner) Scan(ctx context.Context, allowDup bool, h ble.AdvHandler, f ble.AdvFilter) error {
 	return ble.Scan(ctx, allowDup, h, f)
 }

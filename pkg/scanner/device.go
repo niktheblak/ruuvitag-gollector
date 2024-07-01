@@ -9,10 +9,10 @@ type DeviceCreator interface {
 	NewDevice(impl string) (ble.Device, error)
 }
 
-type defaultDeviceCreator struct {
+type GoBLEDeviceCreator struct {
 }
 
-func (c *defaultDeviceCreator) NewDevice(impl string) (ble.Device, error) {
+func (c *GoBLEDeviceCreator) NewDevice(impl string) (ble.Device, error) {
 	d, err := dev.NewDevice(impl)
 	if err != nil {
 		return nil, err
