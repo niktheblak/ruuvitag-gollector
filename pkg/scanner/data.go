@@ -19,6 +19,9 @@ func Read(a ble.Advertisement) (sd commonsensor.Data, err error) {
 	addr := a.Addr().String()
 	data := a.ManufacturerData()
 	sd, err = sensor.Parse(data)
+	if err != nil {
+		return
+	}
 	sd.Addr = addr
 	sd.Timestamp = time.Now()
 	sd.DewPoint, _ = dewpoint.Calculate(sd.Temperature, temperature.Celsius, sd.Humidity)
