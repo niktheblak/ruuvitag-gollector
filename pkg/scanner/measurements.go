@@ -27,26 +27,31 @@ func (s *Measurements) Channel(ctx context.Context) chan sensor.Data {
 		s.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 	ch := make(chan sensor.Data, BufferSize)
-	go func() {
-		err := s.BLE.Scan(ctx, true, func(a ble.Advertisement) {
-			addr := a.Addr().String()
-			s.Logger.LogAttrs(ctx, slog.LevelDebug, "Read sensor data from device", slog.String("addr", addr))
-			sensorData, err := Read(a)
-			if err != nil {
-				LogInvalidData(ctx, s.Logger, a.ManufacturerData(), err)
-				return
-			}
-			sensorData.Name = s.Peripherals[addr]
-			ch <- sensorData
-		}, Filter(s.Peripherals))
-		switch {
-		case errors.Is(err, context.Canceled):
-		case errors.Is(err, context.DeadlineExceeded):
-		case err == nil:
-		default:
-			s.Logger.LogAttrs(ctx, slog.LevelError, "Scan failed", slog.Any("error", err))
-		}
-		close(ch)
-	}()
+	go s.scan(ctx, ch)
 	return ch
+}
+
+func (s *Measurements) scan(ctx context.Context, ch chan sensor.Data) {
+	err := s.BLE.Scan(ctx, true, func(a ble.Advertisement) {
+		addr := a.Addr().String()
+		s.Logger.LogAttrs(ctx, slog.LevelDebug, "Read sensor data from device", slog.String("addr", addr))
+		sensorData, err := Read(a)
+		if err != nil {
+			LogInvalidData(ctx, s.Logger, a.ManufacturerData(), err)
+			return
+		}
+		sensorData.Name = s.Peripherals[addr]
+		ch <- sensorData
+	}, Filter(s.Peripherals))
+	switch {
+	case errors.Is(err, context.Canceled):
+		s.Logger.LogAttrs(ctx, slog.LevelDebug, "Context canceled", slog.Any("error", err))
+	case errors.Is(err, context.DeadlineExceeded):
+		s.Logger.LogAttrs(ctx, slog.LevelDebug, "Deadline exceeded", slog.Any("error", err))
+	case err == nil:
+		// no error, ignore
+	default:
+		s.Logger.LogAttrs(ctx, slog.LevelError, "Scan failed", slog.Any("error", err))
+	}
+	close(ch)
 }
