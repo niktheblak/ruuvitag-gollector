@@ -3,44 +3,20 @@ package scanner
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
 	"time"
-
-	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
 type interval struct {
 	scanner
 }
 
-func NewInterval(device string, peripherals map[string]string, exporters []exporter.Exporter, logger *slog.Logger) (Scanner, error) {
-	if logger == nil {
-		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+func NewInterval(cfg Config) (Scanner, error) {
+	if err := Validate(cfg); err != nil {
+		return nil, err
 	}
-	return NewContinuousWithOpts(Config{
-		Exporters:     exporters,
-		DeviceName:    device,
-		BLEScanner:    new(GoBLEScanner),
-		Peripherals:   peripherals,
-		DeviceCreator: new(GoBLEDeviceCreator),
-		Logger:        logger,
-	})
-}
-
-func NewIntervalWithOpts(cfg Config) (Scanner, error) {
 	s := &interval{
-		scanner: scanner{
-			exporters:   cfg.Exporters,
-			peripherals: cfg.Peripherals,
-			dev:         cfg.DeviceCreator,
-			logger:      cfg.Logger,
-			meas: &Measurements{
-				BLE:         cfg.BLEScanner,
-				Peripherals: cfg.Peripherals,
-				Logger:      cfg.Logger,
-			},
-		},
+		scanner: newScanner(cfg),
 	}
 	err := s.init(cfg.DeviceName)
 	return s, err
@@ -50,12 +26,6 @@ func NewIntervalWithOpts(cfg Config) (Scanner, error) {
 func (s *interval) Scan(ctx context.Context, scanInterval time.Duration) error {
 	if scanInterval == 0 {
 		return fmt.Errorf("scan interval must be greater than zero")
-	}
-	if len(s.exporters) == 0 {
-		return fmt.Errorf("at least one exporter must be specified")
-	}
-	if len(s.peripherals) == 0 {
-		return fmt.Errorf("at least one peripheral must be specified")
 	}
 	s.logger.LogAttrs(ctx, slog.LevelInfo, "Scanning measurements", slog.Duration("interval", scanInterval))
 	ticker := time.NewTicker(scanInterval)

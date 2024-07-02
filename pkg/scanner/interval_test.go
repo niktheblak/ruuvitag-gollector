@@ -42,7 +42,7 @@ func TestScanWithInterval(t *testing.T) {
 		},
 	)
 	device := mockDevice{}
-	scn, err := NewIntervalWithOpts(Config{
+	scn, err := NewInterval(Config{
 		Exporters:     []exporter.Exporter{exp},
 		DeviceName:    "default",
 		BLEScanner:    bleScanner,

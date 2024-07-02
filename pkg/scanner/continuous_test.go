@@ -14,7 +14,7 @@ import (
 func TestScanContinuously(t *testing.T) {
 	exp := new(mockExporter)
 	device := mockDevice{}
-	scn, err := NewContinuousWithOpts(Config{
+	scn, err := NewContinuous(Config{
 		Exporters:     []exporter.Exporter{exp},
 		DeviceName:    "default",
 		BLEScanner:    NewMockBLEScanner(testAdvertisement),

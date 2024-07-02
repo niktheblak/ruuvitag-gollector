@@ -21,18 +21,23 @@ var daemonCmd = &cobra.Command{
 			return err
 		}
 		interval := viper.GetDuration("interval")
-		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-		defer cancel()
+		cfg := scanner.DefaultConfig()
+		cfg.DeviceName = device
+		cfg.Peripherals = peripherals
+		cfg.Exporters = exporters
+		cfg.Logger = logger
 		var scn scanner.Scanner
 		var err error
 		if interval == 0 {
-			scn, err = scanner.NewContinuous(device, peripherals, exporters, logger)
+			scn, err = scanner.NewContinuous(cfg)
 		} else {
-			scn, err = scanner.NewInterval(device, peripherals, exporters, logger)
+			scn, err = scanner.NewInterval(cfg)
 		}
 		if err != nil {
 			return err
 		}
+		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer cancel()
 		err = scn.Scan(ctx, interval)
 		return errors.Join(err, scn.Close(), closeExporters())
 	},

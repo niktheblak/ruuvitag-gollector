@@ -14,7 +14,7 @@ import (
 func TestScanOnce(t *testing.T) {
 	exp := new(mockExporter)
 	device := mockDevice{}
-	scn, err := NewOnceWithOpts(Config{
+	scn, err := NewOnce(Config{
 		Exporters:     []exporter.Exporter{exp},
 		DeviceName:    "default",
 		BLEScanner:    NewMockBLEScanner(testAdvertisement),

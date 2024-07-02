@@ -2,47 +2,22 @@ package scanner
 
 import (
 	"context"
-	"fmt"
-	"io"
 	"log/slog"
 	"time"
 
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
-
-	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
 type continuous struct {
 	scanner
 }
 
-func NewContinuous(device string, peripherals map[string]string, exporters []exporter.Exporter, logger *slog.Logger) (Scanner, error) {
-	if logger == nil {
-		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+func NewContinuous(cfg Config) (Scanner, error) {
+	if err := Validate(cfg); err != nil {
+		return nil, err
 	}
-	return NewContinuousWithOpts(Config{
-		Exporters:     exporters,
-		DeviceName:    device,
-		BLEScanner:    new(GoBLEScanner),
-		Peripherals:   peripherals,
-		DeviceCreator: new(GoBLEDeviceCreator),
-		Logger:        logger,
-	})
-}
-
-func NewContinuousWithOpts(cfg Config) (Scanner, error) {
 	s := &continuous{
-		scanner: scanner{
-			exporters:   cfg.Exporters,
-			peripherals: cfg.Peripherals,
-			dev:         cfg.DeviceCreator,
-			logger:      cfg.Logger,
-			meas: &Measurements{
-				BLE:         cfg.BLEScanner,
-				Peripherals: cfg.Peripherals,
-				Logger:      cfg.Logger,
-			},
-		},
+		scanner: newScanner(cfg),
 	}
 	err := s.init(cfg.DeviceName)
 	return s, err
@@ -50,12 +25,6 @@ func NewContinuousWithOpts(cfg Config) (Scanner, error) {
 
 // Scan scans and reports measurements immediately as they are received
 func (s *continuous) Scan(ctx context.Context, _ time.Duration) error {
-	if len(s.exporters) == 0 {
-		return fmt.Errorf("at least one exporter must be specified")
-	}
-	if len(s.peripherals) == 0 {
-		return fmt.Errorf("at least one peripheral must be specified")
-	}
 	s.logger.Info("Listening for measurements")
 	meas := s.meas.Channel(ctx)
 	s.exportContinuously(ctx, meas)

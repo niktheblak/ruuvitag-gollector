@@ -21,7 +21,12 @@ var collectCmd = &cobra.Command{
 		if err := createExporters(); err != nil {
 			return err
 		}
-		scn, err := scanner.NewOnce(device, peripherals, exporters, logger)
+		cfg := scanner.DefaultConfig()
+		cfg.DeviceName = device
+		cfg.Peripherals = peripherals
+		cfg.Exporters = exporters
+		cfg.Logger = logger
+		scn, err := scanner.NewOnce(cfg)
 		if err != nil {
 			return err
 		}

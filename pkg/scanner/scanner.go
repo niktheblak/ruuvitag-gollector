@@ -24,6 +24,25 @@ type Config struct {
 	Logger        *slog.Logger
 }
 
+func DefaultConfig() Config {
+	return Config{
+		DeviceName:    "default",
+		BLEScanner:    new(GoBLEScanner),
+		DeviceCreator: new(GoBLEDeviceCreator),
+		Logger:        slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}
+}
+
+func Validate(cfg Config) error {
+	if len(cfg.Exporters) == 0 {
+		return fmt.Errorf("at least one exporter must be specified")
+	}
+	if len(cfg.Peripherals) == 0 {
+		return fmt.Errorf("at least one peripheral must be specified")
+	}
+	return nil
+}
+
 type Scanner interface {
 	io.Closer
 	Scan(ctx context.Context, interval time.Duration) error
@@ -36,6 +55,20 @@ type scanner struct {
 	dev         DeviceCreator
 	meas        *Measurements
 	logger      *slog.Logger
+}
+
+func newScanner(cfg Config) scanner {
+	return scanner{
+		exporters:   cfg.Exporters,
+		peripherals: cfg.Peripherals,
+		dev:         cfg.DeviceCreator,
+		logger:      cfg.Logger,
+		meas: &Measurements{
+			BLE:         cfg.BLEScanner,
+			Peripherals: cfg.Peripherals,
+			Logger:      cfg.Logger,
+		},
+	}
 }
 
 func (s *scanner) init(device string) error {
