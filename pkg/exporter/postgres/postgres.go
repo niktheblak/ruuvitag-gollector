@@ -30,13 +30,12 @@ const (
         acceleration_y,
         acceleration_z,
         movement_counter,
-        battery,
         measurement_number,
         dew_point,
         battery_voltage,
         tx_power
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`
 )
 
 type postgresExporter struct {
@@ -85,7 +84,6 @@ func (t *postgresExporter) Export(ctx context.Context, data sensor.Data) error {
 		data.AccelerationY,
 		data.AccelerationZ,
 		data.MovementCounter,
-		data.BatteryVoltage,
 		data.MeasurementNumber,
 		data.DewPoint,
 		data.BatteryVoltage,
