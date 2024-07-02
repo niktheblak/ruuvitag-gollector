@@ -7,7 +7,7 @@ toolchain go1.22.4
 require (
 	cloud.google.com/go/pubsub v1.40.0
 	github.com/JuulLabs-OSS/cbgo v0.0.2 // indirect
-	github.com/aws/aws-sdk-go v1.54.11
+	github.com/aws/aws-sdk-go v1.54.12
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-ble/ble v0.0.0-20240122180141-8c5522f54333
