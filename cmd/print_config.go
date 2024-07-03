@@ -8,13 +8,17 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	output string
+)
+
 var printConfigCmd = &cobra.Command{
 	Use:          "config",
 	Short:        "Print active configuration",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if viper.ConfigFileUsed() != "" {
-			fmt.Printf("Using config file: %s\n", viper.ConfigFileUsed())
+		if output != "" {
+			return viper.WriteConfigAs(output)
 		}
 		keys := viper.AllKeys()
 		sort.Strings(keys)
@@ -28,5 +32,7 @@ var printConfigCmd = &cobra.Command{
 }
 
 func init() {
+	printConfigCmd.Flags().StringVarP(&output, "output", "o", "", "print config into a file")
+
 	printCmd.AddCommand(printConfigCmd)
 }
