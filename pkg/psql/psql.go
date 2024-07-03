@@ -12,40 +12,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-var DefaultColumnNames = []string{
-	"time",
-	"mac",
-	"name",
-	"temperature",
-	"humidity",
-	"pressure",
-	"acceleration_x",
-	"acceleration_y",
-	"acceleration_z",
-	"movement_counter",
-	"measurement_number",
-	"dew_point",
-	"battery_voltage",
-	"tx_power",
-}
-
-var DefaultColumns = map[string]string{
-	"time":               "time",
-	"mac":                "mac",
-	"name":               "name",
-	"temperature":        "temperature",
-	"humidity":           "humidity",
-	"pressure":           "pressure",
-	"acceleration_x":     "acceleration_x",
-	"acceleration_y":     "acceleration_y",
-	"acceleration_z":     "acceleration_z",
-	"movement_counter":   "movement_counter",
-	"measurement_number": "measurement_number",
-	"dew_point":          "dew_point",
-	"battery_voltage":    "battery_voltage",
-	"tx_power":           "tx_power",
-}
-
 var (
 	passwordRegexp = regexp.MustCompile(`password=\S+\s`)
 )
@@ -141,7 +107,7 @@ func RenderInsertQuery(table string, columns map[string]string) (string, error) 
 	templateBuilder.WriteString(table)
 	templateBuilder.WriteString("(")
 	var includedColumns []string
-	for _, c := range DefaultColumnNames {
+	for _, c := range sensor.DefaultColumns {
 		_, ok := columns[c]
 		if ok {
 			includedColumns = append(includedColumns, fmt.Sprintf("{{.%s}}", c))
@@ -169,7 +135,7 @@ func RenderInsertQuery(table string, columns map[string]string) (string, error) 
 
 func BuildQuery(columns map[string]string, data sensor.Data) []any {
 	var args []any
-	for _, c := range DefaultColumnNames {
+	for _, c := range sensor.DefaultColumns {
 		_, ok := columns[c]
 		if !ok {
 			continue

@@ -1,9 +1,8 @@
 package cmd
 
 import (
+	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 	"github.com/spf13/cobra"
-
-	"github.com/niktheblak/ruuvitag-gollector/pkg/psql"
 )
 
 var printColumnsCmd = &cobra.Command{
@@ -11,7 +10,7 @@ var printColumnsCmd = &cobra.Command{
 	Short:        "Print default RuuviTag column names",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		for _, c := range psql.DefaultColumnNames {
+		for _, c := range sensor.DefaultColumns {
 			cmd.Printf("%s\n", c)
 		}
 		return nil
