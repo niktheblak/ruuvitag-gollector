@@ -32,6 +32,8 @@ github.com/aws/aws-sdk-go v1.54.11 h1:Zxuv/R+IVS0B66yz4uezhxH9FN9/G2nbxejYqAMFjx
 github.com/aws/aws-sdk-go v1.54.11/go.mod h1:eRwEWoyTWFMVYVQzKMNHWP5/RV4xIUGMQfXQHfHkpNU=
 github.com/aws/aws-sdk-go v1.54.12 h1:xPDB+GSBZq0rJbmDZF+EyfMbnWRyfEPcn7PZ7bJjXSw=
 github.com/aws/aws-sdk-go v1.54.12/go.mod h1:eRwEWoyTWFMVYVQzKMNHWP5/RV4xIUGMQfXQHfHkpNU=
+github.com/aws/aws-sdk-go v1.54.13 h1:zpCuiG+/mFdDY/klKJvmSioAZWk45F4rLGq0JWVAAzk=
+github.com/aws/aws-sdk-go v1.54.13/go.mod h1:eRwEWoyTWFMVYVQzKMNHWP5/RV4xIUGMQfXQHfHkpNU=
 github.com/bmatcuk/doublestar v1.1.1/go.mod h1:UD6OnuiIn0yFxxA2le/rnRU1G4RaI4UvFv1sNto9p6w=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
@@ -137,6 +139,8 @@ github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyua
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/niktheblak/ruuvitag-common v1.0.1 h1:ZK/rBOGKoeW2oPbbWnTjt+CH8ccKZz5SfUIWoN4x5QI=
 github.com/niktheblak/ruuvitag-common v1.0.1/go.mod h1:LCo/TOOlVl/7u95ISdhxLDSIOWaS7RIo7Rz5U6RJ4oA=
+github.com/niktheblak/ruuvitag-common v1.1.1 h1:Ld8LCitNZfekZl0WlOjl4myoEaahMA8f6OJYTbmrRgQ=
+github.com/niktheblak/ruuvitag-common v1.1.1/go.mod h1:LCo/TOOlVl/7u95ISdhxLDSIOWaS7RIo7Rz5U6RJ4oA=
 github.com/oapi-codegen/runtime v1.1.1 h1:EXLHh0DXIJnWhdRPN2w4MXAzFyE4CskzhNLUmtpMYro=
 github.com/oapi-codegen/runtime v1.1.1/go.mod h1:SK9X900oXmPWilYR5/WKPzt3Kqxn/uS/+lbpREv+eCg=
 github.com/pelletier/go-toml/v2 v2.2.2 h1:aYUidT7k73Pcl9nb2gScu7NSrKCSHIDE89b3+6Wq+LM=
