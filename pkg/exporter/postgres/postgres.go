@@ -45,7 +45,7 @@ func New(ctx context.Context, cfg Config) (exporter.Exporter, error) {
 		cfg.Columns = sensor.DefaultColumnMap
 	}
 	cfg.Logger.LogAttrs(ctx, slog.LevelInfo, "Using columns", slog.Any("columns", cfg.Columns))
-	q, err := psql.RenderInsertQuery(cfg.Table, cfg.Columns)
+	q, err := psql.BuildInsertQuery(cfg.Table, cfg.Columns)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (t *postgresExporter) Name() string {
 }
 
 func (t *postgresExporter) Export(ctx context.Context, data sensor.Data) error {
-	_, err := t.insertStmt.ExecContext(ctx, psql.BuildQuery(t.columns, data)...)
+	_, err := t.insertStmt.ExecContext(ctx, psql.BuildQueryArguments(t.columns, data)...)
 	return err
 }
 

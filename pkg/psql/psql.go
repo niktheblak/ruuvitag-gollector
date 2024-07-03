@@ -101,7 +101,7 @@ func AddPsqlFlags(fs *pflag.FlagSet, vpr *viper.Viper, prefix string) {
 	vpr.SetDefault(fmt.Sprintf("%s.type", prefix), "postgres")
 }
 
-func RenderInsertQuery(table string, columns map[string]string) (string, error) {
+func BuildInsertQuery(table string, columns map[string]string) (string, error) {
 	templateBuilder := new(strings.Builder)
 	templateBuilder.WriteString("INSERT INTO ")
 	templateBuilder.WriteString(table)
@@ -133,7 +133,7 @@ func RenderInsertQuery(table string, columns map[string]string) (string, error) 
 	return builder.String(), nil
 }
 
-func BuildQuery(columns map[string]string, data sensor.Data) []any {
+func BuildQueryArguments(columns map[string]string, data sensor.Data) []any {
 	var args []any
 	for _, c := range sensor.DefaultColumns {
 		_, ok := columns[c]
