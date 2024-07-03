@@ -36,13 +36,15 @@ func New(ctx context.Context, cfg Config) (exporter.Exporter, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
+	cfg.Logger = cfg.Logger.With("exporter", "PostgreSQL")
 	db, err := sql.Open("postgres", cfg.PSQLInfo)
 	if err != nil {
 		return nil, err
 	}
 	if len(cfg.Columns) == 0 {
-		cfg.Columns = psql.DefaultColumns
+		cfg.Columns = sensor.DefaultColumnMap
 	}
+	cfg.Logger.LogAttrs(ctx, slog.LevelInfo, "Using columns", slog.Any("columns", cfg.Columns))
 	q, err := psql.RenderInsertQuery(cfg.Table, cfg.Columns)
 	if err != nil {
 		return nil, err
