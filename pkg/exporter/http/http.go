@@ -12,32 +12,46 @@ import (
 
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 
+	"github.com/niktheblak/ruuvitag-gollector/pkg/columnmap"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
-type httpExporter struct {
-	client *nethttp.Client
-	url    string
-	token  string
-	logger *slog.Logger
+type Config struct {
+	URL     string
+	Token   string
+	Timeout time.Duration
+	Columns map[string]string
+	Logger  *slog.Logger
 }
 
-func New(url, token string, timeout time.Duration, logger *slog.Logger) (exporter.Exporter, error) {
-	if url == "" {
+type httpExporter struct {
+	client  *nethttp.Client
+	url     string
+	token   string
+	columns map[string]string
+	logger  *slog.Logger
+}
+
+func New(cfg Config) (exporter.Exporter, error) {
+	if cfg.URL == "" {
 		return nil, fmt.Errorf("parameter url must be non-empty")
 	}
-	if logger == nil {
-		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	if cfg.Logger == nil {
+		cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
-	logger = logger.With("exporter", "HTTP")
+	if len(cfg.Columns) == 0 {
+		cfg.Columns = sensor.DefaultColumnMap
+	}
+	cfg.Logger = cfg.Logger.With("exporter", "HTTP")
 	client := &nethttp.Client{
-		Timeout: timeout,
+		Timeout: cfg.Timeout,
 	}
 	return &httpExporter{
-		client: client,
-		url:    url,
-		token:  token,
-		logger: logger,
+		client:  client,
+		url:     cfg.URL,
+		token:   cfg.Token,
+		columns: cfg.Columns,
+		logger:  cfg.Logger,
 	}, nil
 }
 
@@ -48,7 +62,7 @@ func (h *httpExporter) Name() string {
 func (h *httpExporter) Export(ctx context.Context, data sensor.Data) error {
 	buf := new(bytes.Buffer)
 	enc := json.NewEncoder(buf)
-	err := enc.Encode(data)
+	err := enc.Encode(h.transformColumns(data))
 	if err != nil {
 		return err
 	}
@@ -74,4 +88,12 @@ func (h *httpExporter) Export(ctx context.Context, data sensor.Data) error {
 func (h *httpExporter) Close() error {
 	h.client.CloseIdleConnections()
 	return nil
+}
+
+func (h *httpExporter) transformColumns(data sensor.Data) map[string]any {
+	values := make(map[string]any)
+	columnmap.Collect(h.columns, data, func(column string, v any) {
+		values[column] = v
+	})
+	return values
 }

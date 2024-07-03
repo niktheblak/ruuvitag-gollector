@@ -157,7 +157,13 @@ func createExporters() error {
 		logger.Info("Creating HTTP exporter")
 		addr := viper.GetString("http.addr")
 		token := viper.GetString("http.token")
-		exp, err := http.New(addr, token, 10*time.Second, logger)
+		exp, err := http.New(http.Config{
+			URL:     addr,
+			Token:   token,
+			Timeout: 10 * time.Second,
+			Columns: columns,
+			Logger:  logger,
+		})
 		if err != nil {
 			return fmt.Errorf("failed to create HTTP exporter: %w", err)
 		}
