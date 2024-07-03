@@ -6,6 +6,6 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
-func New(cfg Config, logger *slog.Logger) (exporter.Exporter, error) {
+func New(cfg Config) (exporter.Exporter, error) {
 	return exporter.NoOp{ReportedName: "InfluxDB"}, nil
 }

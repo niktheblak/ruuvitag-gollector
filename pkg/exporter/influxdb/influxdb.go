@@ -17,22 +17,9 @@ import (
 
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 
+	"github.com/niktheblak/ruuvitag-gollector/pkg/columnmap"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
-
-var defaultColumns = map[string]string{
-	"temperature":        "temperature",
-	"humidity":           "humidity",
-	"dew_point":          "dew_point",
-	"pressure":           "pressure",
-	"battery_voltage":    "battery_voltage",
-	"tx_power":           "tx_power",
-	"acceleration_x":     "acceleration_x",
-	"acceleration_y":     "acceleration_y",
-	"acceleration_z":     "acceleration_z",
-	"movement_counter":   "movement_counter",
-	"measurement_number": "measurement_number",
-}
 
 type pointWriter interface {
 	WritePoint(ctx context.Context, point *write.Point) error
@@ -85,7 +72,7 @@ func New(cfg Config) (exporter.Exporter, error) {
 		return nil, err
 	}
 	if len(cfg.Columns) == 0 {
-		cfg.Columns = defaultColumns
+		cfg.Columns = sensor.DefaultColumnMap
 	}
 	if cfg.Logger == nil {
 		cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -142,37 +129,19 @@ func (e *influxdbExporter) Name() string {
 }
 
 func (e *influxdbExporter) Export(ctx context.Context, data sensor.Data) error {
-	fields := make(map[string]interface{})
-	for dc := range defaultColumns {
-		cn, ok := e.columns[dc]
-		if !ok {
-			continue
+	fields := make(map[string]any)
+	columnmap.Collect(e.columns, data, func(column string, v any) {
+		switch column {
+		case "time":
+			break
+		case "mac":
+			break
+		case "name":
+			break
+		default:
+			fields[column] = v
 		}
-		switch dc {
-		case "temperature":
-			fields[cn] = data.Temperature
-		case "humidity":
-			fields[cn] = data.Humidity
-		case "dew_point":
-			fields[cn] = data.DewPoint
-		case "pressure":
-			fields[cn] = data.Pressure
-		case "battery_voltage":
-			fields[cn] = data.BatteryVoltage
-		case "tx_power":
-			fields[cn] = data.TxPower
-		case "acceleration_x":
-			fields[cn] = data.AccelerationX
-		case "acceleration_y":
-			fields[cn] = data.AccelerationY
-		case "acceleration_z":
-			fields[cn] = data.AccelerationZ
-		case "movement_counter":
-			fields[cn] = data.MovementCounter
-		case "measurement_number":
-			fields[cn] = data.MeasurementNumber
-		}
-	}
+	})
 	point := influxdb2.NewPoint(e.measurement, map[string]string{
 		"mac":  strings.ToUpper(data.Addr),
 		"name": data.Name,

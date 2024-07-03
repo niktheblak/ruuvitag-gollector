@@ -10,6 +10,8 @@ import (
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
+	"github.com/niktheblak/ruuvitag-gollector/pkg/columnmap"
 )
 
 var (
@@ -135,41 +137,8 @@ func BuildInsertQuery(table string, columns map[string]string) (string, error) {
 
 func BuildQueryArguments(columns map[string]string, data sensor.Data) []any {
 	var args []any
-	for _, c := range sensor.DefaultColumns {
-		_, ok := columns[c]
-		if !ok {
-			continue
-		}
-		switch c {
-		case "time":
-			args = append(args, data.Timestamp)
-		case "mac":
-			args = append(args, data.Addr)
-		case "name":
-			args = append(args, data.Name)
-		case "temperature":
-			args = append(args, data.Temperature)
-		case "humidity":
-			args = append(args, data.Humidity)
-		case "pressure":
-			args = append(args, data.Pressure)
-		case "acceleration_x":
-			args = append(args, data.AccelerationX)
-		case "acceleration_y":
-			args = append(args, data.AccelerationY)
-		case "acceleration_z":
-			args = append(args, data.AccelerationZ)
-		case "movement_counter":
-			args = append(args, data.MovementCounter)
-		case "measurement_number":
-			args = append(args, data.MeasurementNumber)
-		case "dew_point":
-			args = append(args, data.DewPoint)
-		case "battery_voltage":
-			args = append(args, data.BatteryVoltage)
-		case "tx_power":
-			args = append(args, data.TxPower)
-		}
-	}
+	columnmap.Collect(columns, data, func(_ string, v any) {
+		args = append(args, v)
+	})
 	return args
 }
