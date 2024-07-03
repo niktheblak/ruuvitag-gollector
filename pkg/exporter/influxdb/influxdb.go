@@ -90,6 +90,7 @@ func New(cfg Config) (exporter.Exporter, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
+	cfg.Logger = cfg.Logger.With("exporter", "InfluxDB")
 	opts := influxdb2.DefaultOptions()
 	opts.SetUseGZip(true)
 	opts.SetTLSConfig(&tls.Config{

@@ -59,7 +59,7 @@ func TestExporter(t *testing.T) {
 			Token:       *auth.Token,
 			Bucket:      bucket.Name,
 			Measurement: "test",
-		}, nil)
+		})
 		require.NoError(t, err)
 		err = exporter.Export(context.Background(), sensor.Data{
 			Addr:           "CC:CA:7E:52:CC:34",
