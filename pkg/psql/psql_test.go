@@ -11,6 +11,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var testData = sensor.Data{
+	Addr:              "ec-40-93-94-35-2a",
+	Name:              "Test",
+	Temperature:       22.5,
+	Humidity:          46,
+	DewPoint:          12.1,
+	Pressure:          1002,
+	BatteryVoltage:    1.45,
+	TxPower:           -18,
+	AccelerationX:     772,
+	AccelerationY:     -724,
+	AccelerationZ:     -4,
+	MovementCounter:   33,
+	MeasurementNumber: 55526,
+	Timestamp:         time.Date(2024, time.July, 3, 10, 24, 23, 213, time.UTC),
+}
+
 func TestRemovePassword(t *testing.T) {
 	assert.Equal(
 		t,
@@ -64,7 +81,13 @@ func TestAddPsqlFlags(t *testing.T) {
 	require.NotNil(t, f)
 }
 
-func TestRenderInsertQuery(t *testing.T) {
+func TestDefaultBuildInsertQuery(t *testing.T) {
+	q, err := BuildInsertQuery("ruuvitag", sensor.DefaultColumnMap)
+	require.NoError(t, err)
+	assert.Equal(t, `INSERT INTO ruuvitag(time,mac,name,temperature,humidity,pressure,acceleration_x,acceleration_y,acceleration_z,movement_counter,measurement_number,dew_point,battery_voltage,tx_power) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`, q)
+}
+
+func TestBuildInsertQuery(t *testing.T) {
 	columns := map[string]string{
 		"time":               "ts",
 		"mac":                "addr",
@@ -80,12 +103,31 @@ func TestRenderInsertQuery(t *testing.T) {
 		"dew_point":          "dewPoint",
 		"battery_voltage":    "batteryVoltage",
 	}
-	q, err := RenderInsertQuery("ruuvitag", columns)
+	q, err := BuildInsertQuery("ruuvitag", columns)
 	require.NoError(t, err)
 	assert.Equal(t, `INSERT INTO ruuvitag(ts,addr,roomName,temperature,humidity,pressure,accX,accY,accZ,movementCounter,measurementNumber,dewPoint,batteryVoltage) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`, q)
 }
 
-func TestBuildQuery(t *testing.T) {
+func TestDefaultBuildQueryArguments(t *testing.T) {
+	args := BuildQueryArguments(sensor.DefaultColumnMap, testData)
+	require.Len(t, args, 14)
+	assert.Equal(t, testData.Timestamp, args[0])
+	assert.Equal(t, testData.Addr, args[1])
+	assert.Equal(t, testData.Name, args[2])
+	assert.Equal(t, testData.Temperature, args[3])
+	assert.Equal(t, testData.Humidity, args[4])
+	assert.Equal(t, testData.Pressure, args[5])
+	assert.Equal(t, testData.AccelerationX, args[6])
+	assert.Equal(t, testData.AccelerationY, args[7])
+	assert.Equal(t, testData.AccelerationZ, args[8])
+	assert.Equal(t, testData.MovementCounter, args[9])
+	assert.Equal(t, testData.MeasurementNumber, args[10])
+	assert.Equal(t, testData.DewPoint, args[11])
+	assert.Equal(t, testData.BatteryVoltage, args[12])
+	assert.Equal(t, testData.TxPower, args[13])
+}
+
+func TestBuildQueryArguments(t *testing.T) {
 	columns := map[string]string{
 		"time":               "ts",
 		"mac":                "mac",
@@ -98,33 +140,16 @@ func TestBuildQuery(t *testing.T) {
 		"dew_point":          "dewPoint",
 		"battery_voltage":    "batteryVoltage",
 	}
-	ts := time.Now()
-	data := sensor.Data{
-		Addr:              "ec-40-93-94-35-2a",
-		Name:              "Test",
-		Temperature:       22.5,
-		Humidity:          46,
-		DewPoint:          12.1,
-		Pressure:          1002,
-		BatteryVoltage:    1.45,
-		TxPower:           0,
-		AccelerationX:     0,
-		AccelerationY:     0,
-		AccelerationZ:     0,
-		MovementCounter:   11,
-		MeasurementNumber: 111,
-		Timestamp:         ts,
-	}
-	args := BuildQuery(columns, data)
+	args := BuildQueryArguments(columns, testData)
 	require.Len(t, args, 10)
-	assert.Equal(t, data.Timestamp, args[0])
-	assert.Equal(t, data.Addr, args[1])
-	assert.Equal(t, data.Name, args[2])
-	assert.Equal(t, data.Temperature, args[3])
-	assert.Equal(t, data.Humidity, args[4])
-	assert.Equal(t, data.Pressure, args[5])
-	assert.Equal(t, data.MovementCounter, args[6])
-	assert.Equal(t, data.MeasurementNumber, args[7])
-	assert.Equal(t, data.DewPoint, args[8])
-	assert.Equal(t, data.BatteryVoltage, args[9])
+	assert.Equal(t, testData.Timestamp, args[0])
+	assert.Equal(t, testData.Addr, args[1])
+	assert.Equal(t, testData.Name, args[2])
+	assert.Equal(t, testData.Temperature, args[3])
+	assert.Equal(t, testData.Humidity, args[4])
+	assert.Equal(t, testData.Pressure, args[5])
+	assert.Equal(t, testData.MovementCounter, args[6])
+	assert.Equal(t, testData.MeasurementNumber, args[7])
+	assert.Equal(t, testData.DewPoint, args[8])
+	assert.Equal(t, testData.BatteryVoltage, args[9])
 }
