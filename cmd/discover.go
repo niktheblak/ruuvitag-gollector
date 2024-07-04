@@ -17,7 +17,11 @@ var discoverCmd = &cobra.Command{
 	Use:   "discover",
 	Short: "Discover all nearby RuuviTags",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		d := scanner.NewDiscover(&scanner.GoBLEScanner{}, logger)
+		d, err := scanner.NewDiscover(device, &scanner.GoBLEScanner{}, &scanner.GoBLEDeviceCreator{}, logger)
+		if err != nil {
+			return err
+		}
+		defer d.Close()
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		addrs, err := d.Discover(ctx)

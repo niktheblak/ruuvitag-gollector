@@ -3,6 +3,7 @@ package scanner
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"sort"
@@ -14,17 +15,33 @@ import (
 
 type Discover struct {
 	ble    BLEScanner
+	dev    DeviceCreator
+	device ble.Device
 	logger *slog.Logger
 }
 
-func NewDiscover(ble BLEScanner, logger *slog.Logger) *Discover {
+func NewDiscover(device string, ble BLEScanner, dev DeviceCreator, logger *slog.Logger) (*Discover, error) {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
-	return &Discover{
+	d := &Discover{
 		ble:    ble,
+		dev:    dev,
 		logger: logger,
 	}
+	if err := d.init(device); err != nil {
+		return nil, err
+	}
+	return d, nil
+}
+
+func (d *Discover) init(device string) error {
+	dev, err := d.dev.NewDevice(device)
+	if err != nil {
+		return fmt.Errorf("failed to initialize device %s: %w", device, err)
+	}
+	d.device = dev
+	return nil
 }
 
 func (d *Discover) Discover(ctx context.Context) ([]string, error) {
@@ -54,4 +71,13 @@ func (d *Discover) Discover(ctx context.Context) ([]string, error) {
 	}
 	sort.Strings(addrs)
 	return addrs, nil
+}
+
+func (d *Discover) Close() error {
+	if d.device != nil {
+		err := d.device.Stop()
+		d.device = nil
+		return err
+	}
+	return nil
 }
