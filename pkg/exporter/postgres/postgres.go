@@ -17,13 +17,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type Config struct {
-	PSQLInfo string
-	Table    string
-	Columns  map[string]string
-	Logger   *slog.Logger
-}
-
 type postgresExporter struct {
 	db         *sql.DB
 	insertStmt *sql.Stmt
