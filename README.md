@@ -58,6 +58,27 @@ See the command-line help for the arguments needed by each exporter:
 ruuvitag-gollector -h
 ```
 
+You can specify custom column names for the data fields ruuvitag-gollector sends out to match your database schema.
+You can also exclude columns whose value you don't need. The default columns and their names are:
+
+```toml
+[columns]
+time = "time"
+mac = "mac"
+name = "name"
+temperature = "temperature"
+humidity = "humidity"
+pressure = "pressure"
+acceleration_x = "acceleration_x"
+acceleration_y = "acceleration_y"
+acceleration_z = "acceleration_z"
+movement_counter = "movement_counter"
+measurement_number = "measurement_number"
+dew_point = "dew_point"
+battery_voltage = "battery_voltage"
+tx_power = "tx_power"
+```
+
 ## Running
 
 Now you can try to run it manually (you typically need to run as root to allow the collector
@@ -134,4 +155,14 @@ password = "my_secret_password"
 ca_file = "root_ca.pem"
 auto_reconnect = true
 reconnect_interval = 30
+
+[columns]
+time = "time"
+mac = "mac"
+name = "name"
+temperature = "temperature"
+humidity = "humidity"
+pressure = "pressure"
+movement_counter = "movementCounter"
+measurement_number = "measurementNumber"
 ```
