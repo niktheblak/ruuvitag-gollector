@@ -18,14 +18,6 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
-type Config struct {
-	Project         string
-	Topic           string
-	CredentialsJSON []byte
-	Columns         map[string]string
-	Logger          *slog.Logger
-}
-
 type pubsubExporter struct {
 	client  *pubsub.Client
 	topic   *pubsub.Topic
