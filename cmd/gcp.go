@@ -5,6 +5,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/spf13/viper"
 
@@ -19,7 +20,7 @@ func init() {
 	rootCmd.PersistentFlags().String("gcp.pubsub.topic", "", "Google Pub/Sub topic to use")
 }
 
-func addPubSubExporter(exporters *[]exporter.Exporter) error {
+func addPubSubExporter(exporters *[]exporter.Exporter, columns map[string]string) error {
 	ctx := context.Background()
 	project := viper.GetString("gcp.project")
 	if project == "" {
@@ -29,7 +30,22 @@ func addPubSubExporter(exporters *[]exporter.Exporter) error {
 	if topic == "" {
 		return fmt.Errorf("Google Pub/Sub topic must be specified")
 	}
-	ps, err := pubsub.New(ctx, project, topic)
+	var credentialsJSON []byte
+	credentialsFile := viper.GetString("gcp.credentials")
+	var err error
+	if credentialsFile != "" {
+		credentialsJSON, err = os.ReadFile(credentialsFile)
+		if err != nil {
+			return err
+		}
+	}
+	ps, err := pubsub.New(ctx, pubsub.Config{
+		Project:         project,
+		Topic:           topic,
+		CredentialsJSON: credentialsJSON,
+		Columns:         columns,
+		Logger:          logger,
+	})
 	if err != nil {
 		return err
 	}

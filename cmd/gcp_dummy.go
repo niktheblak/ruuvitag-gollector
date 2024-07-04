@@ -8,6 +8,6 @@ func initStackdriverLogging() error {
 	return ErrNotEnabled
 }
 
-func addPubSubExporter(exporters *[]exporter.Exporter) error {
+func addPubSubExporter(exporters *[]exporter.Exporter, columns map[string]string) error {
 	return ErrNotEnabled
 }

@@ -8,6 +8,6 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
-func New(ctx context.Context, project, topic string) (exporter.Exporter, error) {
+func New(ctx context.Context, cfg Config) (exporter.Exporter, error) {
 	return exporter.NoOp{ReportedName: "Google Pub/Sub"}, nil
 }

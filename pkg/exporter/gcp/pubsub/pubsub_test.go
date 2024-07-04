@@ -17,7 +17,11 @@ func TestPublish(t *testing.T) {
 	project := os.Getenv("RUUVITAG_GOOGLE_PROJECT")
 	topic := os.Getenv("RUUVITAG_PUBSUB_TOPIC")
 	ctx := context.Background()
-	e, err := New(ctx, project, topic)
+	e, err := New(ctx, Config{
+		Project:         project,
+		Topic:           topic,
+		CredentialsJSON: nil,
+	})
 	require.NoError(t, err)
 	defer e.Close()
 	err = e.Export(ctx, sensor.Data{

@@ -103,12 +103,6 @@ func createExporters() error {
 	if viper.ConfigFileUsed() != "" {
 		logger.LogAttrs(nil, slog.LevelInfo, "Read config from file", slog.String("file", viper.ConfigFileUsed()))
 	}
-	creds := viper.GetString("gcp.credentials")
-	if creds != "" {
-		if err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", creds); err != nil {
-			return err
-		}
-	}
 	ruuviTags := viper.GetStringMapString("ruuvitags")
 	if len(ruuviTags) == 0 {
 		return fmt.Errorf("at least one RuuviTag address must be specified")
@@ -131,7 +125,7 @@ func createExporters() error {
 	}
 	if viper.GetBool("gcp.pubsub.enabled") {
 		logger.Info("Creating Google Pub/Sub exporter")
-		if err := addPubSubExporter(&exporters); err != nil {
+		if err := addPubSubExporter(&exporters, columns); err != nil {
 			return fmt.Errorf("failed to create Google Pub/Sub exporter: %w", err)
 		}
 	}
