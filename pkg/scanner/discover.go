@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"sort"
+	"strings"
 
 	"github.com/go-ble/ble"
 
@@ -67,7 +68,7 @@ func (d *Discover) Discover(ctx context.Context) ([]string, error) {
 	}
 	var addrs []string
 	for addr := range addrMap {
-		addrs = append(addrs, addr)
+		addrs = append(addrs, strings.ToUpper(addr))
 	}
 	sort.Strings(addrs)
 	return addrs, nil
