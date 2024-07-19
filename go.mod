@@ -27,13 +27,13 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/net v0.26.0 // indirect
-	google.golang.org/api v0.186.0 // indirect
+	google.golang.org/api v0.186.0
 	google.golang.org/genproto v0.0.0-20240617180043-68d350f18fd4 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
 
 require (
-	github.com/niktheblak/ruuvitag-common v1.1.1
+	github.com/niktheblak/ruuvitag-common v1.2.0
 	github.com/spf13/pflag v1.0.5
 )
 
