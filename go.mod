@@ -7,7 +7,7 @@ toolchain go1.22.5
 require (
 	cloud.google.com/go/pubsub v1.40.0
 	github.com/JuulLabs-OSS/cbgo v0.0.2 // indirect
-	github.com/aws/aws-sdk-go v1.54.14
+	github.com/aws/aws-sdk-go v1.55.1
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-ble/ble v0.0.0-20240122180141-8c5522f54333
@@ -27,7 +27,7 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/net v0.26.0 // indirect
-	google.golang.org/api v0.186.0 // indirect
+	google.golang.org/api v0.186.0
 	google.golang.org/genproto v0.0.0-20240617180043-68d350f18fd4 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
