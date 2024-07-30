@@ -16,23 +16,23 @@ import (
 
 func init() {
 	rootCmd.PersistentFlags().Bool("postgres.enabled", false, "enable PostgreSQL exporter")
-	psql.AddPsqlFlags(rootCmd.PersistentFlags(), viper.GetViper(), "postgres")
+	psql.AddFlags(rootCmd.PersistentFlags(), viper.GetViper(), "postgres")
 }
 
 func addPostgresExporter(exporters *[]exporter.Exporter, columns map[string]string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	psqlInfo, err := psql.CreatePsqlInfoString(viper.GetViper(), "postgres")
+	psqlInfo, err := psql.CreateConnString(viper.GetViper(), "postgres")
 	if err != nil {
 		return err
 	}
 	table := viper.GetString("postgres.table")
 	logger.LogAttrs(ctx, slog.LevelInfo, "Connecting to PostgreSQL", slog.String("conn_str", psql.RemovePassword(psqlInfo)), slog.String("table", table))
 	exp, err := postgres.New(ctx, postgres.Config{
-		PSQLInfo: psqlInfo,
-		Table:    table,
-		Columns:  columns,
-		Logger:   logger,
+		ConnString: psqlInfo,
+		Table:      table,
+		Columns:    columns,
+		Logger:     logger,
 	})
 	if err != nil {
 		return err

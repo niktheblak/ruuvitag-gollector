@@ -4,25 +4,22 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"io"
 	"log/slog"
+	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/psql"
-
-	_ "github.com/lib/pq"
 )
 
 type postgresExporter struct {
-	db         *sql.DB
-	insertStmt *sql.Stmt
-	table      string
-	columns    map[string]string
-	logger     *slog.Logger
+	conn    *pgx.Conn
+	query   string
+	columns map[string]string
+	logger  *slog.Logger
 }
 
 func New(ctx context.Context, cfg Config) (exporter.Exporter, error) {
@@ -30,7 +27,7 @@ func New(ctx context.Context, cfg Config) (exporter.Exporter, error) {
 		cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 	cfg.Logger = cfg.Logger.With("exporter", "PostgreSQL")
-	db, err := sql.Open("postgres", cfg.PSQLInfo)
+	conn, err := pgx.Connect(ctx, cfg.ConnString)
 	if err != nil {
 		return nil, err
 	}
@@ -43,16 +40,11 @@ func New(ctx context.Context, cfg Config) (exporter.Exporter, error) {
 		return nil, err
 	}
 	cfg.Logger.LogAttrs(ctx, slog.LevelDebug, "Preparing insert statement", slog.String("query", q))
-	insertStmt, err := db.PrepareContext(ctx, q)
-	if err != nil {
-		return nil, err
-	}
 	return &postgresExporter{
-		db:         db,
-		insertStmt: insertStmt,
-		table:      cfg.Table,
-		columns:    cfg.Columns,
-		logger:     cfg.Logger,
+		conn:    conn,
+		query:   q,
+		columns: cfg.Columns,
+		logger:  cfg.Logger,
 	}, nil
 }
 
@@ -61,10 +53,12 @@ func (t *postgresExporter) Name() string {
 }
 
 func (t *postgresExporter) Export(ctx context.Context, data sensor.Data) error {
-	_, err := t.insertStmt.ExecContext(ctx, psql.BuildQueryArguments(t.columns, data)...)
+	_, err := t.conn.Exec(ctx, t.query, psql.BuildQueryArguments(t.columns, data)...)
 	return err
 }
 
 func (t *postgresExporter) Close() error {
-	return errors.Join(t.insertStmt.Close(), t.db.Close())
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return t.conn.Close(ctx)
 }

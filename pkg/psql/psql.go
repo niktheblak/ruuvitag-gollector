@@ -23,7 +23,7 @@ func RemovePassword(psqlInfo string) string {
 	return passwordRegexp.ReplaceAllString(psqlInfo, "password=[redacted] ")
 }
 
-func CreatePsqlInfoString(vpr *viper.Viper, prefix string) (psqlInfo string, err error) {
+func CreateConnString(vpr *viper.Viper, prefix string) (connString string, err error) {
 	var (
 		host     = vpr.GetString(fmt.Sprintf("%s.host", prefix))
 		port     = vpr.GetInt(fmt.Sprintf("%s.port", prefix))
@@ -80,11 +80,11 @@ func CreatePsqlInfoString(vpr *viper.Viper, prefix string) (psqlInfo string, err
 		builder.WriteString("sslkey=")
 		builder.WriteString(sslkey)
 	}
-	psqlInfo = builder.String()
+	connString = builder.String()
 	return
 }
 
-func AddPsqlFlags(fs *pflag.FlagSet, vpr *viper.Viper, prefix string) {
+func AddFlags(fs *pflag.FlagSet, vpr *viper.Viper, prefix string) {
 	fs.String(fmt.Sprintf("%s.host", prefix), "", "database host or IP")
 	fs.Int(fmt.Sprintf("%s.port", prefix), 0, "database port")
 	fs.String(fmt.Sprintf("%s.username", prefix), "", "database username")

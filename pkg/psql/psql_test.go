@@ -44,7 +44,7 @@ func TestCreatePsqlInfoString(t *testing.T) {
 	vpr.Set("postgres.password", "t4st_p4s!$")
 	vpr.Set("postgres.database", "test_database")
 	vpr.Set("postgres.table", "test_table")
-	psqlInfo, err := CreatePsqlInfoString(vpr, "postgres")
+	psqlInfo, err := CreateConnString(vpr, "postgres")
 	require.NoError(t, err)
 	assert.Equal(
 		t,
@@ -53,7 +53,7 @@ func TestCreatePsqlInfoString(t *testing.T) {
 	)
 
 	vpr.Set("postgres.table", "")
-	_, err = CreatePsqlInfoString(vpr, "postgres")
+	_, err = CreateConnString(vpr, "postgres")
 	assert.ErrorContains(t, err, "table name must be specified")
 }
 
@@ -66,7 +66,7 @@ func TestAddPsqlFlags(t *testing.T) {
 	vpr.Set("postgres.password", "t4st_p4s!$")
 	vpr.Set("postgres.database", "test_database")
 	vpr.Set("postgres.table", "test_table")
-	AddPsqlFlags(fs, vpr, "postgres")
+	AddFlags(fs, vpr, "postgres")
 	f := fs.Lookup("postgres.host")
 	require.NotNil(t, f)
 	f = fs.Lookup("postgres.port")

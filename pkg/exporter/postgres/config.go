@@ -5,8 +5,8 @@ import (
 )
 
 type Config struct {
-	PSQLInfo string
-	Table    string
-	Columns  map[string]string
-	Logger   *slog.Logger
+	ConnString string
+	Table      string
+	Columns    map[string]string
+	Logger     *slog.Logger
 }
