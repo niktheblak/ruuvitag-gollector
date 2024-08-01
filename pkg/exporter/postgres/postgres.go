@@ -52,19 +52,32 @@ func (t *postgresExporter) Name() string {
 }
 
 func (t *postgresExporter) Export(ctx context.Context, data sensor.Data) error {
-	if t.conn == nil || t.conn.IsClosed() {
-		if err := t.reconnect(ctx); err != nil {
-			return fmt.Errorf("failed to reconnect: %w", err)
+	args := psql.BuildQueryArguments(t.columns, data)
+	_, err := t.conn.Exec(ctx, t.query, args...)
+	if err != nil {
+		if err.Error() == "conn closed" {
+			// reconnect and retry
+			if reconnectErr := t.reconnect(ctx); reconnectErr != nil {
+				return fmt.Errorf("failed to reconnect: %w", reconnectErr)
+			}
+			_, err = t.conn.Exec(ctx, t.query, args...)
+			return err
+		} else {
+			return err
 		}
 	}
-	_, err := t.conn.Exec(ctx, t.query, psql.BuildQueryArguments(t.columns, data)...)
-	return err
+	return nil
 }
 
 func (t *postgresExporter) Close() error {
+	if t.conn == nil || t.conn.IsClosed() {
+		return nil
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	return t.conn.Close(ctx)
+	err := t.conn.Close(ctx)
+	t.conn = nil
+	return err
 }
 
 func (t *postgresExporter) reconnect(ctx context.Context) error {
@@ -72,8 +85,8 @@ func (t *postgresExporter) reconnect(ctx context.Context) error {
 		if err := t.conn.Close(ctx); err != nil {
 			t.logger.LogAttrs(ctx, slog.LevelWarn, "Error while closing connection", slog.String("error", err.Error()))
 		}
+		t.conn = nil
 	}
-	t.conn = nil
 	conn, err := pgx.Connect(ctx, t.connString)
 	if err != nil {
 		return err
