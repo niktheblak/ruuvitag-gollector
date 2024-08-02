@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/niktheblak/ruuvitag-common/pkg/psql"
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/psql"
 )
 
 type postgresExporter struct {
@@ -25,14 +25,16 @@ type postgresExporter struct {
 }
 
 func New(ctx context.Context, cfg Config) (exporter.Exporter, error) {
+	if cfg.ConnString == "" {
+		return nil, fmt.Errorf("no connection string provided")
+	}
+	if len(cfg.Columns) == 0 {
+		return nil, fmt.Errorf("columns must be non-empty")
+	}
 	if cfg.Logger == nil {
 		cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 	cfg.Logger = cfg.Logger.With("exporter", "PostgreSQL")
-	if len(cfg.Columns) == 0 {
-		cfg.Columns = sensor.DefaultColumnMap
-	}
-	cfg.Logger.LogAttrs(ctx, slog.LevelInfo, "Using columns", slog.Any("columns", cfg.Columns))
 	q, err := psql.BuildInsertQuery(cfg.Table, cfg.Columns)
 	if err != nil {
 		return nil, err

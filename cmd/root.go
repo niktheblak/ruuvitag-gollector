@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-ble/ble"
+	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -109,6 +110,10 @@ func createExporters() error {
 	}
 	logger.LogAttrs(nil, slog.LevelInfo, "RuuviTags", slog.Any("ruuvitags", ruuviTags))
 	columns := viper.GetStringMapString("columns")
+	if columns == nil || len(columns) == 0 {
+		columns = sensor.DefaultColumnMap
+	}
+	logger.LogAttrs(nil, slog.LevelInfo, "Using column mapping", slog.Any("columns", columns))
 	peripherals = make(map[string]string)
 	for addr, name := range ruuviTags {
 		peripherals[ble.NewAddr(addr).String()] = name

@@ -5,6 +5,7 @@ package influxdb
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"log/slog"
 	"strings"
@@ -15,9 +16,9 @@ import (
 	http2 "github.com/influxdata/influxdb-client-go/v2/api/http"
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
 
+	"github.com/niktheblak/ruuvitag-common/pkg/columnmap"
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 
-	"github.com/niktheblak/ruuvitag-gollector/pkg/columnmap"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
@@ -72,7 +73,7 @@ func New(cfg Config) (exporter.Exporter, error) {
 		return nil, err
 	}
 	if len(cfg.Columns) == 0 {
-		cfg.Columns = sensor.DefaultColumnMap
+		return nil, fmt.Errorf("columns must be non-empty")
 	}
 	if cfg.Logger == nil {
 		cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -129,23 +130,14 @@ func (e *influxdbExporter) Name() string {
 }
 
 func (e *influxdbExporter) Export(ctx context.Context, data sensor.Data) error {
-	fields := make(map[string]any)
-	columnmap.Collect(e.columns, data, func(column string, v any) {
-		switch column {
-		case "time":
-			break
-		case "mac":
-			break
-		case "name":
-			break
-		default:
-			fields[column] = v
-		}
-	})
-	point := influxdb2.NewPoint(e.measurement, map[string]string{
-		"mac":  strings.ToUpper(data.Addr),
-		"name": data.Name,
-	}, fields, data.Timestamp)
+	fields := columnmap.Transform(e.columns, data)
+	delete(fields, e.columns["time"]) // included as primary InfluxDB key
+	delete(fields, e.columns["mac"])  // included as tag
+	delete(fields, e.columns["name"]) // included as tag
+	tags := make(map[string]string)
+	tags[e.columns["mac"]] = strings.ToUpper(data.Addr)
+	tags[e.columns["name"]] = data.Name
+	point := influxdb2.NewPoint(e.measurement, tags, fields, data.Timestamp)
 	return e.WritePoint(ctx, point)
 }
 

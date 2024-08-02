@@ -9,9 +9,10 @@ import (
 
 	"github.com/spf13/viper"
 
+	"github.com/niktheblak/ruuvitag-common/pkg/psql"
+
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/postgres"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/psql"
 )
 
 func init() {

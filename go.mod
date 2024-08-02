@@ -34,7 +34,7 @@ require (
 require (
 	github.com/carlmjohnson/versioninfo v0.22.5
 	github.com/jackc/pgx/v5 v5.6.0
-	github.com/niktheblak/ruuvitag-common v1.2.0
+	github.com/niktheblak/ruuvitag-common v1.3.1
 	github.com/spf13/pflag v1.0.5
 )
 

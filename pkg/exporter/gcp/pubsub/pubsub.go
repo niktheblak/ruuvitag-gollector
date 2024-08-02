@@ -12,9 +12,9 @@ import (
 	"cloud.google.com/go/pubsub"
 	"google.golang.org/api/option"
 
+	"github.com/niktheblak/ruuvitag-common/pkg/columnmap"
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 
-	"github.com/niktheblak/ruuvitag-gollector/pkg/columnmap"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
@@ -27,6 +27,9 @@ type pubsubExporter struct {
 
 // New creates a new Google Pub/Sub reporter
 func New(ctx context.Context, cfg Config) (exporter.Exporter, error) {
+	if len(cfg.Columns) == 0 {
+		return nil, fmt.Errorf("columns must be non-empty")
+	}
 	if cfg.Logger == nil {
 		cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
@@ -55,28 +58,20 @@ func (e *pubsubExporter) Name() string {
 }
 
 func (e *pubsubExporter) Export(ctx context.Context, data sensor.Data) error {
-	fields := make(map[string]any)
-	columnmap.Collect(e.columns, data, func(column string, v any) {
-		switch column {
-		case "mac":
-			break
-		case "name":
-			break
-		default:
-			fields[column] = v
-		}
-	})
+	fields := columnmap.Transform(e.columns, data)
+	delete(fields, e.columns["mac"])  // included as attribute
+	delete(fields, e.columns["name"]) // included as attribute
 	jsonData, err := json.Marshal(fields)
 	if err != nil {
 		return err
 	}
 	e.logger.LogAttrs(ctx, slog.LevelInfo, "Publishing measurement", slog.String("data", string(jsonData)), slog.String("mac", data.Addr), slog.String("name", data.Name))
+	attrs := make(map[string]string)
+	attrs[e.columns["mac"]] = data.Addr
+	attrs[e.columns["name"]] = data.Name
 	msg := &pubsub.Message{
-		Data: jsonData,
-		Attributes: map[string]string{
-			"mac":  data.Addr,
-			"name": data.Name,
-		},
+		Data:       jsonData,
+		Attributes: attrs,
 	}
 	_, err = e.topic.Publish(ctx, msg).Get(ctx)
 	return err
