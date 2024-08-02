@@ -26,7 +26,7 @@ func (m *mockDynamoDBClient) PutItemWithContext(ctx aws.Context, input *dynamodb
 	assert.Equal("CC:CA:7E:52:CC:34", *input.Item["mac"].S)
 	assert.Equal("Backyard", *input.Item["name"].S)
 	assert.Equal("21.5", *input.Item["temperature"].N)
-	assert.Equal("2020-01-01T00:00:00Z", *input.Item["ts"].S)
+	assert.Equal("2020-01-01T00:00:00Z", *input.Item["time"].S)
 	return &dynamodb.PutItemOutput{}, nil
 }
 
