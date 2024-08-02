@@ -52,6 +52,12 @@ func (t *postgresExporter) Name() string {
 }
 
 func (t *postgresExporter) Export(ctx context.Context, data sensor.Data) error {
+	// previous reconnect failed; attempt again
+	if t.conn == nil {
+		if err := t.reconnect(ctx); err != nil {
+			return fmt.Errorf("failed to reconnect: %w", err)
+		}
+	}
 	args := psql.BuildQueryArguments(t.columns, data)
 	_, err := t.conn.Exec(ctx, t.query, args...)
 	if err != nil {
