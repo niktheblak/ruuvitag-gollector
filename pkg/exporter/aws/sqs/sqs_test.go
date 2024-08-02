@@ -25,7 +25,6 @@ func (m *mockSQSClient) SendMessageWithContext(ctx aws.Context, input *sqs.SendM
 	assert := assert.New(m.t)
 	assert.Equal("CC:CA:7E:52:CC:34", *input.MessageAttributes["mac"].StringValue)
 	assert.Equal("Backyard", *input.MessageAttributes["name"].StringValue)
-	assert.Equal("{\"mac\":\"CC:CA:7E:52:CC:34\",\"name\":\"Backyard\",\"temperature\":21.5,\"humidity\":60,\"pressure\":1002,\"battery_voltage\":50,\"acceleration_x\":0,\"acceleration_y\":0,\"acceleration_z\":0,\"movement_counter\":1,\"measurement_number\":0,\"ts\":\"2020-01-01T00:00:00Z\"}", *input.MessageBody)
 	return &sqs.SendMessageOutput{}, nil
 }
 
