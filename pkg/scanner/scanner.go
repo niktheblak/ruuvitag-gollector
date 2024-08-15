@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
+	"slices"
 	"sync"
 	"time"
 
@@ -106,7 +108,7 @@ func (s *scanner) doExport(ctx context.Context, measurements chan sensor.Data) {
 			if err := s.export(ctx, m); err != nil {
 				s.logger.LogAttrs(ctx, slog.LevelError, "Failed to report measurement", slog.Any("error", err))
 			}
-			if len(s.peripherals) > 0 && ContainsKeys(s.peripherals, seenPeripherals) {
+			if len(s.peripherals) > 0 && slices.Equal(slices.Sorted(maps.Keys(s.peripherals)), slices.Sorted(maps.Keys(seenPeripherals))) {
 				return
 			}
 		case <-ctx.Done():
