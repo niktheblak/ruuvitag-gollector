@@ -134,10 +134,10 @@ github.com/mgutz/logxi v0.0.0-20161027140823-aebf8a7d67ab h1:n8cgpHzJ5+EDyDri2s/
 github.com/mgutz/logxi v0.0.0-20161027140823-aebf8a7d67ab/go.mod h1:y1pL58r5z2VvAjeG1VLGc8zOQgSOzbKN7kMHPvFXJ+8=
 github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
-github.com/niktheblak/pgx-reconnect v1.0.0 h1:lSq71FI2A59uGCYTMl9KhjCeOB1N2W/WXJjjCO3rNFs=
-github.com/niktheblak/pgx-reconnect v1.0.0/go.mod h1:z6gVGB7lakXKzsYfrXk/H3+wcOF07hikn4OG+XHtgUs=
-github.com/niktheblak/ruuvitag-common v1.3.2 h1:SA6Na3uxp/mp05rM8veTtoKmYM14zrT0kVpOtxK6CRw=
-github.com/niktheblak/ruuvitag-common v1.3.2/go.mod h1:ab6Oiap5Gn3GPcM9jEohfVR8jEm+VMBRIrC+OwPDkqI=
+github.com/niktheblak/pgx-reconnect v1.1.0 h1:5nhzGxCAE4zP3KRwx35CnGaYeWVpUrW+BMnDc817SLA=
+github.com/niktheblak/pgx-reconnect v1.1.0/go.mod h1:nPhnU7VD7UrHHh61Cz+qkGw5QFEJcBzpjk5ml0/sZRY=
+github.com/niktheblak/ruuvitag-common v1.4.0 h1:TSAYVXnCdxNiphNY006CaqoHpZmcnwNFkqxGF5lwV10=
+github.com/niktheblak/ruuvitag-common v1.4.0/go.mod h1:qBrlhgsunNrd/srJqYC0kPw2xFNe9uEXvyT+cyehcZA=
 github.com/oapi-codegen/runtime v1.1.1 h1:EXLHh0DXIJnWhdRPN2w4MXAzFyE4CskzhNLUmtpMYro=
 github.com/oapi-codegen/runtime v1.1.1/go.mod h1:SK9X900oXmPWilYR5/WKPzt3Kqxn/uS/+lbpREv+eCg=
 github.com/pelletier/go-toml/v2 v2.2.2 h1:aYUidT7k73Pcl9nb2gScu7NSrKCSHIDE89b3+6Wq+LM=
