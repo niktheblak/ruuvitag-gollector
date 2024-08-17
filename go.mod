@@ -35,7 +35,7 @@ require (
 	github.com/carlmjohnson/versioninfo v0.22.5
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/niktheblak/pgx-reconnect v1.1.0
-	github.com/niktheblak/ruuvitag-common v1.4.0
+	github.com/niktheblak/ruuvitag-common v1.5.0
 )
 
 require (
