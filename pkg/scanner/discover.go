@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"sort"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/go-ble/ble"
@@ -62,16 +63,11 @@ func (d *Discover) Discover(ctx context.Context) ([]string, error) {
 	default:
 		return nil, err
 	}
-	addrMap := make(map[string]any)
+	addrMap := make(map[string]bool)
 	for addr := range ch {
-		addrMap[addr] = struct{}{}
+		addrMap[strings.ToUpper(addr)] = true
 	}
-	var addrs []string
-	for addr := range addrMap {
-		addrs = append(addrs, strings.ToUpper(addr))
-	}
-	sort.Strings(addrs)
-	return addrs, nil
+	return slices.Sorted(maps.Keys(addrMap)), nil
 }
 
 func (d *Discover) Close() error {
