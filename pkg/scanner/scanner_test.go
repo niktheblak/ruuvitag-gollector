@@ -5,6 +5,9 @@ import (
 	"encoding/binary"
 	"io"
 	"log/slog"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
@@ -45,4 +48,26 @@ func init() {
 		addr:             testAddr1,
 		manufacturerData: buf.Bytes(),
 	}
+}
+
+func TestContainsKeys(t *testing.T) {
+	t.Parallel()
+
+	assert.True(t, containsKeys(map[string]string{
+		testAddr1: "Living Room",
+		testAddr2: "Bedroom",
+		testAddr3: "Bathroom",
+	}, map[string]bool{
+		testAddr1: true,
+		testAddr2: true,
+		testAddr3: true,
+	}))
+	assert.False(t, containsKeys(map[string]string{
+		testAddr1: "Living Room",
+		testAddr2: "Bedroom",
+		testAddr3: "Bathroom",
+	}, map[string]bool{
+		testAddr1: true,
+		testAddr2: true,
+	}))
 }
