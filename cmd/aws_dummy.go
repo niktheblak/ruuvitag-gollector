@@ -4,10 +4,10 @@ package cmd
 
 import "github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 
-func addDynamoDBExporter(exporters *[]exporter.Exporter) error {
-	return ErrNotEnabled
+func createDynamoDBExporter(cfg map[string]any) (exporter.Exporter, error) {
+	return nil, ErrNotEnabled
 }
 
-func addSQSExporter(exporters *[]exporter.Exporter) error {
-	return ErrNotEnabled
+func createSQSExporter(cfg map[string]any) (exporter.Exporter, error) {
+	return nil, ErrNotEnabled
 }

@@ -6,16 +6,23 @@ import (
 	"fmt"
 
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
+
+	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
-type Exporter struct {
+type consoleExporter struct {
+	name string
 }
 
-func (e Exporter) Name() string {
-	return "Console"
+func New(name string) exporter.Exporter {
+	return &consoleExporter{name: name}
 }
 
-func (e Exporter) Export(ctx context.Context, data sensor.Data) error {
+func (e *consoleExporter) Name() string {
+	return e.name
+}
+
+func (e *consoleExporter) Export(ctx context.Context, data sensor.Data) error {
 	j, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
 		return err
@@ -24,6 +31,6 @@ func (e Exporter) Export(ctx context.Context, data sensor.Data) error {
 	return nil
 }
 
-func (e Exporter) Close() error {
+func (e *consoleExporter) Close() error {
 	return nil
 }

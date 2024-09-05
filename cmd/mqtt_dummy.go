@@ -4,6 +4,6 @@ package cmd
 
 import "github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 
-func addMQTTExporter(exporters *[]exporter.Exporter) error {
-	return ErrNotEnabled
+func createMQTTExporter(cfg map[string]any) (exporter.Exporter, error) {
+	return nil, ErrNotEnabled
 }
