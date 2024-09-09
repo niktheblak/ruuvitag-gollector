@@ -13,7 +13,7 @@ import (
 )
 
 func createDynamoDBExporter(cfg map[string]any) (exporter.Exporter, error) {
-	table := cast.ToString(cfg["dynamodb.table"])
+	table := cast.ToString(cfg["table"])
 	if table == "" {
 		return nil, fmt.Errorf("DynamoDB table name must be specified")
 	}
@@ -27,8 +27,8 @@ func createDynamoDBExporter(cfg map[string]any) (exporter.Exporter, error) {
 }
 
 func createSQSExporter(cfg map[string]any) (exporter.Exporter, error) {
-	queueName := cast.ToString(cfg["sqs.queue.name"])
-	queueURL := cast.ToString(cfg["sqs.queue.url"])
+	queueName := cast.ToString(cfg["queue.name"])
+	queueURL := cast.ToString(cfg["queue.url"])
 	if queueName == "" && queueURL == "" {
 		return nil, fmt.Errorf("AWS SQS queue name or queue URL must be specified")
 	}
