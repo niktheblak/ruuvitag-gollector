@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"time"
 
 	"github.com/go-ble/ble"
@@ -148,19 +149,34 @@ func parseOldExporterConfig() map[string]map[string]any {
 	}
 	dynamoDBCfg, ok := viper.Get("aws.dynamodb").(map[string]any)
 	if ok && isEnabled(dynamoDBCfg) {
+		dynamoDBCfg = maps.Clone(dynamoDBCfg) // defensive copy
+		dynamoDBCfg["access_key_id"] = viper.GetString("aws.access_key_id")
+		dynamoDBCfg["secret_access_key"] = viper.GetString("aws.secret_access_key")
+		dynamoDBCfg["region"] = viper.GetString("aws.region")
 		configs["dynamodb"] = dynamoDBCfg
 	}
 	sqsCfg, ok := viper.Get("aws.sqs").(map[string]any)
 	if ok && isEnabled(sqsCfg) {
+		sqsCfg = maps.Clone(sqsCfg) // defensive copy
+		sqsCfg["access_key_id"] = viper.GetString("aws.access_key_id")
+		sqsCfg["secret_access_key"] = viper.GetString("aws.secret_access_key")
+		sqsCfg["region"] = viper.GetString("aws.region")
 		configs["sqs"] = sqsCfg
 	}
 	gcpCfg, ok := viper.Get("gcp").(map[string]any)
 	if ok && isEnabled(gcpCfg) {
+		gcpCfg = maps.Clone(gcpCfg) // defensive copy
+		gcpCfg["credentials"] = viper.GetString("gcp.credentials")
+		gcpCfg["project"] = viper.GetString("gcp.project")
 		configs["gcp"] = gcpCfg
 	}
 	mqttCfg, ok := viper.Get("mqtt").(map[string]any)
 	if ok && isEnabled(mqttCfg) {
 		configs["mqtt"] = mqttCfg
+	}
+	httpCfg, ok := viper.Get("http").(map[string]any)
+	if ok && isEnabled(httpCfg) {
+		configs["http"] = mqttCfg
 	}
 	return configs
 }

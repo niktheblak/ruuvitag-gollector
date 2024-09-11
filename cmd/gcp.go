@@ -19,7 +19,7 @@ func createPubSubExporter(columns map[string]string, cfg map[string]any) (export
 	if project == "" {
 		return nil, fmt.Errorf("Google Cloud Platform project must be specified")
 	}
-	topic := cast.ToString(cfg["pubsub.topic"])
+	topic := cast.ToString(cfg["topic"])
 	if topic == "" {
 		return nil, fmt.Errorf("Google Pub/Sub topic must be specified")
 	}
