@@ -106,8 +106,10 @@ console = false
 "FB:E1:B7:04:95:EE" = "Upstairs"
 "E8:E0:C6:0B:B8:C5" = "Downstairs"
 
-[influxdb]
-enabled = true
+[exporters]
+
+[exporters.influxdb]
+type = "influxdb"
 addr = "https://eu-central-1-1.aws.cloud2.influxdata.com"
 bucket = "ruuvitag"
 measurement = "ruuvitag"
@@ -116,20 +118,22 @@ async = true
 batch_size = 20
 flush_interval = "5s"
 
-[aws]
+[exporters.dynamodb]
+type = "dynamodb"
+table = "ruuvitag"
 access_key_id = "MYAWSAKKESSKEY"
 secret_access_key = "my+aws+secret+key"
 region = "us-east-2"
 
-[aws.dynamodb]
-enabled = true
-table = "ruuvitag"
-[aws.sqs]
-enabled = true
+[exporters.sqs]
+type = "sqs"
 queue.url = "https://us-east-2.queue.amazonaws.com/321667262165/measurements"
+access_key_id = "MYAWSAKKESSKEY"
+secret_access_key = "my+aws+secret+key"
+region = "us-east-2"
 
-[postgres]
-enabled = true
+[exporters.postgres]
+type = "postgres"
 host = "my-instance-name.eu-central-1.aws.neon.tech"
 port = 5432
 database = "ruuvitag"
@@ -138,16 +142,13 @@ password = "some_secret_password"
 table = "ruuvitag"
 sslmode = "require"
 
-[postgres.column]
-time = "time"
-
-[http]
-enabled = true
+[exporters.http]
+type = "http"
 url = "https://my-api.herokuapp.com/receive"
 token = "MyHerokuToken"
   
-[mqtt]
-enabled = true
+[exporters.mqtt]
+type = "mqtt"
 addr = "tcp://localhost:8883"
 client_id = "ruuvitag-gollector"
 username = "mqtt_user"
