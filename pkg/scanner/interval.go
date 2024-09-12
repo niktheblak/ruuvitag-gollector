@@ -49,5 +49,5 @@ func (s *interval) listen(ctx context.Context, ticks <-chan time.Time, scanTimeo
 
 func (s *interval) doScan(ctx context.Context) {
 	meas := s.meas.Channel(ctx)
-	s.doExport(ctx, meas)
+	s.exportChan(ctx, meas)
 }

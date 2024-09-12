@@ -13,6 +13,7 @@ import (
 	"github.com/go-ble/ble"
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 
+	"github.com/niktheblak/ruuvitag-gollector/pkg/downsample"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
@@ -22,6 +23,7 @@ type Config struct {
 	BLEScanner    BLEScanner
 	Peripherals   map[string]string
 	DeviceCreator DeviceCreator
+	Downsample    int
 	Logger        *slog.Logger
 }
 
@@ -30,6 +32,7 @@ func DefaultConfig() Config {
 		DeviceName:    "default",
 		BLEScanner:    new(GoBLEScanner),
 		DeviceCreator: new(GoBLEDeviceCreator),
+		Downsample:    0,
 		Logger:        slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
 }
@@ -55,6 +58,8 @@ type scanner struct {
 	peripherals map[string]string
 	dev         DeviceCreator
 	meas        *Measurements
+	buffer      []sensor.Data
+	position    int
 	logger      *slog.Logger
 }
 
@@ -63,6 +68,7 @@ func newScanner(cfg Config) scanner {
 		exporters:   cfg.Exporters,
 		peripherals: cfg.Peripherals,
 		dev:         cfg.DeviceCreator,
+		buffer:      make([]sensor.Data, cfg.Downsample),
 		logger:      cfg.Logger,
 		meas: &Measurements{
 			BLE:         cfg.BLEScanner,
@@ -95,7 +101,7 @@ func (s *scanner) Close() error {
 	return nil
 }
 
-func (s *scanner) doExport(ctx context.Context, measurements chan sensor.Data) {
+func (s *scanner) exportChan(ctx context.Context, measurements chan sensor.Data) {
 	seenPeripherals := make(map[string]bool)
 	for {
 		select {
@@ -105,18 +111,60 @@ func (s *scanner) doExport(ctx context.Context, measurements chan sensor.Data) {
 			}
 			seenPeripherals[m.Addr] = true
 			if err := s.export(ctx, m); err != nil {
-				s.logger.LogAttrs(ctx, slog.LevelError, "Failed to report measurement", slog.Any("error", err))
+				s.logger.LogAttrs(ctx, slog.LevelError, "Failed to export measurement", slog.Any("error", err))
 			}
 			if len(s.peripherals) > 0 && containsKeys(s.peripherals, seenPeripherals) {
 				return
 			}
 		case <-ctx.Done():
+			flushCtx := context.Background()
+			if err := s.flush(flushCtx); err != nil {
+				s.logger.LogAttrs(ctx, slog.LevelError, "Failed to flush measurements", slog.Any("error", err))
+			}
 			return
 		}
 	}
 }
 
 func (s *scanner) export(ctx context.Context, m sensor.Data) error {
+	if len(s.buffer) == 0 {
+		return s.runExport(ctx, m)
+	}
+	s.append(m)
+	if s.full() {
+		return s.flush(ctx)
+	}
+	return nil
+}
+
+func (s *scanner) append(m sensor.Data) {
+	if s.full() {
+		return
+	}
+	s.buffer[s.position] = m
+	s.position++
+}
+
+func (s *scanner) full() bool {
+	return s.position == len(s.buffer)
+}
+
+func (s *scanner) flush(ctx context.Context) error {
+	if len(s.buffer) == 0 || s.position == 0 {
+		return nil
+	}
+	avg := downsample.Avg(s.buffer[0:s.position])
+	err := s.runExport(ctx, avg)
+	if err != nil {
+		s.buffer[0] = avg
+		s.position = 1
+	} else {
+		s.position = 0
+	}
+	return err
+}
+
+func (s *scanner) runExport(ctx context.Context, m sensor.Data) error {
 	if len(s.exporters) == 0 {
 		return fmt.Errorf("no exporters available")
 	}
