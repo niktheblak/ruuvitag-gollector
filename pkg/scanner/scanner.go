@@ -13,6 +13,7 @@ import (
 	"github.com/go-ble/ble"
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 
+	"github.com/niktheblak/ruuvitag-gollector/pkg/buffer"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/downsample"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
@@ -58,17 +59,20 @@ type scanner struct {
 	peripherals map[string]string
 	dev         DeviceCreator
 	meas        *Measurements
-	buffer      []sensor.Data
-	position    int
+	buffer      *buffer.Buffer[sensor.Data]
 	logger      *slog.Logger
 }
 
 func newScanner(cfg Config) scanner {
+	var b *buffer.Buffer[sensor.Data]
+	if cfg.Downsample > 0 {
+		b = buffer.New[sensor.Data](cfg.Downsample)
+	}
 	return scanner{
 		exporters:   cfg.Exporters,
 		peripherals: cfg.Peripherals,
 		dev:         cfg.DeviceCreator,
-		buffer:      make([]sensor.Data, cfg.Downsample),
+		buffer:      b,
 		logger:      cfg.Logger,
 		meas: &Measurements{
 			BLE:         cfg.BLEScanner,
@@ -117,6 +121,9 @@ func (s *scanner) exportChan(ctx context.Context, measurements chan sensor.Data)
 				return
 			}
 		case <-ctx.Done():
+			if s.buffer == nil {
+				return
+			}
 			flushCtx := context.Background()
 			if err := s.flush(flushCtx); err != nil {
 				s.logger.LogAttrs(ctx, slog.LevelError, "Failed to flush measurements", slog.Any("error", err))
@@ -127,41 +134,23 @@ func (s *scanner) exportChan(ctx context.Context, measurements chan sensor.Data)
 }
 
 func (s *scanner) export(ctx context.Context, m sensor.Data) error {
-	if len(s.buffer) == 0 {
+	if s.buffer == nil {
 		return s.runExport(ctx, m)
 	}
-	s.append(m)
-	if s.full() {
-		return s.flush(ctx)
+	if s.buffer.Push(m) {
+		err := s.flush(ctx)
+		s.buffer.Clear()
+		return err
 	}
 	return nil
 }
 
-func (s *scanner) append(m sensor.Data) {
-	if s.full() {
-		return
-	}
-	s.buffer[s.position] = m
-	s.position++
-}
-
-func (s *scanner) full() bool {
-	return s.position == len(s.buffer)
-}
-
 func (s *scanner) flush(ctx context.Context) error {
-	if len(s.buffer) == 0 || s.position == 0 {
+	if s.buffer.Cap() == 0 || s.buffer.Position() == 0 {
 		return nil
 	}
-	avg := downsample.Avg(s.buffer[0:s.position])
-	err := s.runExport(ctx, avg)
-	if err != nil {
-		s.buffer[0] = avg
-		s.position = 1
-	} else {
-		s.position = 0
-	}
-	return err
+	avg := downsample.Avg(s.buffer.Items())
+	return s.runExport(ctx, avg)
 }
 
 func (s *scanner) runExport(ctx context.Context, m sensor.Data) error {
