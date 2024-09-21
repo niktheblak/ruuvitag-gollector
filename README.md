@@ -32,8 +32,8 @@ RuuviTags into the config file under the `ruuvitags` key:
 If you want to save data to InfluxDB (local or remote), add the following options to your config file:
 
 ```toml
-[influxdb]
-enabled = true
+[expoters.influxdb]
+type = "influxdb"
 addr = "http://localhost:8086"
 bucket = "ruuvitag"
 measurement = "ruuvitag"
@@ -99,7 +99,6 @@ sudo ruuvitag-gollector daemon
 ```toml
 interval = "0m"
 device = "default"
-console = false
 
 [ruuvitags]
 "CC:CA:7E:52:CC:34" = "Backyard"

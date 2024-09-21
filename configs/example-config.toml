@@ -8,6 +8,7 @@ device = "default"
 "E8:E0:C6:0B:B8:C5" = "Downstairs"
 
 [exporters.influxdb]
+type = "influxdb"
 addr = "https://eu-central-1-1.aws.cloud2.influxdata.com"
 bucket = "ruuvitag"
 measurement = "ruuvitag"
@@ -17,6 +18,7 @@ batch_size = 20
 flush_interval = "5s"
 
 [exporters.postgres]
+type = "postgres"
 host = "my-instance-name.eu-central-1.aws.neon.tech"
 port = 5432
 database = "ruuvitag"
