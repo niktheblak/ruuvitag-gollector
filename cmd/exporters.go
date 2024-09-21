@@ -115,6 +115,9 @@ func getExporterConfigs() (map[string]map[string]any, error) {
 		return nil, err
 	}
 	oldCfg := parseOldExporterConfig()
+	if len(oldCfg) > 0 {
+		logger.Warn("Using deprecated exporter config. Consult README.md for the new configuration format.")
+	}
 	for k, v := range oldCfg {
 		cfg[k] = v
 	}

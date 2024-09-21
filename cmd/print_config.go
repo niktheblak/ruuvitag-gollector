@@ -27,6 +27,9 @@ var printConfigCmd = &cobra.Command{
 				fmt.Printf("%s = %v\n", key, viper.Get(key))
 			}
 		}
+		if _, err := getExporterConfigs(); err != nil {
+			return err
+		}
 		return nil
 	},
 }
