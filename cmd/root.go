@@ -6,16 +6,11 @@ import (
 	"log/slog"
 	"os"
 	"strings"
-	"time"
 
-	"github.com/go-ble/ble"
-	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/http"
 )
 
 var ErrNotEnabled = errors.New("this exporter is not included in the build")
@@ -50,14 +45,8 @@ func init() {
 	rootCmd.PersistentFlags().StringToString("ruuvitags", nil, "RuuviTag addresses and names to use")
 	rootCmd.PersistentFlags().StringToString("columns", nil, "RuuviTag fields to use and their column names")
 	rootCmd.PersistentFlags().String("device", "", "HCL device to use")
-	rootCmd.PersistentFlags().BoolP("console", "c", false, "Print measurements to console")
-	rootCmd.PersistentFlags().String("loglevel", "info", "Log level")
 	rootCmd.PersistentFlags().String("log.level", "info", "Log level")
 	rootCmd.PersistentFlags().String("log.format", "text", "Log level")
-
-	rootCmd.PersistentFlags().Bool("http.enabled", false, "Send measurements as JSON to a HTTP endpoint")
-	rootCmd.PersistentFlags().String("http.addr", "", "HTTP receiver address")
-	rootCmd.PersistentFlags().String("http.token", "", "HTTP receiver authorization token")
 
 	viper.SetDefault("log.level", "info")
 	viper.SetDefault("log.format", "text")
@@ -98,93 +87,4 @@ func initConfig() {
 		os.Exit(1)
 	}
 	logger = slog.New(logHandler)
-}
-
-func createExporters() error {
-	if viper.ConfigFileUsed() != "" {
-		logger.LogAttrs(nil, slog.LevelInfo, "Read config from file", slog.String("file", viper.ConfigFileUsed()))
-	}
-	ruuviTags := viper.GetStringMapString("ruuvitags")
-	if len(ruuviTags) == 0 {
-		return fmt.Errorf("at least one RuuviTag address must be specified")
-	}
-	logger.LogAttrs(nil, slog.LevelInfo, "RuuviTags", slog.Any("ruuvitags", ruuviTags))
-	columns := viper.GetStringMapString("columns")
-	if columns == nil || len(columns) == 0 {
-		columns = sensor.DefaultColumnMap
-	}
-	logger.LogAttrs(nil, slog.LevelInfo, "Using column mapping", slog.Any("columns", columns))
-	peripherals = make(map[string]string)
-	for addr, name := range ruuviTags {
-		peripherals[ble.NewAddr(addr).String()] = name
-	}
-	if viper.GetBool("console") {
-		logger.Info("Creating console exporter")
-		exporters = append(exporters, console.Exporter{})
-	}
-	if viper.GetBool("influxdb.enabled") {
-		logger.Info("Creating InfluxDB exporter")
-		if err := addInfluxDBExporter(&exporters, columns); err != nil {
-			return fmt.Errorf("failed to create InfluxDB exporter: %w", err)
-		}
-	}
-	if viper.GetBool("gcp.pubsub.enabled") {
-		logger.Info("Creating Google Pub/Sub exporter")
-		if err := addPubSubExporter(&exporters, columns); err != nil {
-			return fmt.Errorf("failed to create Google Pub/Sub exporter: %w", err)
-		}
-	}
-	if viper.GetBool("aws.dynamodb.enabled") {
-		logger.Info("Creating AWS DynamoDB exporter")
-		if err := addDynamoDBExporter(&exporters); err != nil {
-			return fmt.Errorf("failed to create AWS DynamoDB exporter: %w", err)
-		}
-	}
-	if viper.GetBool("aws.sqs.enabled") {
-		logger.Info("Creating AWS SQS  exporter")
-		if err := addSQSExporter(&exporters); err != nil {
-			return fmt.Errorf("failed to create AWS SQS exporter: %w", err)
-		}
-	}
-	if viper.GetBool("postgres.enabled") {
-		logger.Info("Creating PostgreSQL exporter")
-		if err := addPostgresExporter(&exporters, columns); err != nil {
-			return fmt.Errorf("failed to create PostgreSQL exporter: %w", err)
-		}
-	}
-	if viper.GetBool("http.enabled") {
-		logger.Info("Creating HTTP exporter")
-		addr := viper.GetString("http.addr")
-		token := viper.GetString("http.token")
-		exp, err := http.New(http.Config{
-			URL:     addr,
-			Token:   token,
-			Timeout: 10 * time.Second,
-			Columns: columns,
-			Logger:  logger,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to create HTTP exporter: %w", err)
-		}
-		exporters = append(exporters, exp)
-	}
-	if viper.GetBool("mqtt.enabled") {
-		logger.Info("Creating MQTT exporter")
-		if err := addMQTTExporter(&exporters); err != nil {
-			return fmt.Errorf("failed to create MQTT exporter: %w", err)
-		}
-	}
-	device = viper.GetString("device")
-	logger.Info("Using device", "device", device)
-	return nil
-}
-
-func closeExporters() error {
-	var errs []error
-	for _, exp := range exporters {
-		if err := exp.Close(); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	return errors.Join(errs...)
 }

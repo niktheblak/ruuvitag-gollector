@@ -4,6 +4,6 @@ package cmd
 
 import "github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 
-func addPostgresExporter(exporters *[]exporter.Exporter, columns map[string]string) error {
-	return ErrNotEnabled
+func createPostgresExporter(name string, columns map[string]string, cfg map[string]any) (exporter.Exporter, error) {
+	return nil, ErrNotEnabled
 }

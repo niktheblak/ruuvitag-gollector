@@ -11,8 +11,6 @@ import (
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 )
 
-const BufferSize = 128
-
 type Measurements struct {
 	BLE         BLEScanner
 	Peripherals map[string]string
@@ -26,7 +24,7 @@ func (s *Measurements) Channel(ctx context.Context) chan sensor.Data {
 	if s.Logger == nil {
 		s.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
-	ch := make(chan sensor.Data, BufferSize)
+	ch := make(chan sensor.Data)
 	go s.scan(ctx, ch)
 	return ch
 }

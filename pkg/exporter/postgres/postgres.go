@@ -18,6 +18,7 @@ import (
 )
 
 type postgresExporter struct {
+	name       string
 	conn       *pgxreconnect.ReConn
 	connString string
 	query      string
@@ -25,7 +26,7 @@ type postgresExporter struct {
 	logger     *slog.Logger
 }
 
-func New(ctx context.Context, cfg Config) (exporter.Exporter, error) {
+func New(ctx context.Context, name string, cfg Config) (exporter.Exporter, error) {
 	if cfg.ConnString == "" {
 		return nil, fmt.Errorf("no connection string provided")
 	}
@@ -46,6 +47,7 @@ func New(ctx context.Context, cfg Config) (exporter.Exporter, error) {
 	}
 	cfg.Logger.LogAttrs(ctx, slog.LevelDebug, "Using insert query", slog.String("query", q))
 	e := &postgresExporter{
+		name:       name,
 		conn:       conn,
 		connString: cfg.ConnString,
 		query:      q,
@@ -56,7 +58,7 @@ func New(ctx context.Context, cfg Config) (exporter.Exporter, error) {
 }
 
 func (t *postgresExporter) Name() string {
-	return "PostgreSQL"
+	return t.name
 }
 
 func (t *postgresExporter) Export(ctx context.Context, data sensor.Data) error {

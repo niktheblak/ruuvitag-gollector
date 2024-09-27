@@ -7,8 +7,8 @@ device = "default"
 "FB:E1:B7:04:95:EE" = "Upstairs"
 "E8:E0:C6:0B:B8:C5" = "Downstairs"
 
-[influxdb]
-enabled = true
+[exporters.influxdb]
+type = "influxdb"
 addr = "https://eu-central-1-1.aws.cloud2.influxdata.com"
 bucket = "ruuvitag"
 measurement = "ruuvitag"
@@ -17,8 +17,8 @@ async = true
 batch_size = 20
 flush_interval = "5s"
 
-[postgres]
-enabled = true
+[exporters.postgres]
+type = "postgres"
 host = "my-instance-name.eu-central-1.aws.neon.tech"
 port = 5432
 database = "ruuvitag"
@@ -26,6 +26,3 @@ username = "myorg@example.com"
 password = "some_secret_password"
 table = "ruuvitag"
 sslmode = "require"
-
-[postgres.column]
-time = "time"
