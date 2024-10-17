@@ -6,7 +6,7 @@ StartLimitIntervalSec=90
 
 [Service]
 Type=exec
-Restart=always
+Restart=on-failure
 RestartSec=2
 ExecStart=/usr/local/bin/ruuvitag-gollector daemon
 
