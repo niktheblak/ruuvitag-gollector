@@ -7,10 +7,8 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"time"
 
-	"github.com/cenkalti/backoff/v4"
-	"github.com/niktheblak/pgx-reconnect"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/niktheblak/ruuvitag-common/pkg/psql"
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 
@@ -19,7 +17,7 @@ import (
 
 type postgresExporter struct {
 	name       string
-	conn       *pgxreconnect.ReConn
+	dbpool     *pgxpool.Pool
 	connString string
 	query      string
 	columns    map[string]string
@@ -37,7 +35,7 @@ func New(ctx context.Context, name string, cfg Config) (exporter.Exporter, error
 		cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 	cfg.Logger = cfg.Logger.With("exporter", "PostgreSQL")
-	conn, err := pgxreconnect.Connect(ctx, cfg.ConnString, backoff.NewExponentialBackOff())
+	dbpool, err := pgxpool.New(ctx, cfg.ConnString)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +46,7 @@ func New(ctx context.Context, name string, cfg Config) (exporter.Exporter, error
 	cfg.Logger.LogAttrs(ctx, slog.LevelDebug, "Using insert query", slog.String("query", q))
 	e := &postgresExporter{
 		name:       name,
-		conn:       conn,
+		dbpool:     dbpool,
 		connString: cfg.ConnString,
 		query:      q,
 		columns:    cfg.Columns,
@@ -63,7 +61,7 @@ func (t *postgresExporter) Name() string {
 
 func (t *postgresExporter) Export(ctx context.Context, data sensor.Data) error {
 	args := psql.BuildQueryArguments(t.columns, data)
-	_, err := t.conn.Exec(ctx, t.query, args...)
+	_, err := t.dbpool.Exec(ctx, t.query, args...)
 	if err != nil {
 		return err
 	}
@@ -71,8 +69,6 @@ func (t *postgresExporter) Export(ctx context.Context, data sensor.Data) error {
 }
 
 func (t *postgresExporter) Close() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	err := t.conn.Close(ctx)
-	return err
+	t.dbpool.Close()
+	return nil
 }
