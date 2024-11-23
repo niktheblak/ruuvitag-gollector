@@ -24,7 +24,7 @@ require (
 	github.com/spf13/cast v1.7.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	golang.org/x/net v0.31.0 // indirect
 	google.golang.org/api v0.208.0
 	google.golang.org/genproto v0.0.0-20241113202542-65e8d215514f // indirect
