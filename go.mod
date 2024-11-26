@@ -32,7 +32,7 @@ require (
 )
 
 require (
-	github.com/carlmjohnson/versioninfo v0.22.5
+	github.com/carlmjohnson/versioninfo/v2 v2.24.1
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/niktheblak/ruuvitag-common v1.6.0
 )
