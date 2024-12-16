@@ -51,5 +51,4 @@ func (s *Measurements) scan(ctx context.Context, ch chan sensor.Data) {
 	default:
 		s.Logger.LogAttrs(ctx, slog.LevelError, "Scan failed", slog.Any("error", err))
 	}
-	close(ch)
 }
