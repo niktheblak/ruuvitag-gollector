@@ -2,7 +2,7 @@ module github.com/niktheblak/ruuvitag-gollector
 
 go 1.23
 
-toolchain go1.23.4
+toolchain go1.23.5
 
 require (
 	cloud.google.com/go/pubsub v1.45.3
