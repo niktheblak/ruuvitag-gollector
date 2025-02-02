@@ -5,7 +5,7 @@ go 1.23
 toolchain go1.23.5
 
 require (
-	cloud.google.com/go/pubsub v1.46.0
+	cloud.google.com/go/pubsub v1.47.0
 	github.com/JuulLabs-OSS/cbgo v0.0.2 // indirect
 	github.com/aws/aws-sdk-go v1.55.6
 	github.com/eclipse/paho.mqtt.golang v1.5.0
@@ -37,7 +37,7 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.118.0 // indirect
+	cloud.google.com/go v0.118.1 // indirect
 	cloud.google.com/go/auth v0.14.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.7 // indirect
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
