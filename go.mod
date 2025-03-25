@@ -32,7 +32,7 @@ require (
 )
 
 require (
-	github.com/jackc/pgx/v5 v5.7.3
+	github.com/jackc/pgx/v5 v5.7.4
 	github.com/niktheblak/ruuvitag-common v1.6.0
 )
 
