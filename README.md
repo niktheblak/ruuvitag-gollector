@@ -1,6 +1,6 @@
 # ruuvitag-gollector
 
-Collects data from RuuviTag sensors to InfluxDB and other databases.
+ruuvitag-gollector collects Bluetooth sensor data from RuuviTags and exports it to time-series databases and cloud platforms.
 
 Supports the RAWv2 format emitted by RuuviTags with 2.x firmware.
 
