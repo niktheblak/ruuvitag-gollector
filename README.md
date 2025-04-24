@@ -2,7 +2,7 @@
 
 RuuviTags are an amazing way to collect environmental data. But sometimes, you want full control over how that data is stored, visualized, or processed. ruuvitag-gollector is a self-hosted solution that listens to BLE broadcasts and pushes sensor data to platforms like InfluxDB, PostgreSQL, AWS, GCP and more.
 
-Whether you're monitoring a greenhouse, a guitar case, a terrarium, or just love collecting atmospheric data with Raspberry Pi; this project gives you full flexibility without needing a subscription. You will need to self-host or host in the cloud some the server stuff, such as a database and Grafana though. But for collecting and seeing ther data, all you need is the cheapest possible Raspberry Pi and a Go compiler.
+Whether you're monitoring a greenhouse, a guitar case, a terrarium, or just love collecting atmospheric data with Raspberry Pi; this project gives you full flexibility without needing a subscription. You will need to self-host or host in the cloud some the server stuff, such as a database and Grafana though. But for collecting and seeing their data, all you need is the cheapest possible Raspberry Pi and a Go compiler.
 
 Supports the RAWv2 format emitted by RuuviTags with 2.x or later firmware.
 
