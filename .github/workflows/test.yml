@@ -1,12 +1,16 @@
-name: Test
+name: Unit Tests
 
 on:
   push:
 
 jobs:
-
-  build:
+  test:
     runs-on: ubuntu-latest
+    permissions:
+      packages: read
+      actions: read
+      contents: read
+
     steps:
     - uses: actions/checkout@v4
 
@@ -16,7 +20,7 @@ jobs:
         go-version: '1.24'
 
     - name: Build
-      run: go build -tags postgres,influxdb
+      run: go build -tags postgres,influxdb,aws,gcp,mqtt
 
-    - name: Test
-      run: go test -tags postgres,influxdb -v ./...
+    - name: Run Unit Tests
+      run: go test -tags postgres,influxdb,aws,gcp,mqtt -v ./...
