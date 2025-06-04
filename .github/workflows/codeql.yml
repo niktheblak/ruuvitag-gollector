@@ -35,6 +35,7 @@ jobs:
     - if: matrix.build-mode == 'manual'
       shell: bash
       run: |
+        echo '  go mod download'
         echo '  go build -tags postgres,influxdb,aws,gcp,mqtt'
 
     - name: Perform CodeQL Analysis
