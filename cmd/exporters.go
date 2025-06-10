@@ -46,7 +46,7 @@ func createExporters() error {
 		}
 		exporters = append(exporters, exp)
 	}
-	device = viper.GetString("device")
+	device = viper.GetString(deviceConfigKey)
 	logger.Info("Using device", "device", device)
 	return nil
 }

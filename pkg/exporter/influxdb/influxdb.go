@@ -39,7 +39,7 @@ type asyncInfluxdbExporter struct {
 	writeAPI api.WriteAPI
 }
 
-func (e *asyncInfluxdbExporter) WritePoint(ctx context.Context, point *write.Point) error {
+func (e *asyncInfluxdbExporter) WritePoint(_ context.Context, point *write.Point) error {
 	e.writeAPI.WritePoint(point)
 	return nil
 }

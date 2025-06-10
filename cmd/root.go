@@ -13,6 +13,12 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
+const (
+	logLevelConfigKey  = "log.level"
+	logFormatConfigKey = "log.format"
+	deviceConfigKey    = "device"
+)
+
 var ErrNotEnabled = errors.New("this exporter is not included in the build")
 
 var (
@@ -31,8 +37,7 @@ var rootCmd = &cobra.Command{
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		panic(err)
 	}
 }
 
@@ -44,13 +49,13 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file path")
 	rootCmd.PersistentFlags().StringToString("ruuvitags", nil, "RuuviTag addresses and names to use")
 	rootCmd.PersistentFlags().StringToString("columns", nil, "RuuviTag fields to use and their column names")
-	rootCmd.PersistentFlags().String("device", "", "HCL device to use")
-	rootCmd.PersistentFlags().String("log.level", "info", "Log level")
-	rootCmd.PersistentFlags().String("log.format", "text", "Log level")
+	rootCmd.PersistentFlags().String(deviceConfigKey, "", "HCL device to use")
+	rootCmd.PersistentFlags().String(logLevelConfigKey, "info", "Log level")
+	rootCmd.PersistentFlags().String(logFormatConfigKey, "text", "Log level")
 
-	viper.SetDefault("log.level", "info")
-	viper.SetDefault("log.format", "text")
-	viper.SetDefault("device", "default")
+	viper.SetDefault(deviceConfigKey, "default")
+	viper.SetDefault(logLevelConfigKey, "info")
+	viper.SetDefault(logFormatConfigKey, "text")
 }
 
 func initConfig() {
@@ -69,13 +74,12 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err != nil {
 		// configuration file does not exist; only use CLI args and env
 	}
-	logLevelCfg := viper.GetString("log.level")
+	logLevelCfg := viper.GetString(logLevelConfigKey)
 	var logLevel = new(slog.LevelVar)
 	if err := logLevel.UnmarshalText([]byte(logLevelCfg)); err != nil {
-		fmt.Fprintf(os.Stderr, "Invalid log level: %s\n", err)
-		os.Exit(1)
+		panic(fmt.Sprintf("invalid log level %s: %v", logLevelCfg, err))
 	}
-	logFormat := viper.GetString("log.format")
+	logFormat := viper.GetString(logFormatConfigKey)
 	var logHandler slog.Handler
 	switch logFormat {
 	case "text":
@@ -83,8 +87,7 @@ func initConfig() {
 	case "json":
 		logHandler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
 	default:
-		fmt.Fprintf(os.Stderr, "Invalid log format: %s\n", logFormat)
-		os.Exit(1)
+		panic(fmt.Sprintf("invalid log format: %s", logFormat))
 	}
 	logger = slog.New(logHandler)
 }
