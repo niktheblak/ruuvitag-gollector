@@ -4,7 +4,6 @@ package influxdb
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"log/slog"
@@ -81,9 +80,6 @@ func New(cfg Config) (exporter.Exporter, error) {
 	cfg.Logger = cfg.Logger.With("exporter", "InfluxDB")
 	opts := influxdb2.DefaultOptions()
 	opts.SetUseGZip(true)
-	opts.SetTLSConfig(&tls.Config{
-		InsecureSkipVerify: true,
-	})
 	if cfg.BatchSize > 0 {
 		opts.SetBatchSize(uint(cfg.BatchSize))
 	}
