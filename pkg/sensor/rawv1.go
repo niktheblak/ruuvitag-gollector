@@ -24,8 +24,7 @@ type DataFormat3 struct {
 }
 
 func ParseTemperature(t uint8, f uint8) float64 {
-	var mask uint8
-	mask = 1 << 7
+	var mask uint8 = 1 << 7
 	isNegative := (t & mask) > 0
 	temp := float64(t&^mask) + float64(f)/100.0
 	if isNegative {
