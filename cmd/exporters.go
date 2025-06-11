@@ -26,7 +26,7 @@ func createExporters() error {
 	if len(ruuviTags) == 0 {
 		return fmt.Errorf("at least one RuuviTag address must be specified")
 	}
-	logger.LogAttrs(nil, slog.LevelInfo, "RuuviTags", slog.Any("ruuvitags", ruuviTags))
+	logger.LogAttrs(context.TODO(), slog.LevelInfo, "RuuviTags", slog.Any("ruuvitags", ruuviTags))
 	columns := viper.GetStringMapString("columns")
 	if len(columns) == 0 {
 		columns = sensor.DefaultColumnMap
