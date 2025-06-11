@@ -72,7 +72,7 @@ func initConfig() {
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	if err := viper.ReadInConfig(); err != nil {
-		// configuration file does not exist; only use CLI args and env
+		fmt.Println("No config file found, using only CLI args and env vars")
 	}
 	logLevelCfg := viper.GetString(logLevelConfigKey)
 	var logLevel = new(slog.LevelVar)

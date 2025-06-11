@@ -79,7 +79,7 @@ func (s *scanner) init(device string) error {
 	}
 	s.device = d
 	if len(s.peripherals) > 0 {
-		s.logger.LogAttrs(nil, slog.LevelInfo, "Reading from peripherals", slog.Any("peripherals", s.peripherals))
+		s.logger.LogAttrs(context.TODO(), slog.LevelInfo, "Reading from peripherals", slog.Any("peripherals", s.peripherals))
 	} else {
 		s.logger.Info("Reading from all nearby BLE peripherals")
 	}

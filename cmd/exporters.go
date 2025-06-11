@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -19,18 +20,18 @@ import (
 
 func createExporters() error {
 	if viper.ConfigFileUsed() != "" {
-		logger.LogAttrs(nil, slog.LevelInfo, "Read config from file", slog.String("file", viper.ConfigFileUsed()))
+		logger.LogAttrs(context.TODO(), slog.LevelInfo, "Read config from file", slog.String("file", viper.ConfigFileUsed()))
 	}
 	ruuviTags := viper.GetStringMapString("ruuvitags")
 	if len(ruuviTags) == 0 {
 		return fmt.Errorf("at least one RuuviTag address must be specified")
 	}
-	logger.LogAttrs(nil, slog.LevelInfo, "RuuviTags", slog.Any("ruuvitags", ruuviTags))
+	logger.LogAttrs(context.TODO(), slog.LevelInfo, "RuuviTags", slog.Any("ruuvitags", ruuviTags))
 	columns := viper.GetStringMapString("columns")
-	if columns == nil || len(columns) == 0 {
+	if len(columns) == 0 {
 		columns = sensor.DefaultColumnMap
 	}
-	logger.LogAttrs(nil, slog.LevelInfo, "Using column mapping", slog.Any("columns", columns))
+	logger.LogAttrs(context.TODO(), slog.LevelInfo, "Using column mapping", slog.Any("columns", columns))
 	peripherals = make(map[string]string)
 	for addr, name := range ruuviTags {
 		peripherals[ble.NewAddr(addr).String()] = name

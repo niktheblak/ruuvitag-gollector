@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/signal"
 	"time"
@@ -38,15 +39,22 @@ func init() {
 	rootCmd.AddCommand(discoverCmd)
 }
 
-func discover(timeout time.Duration) ([]string, error) {
-	d, err := scanner.NewDiscover(device, &scanner.GoBLEScanner{}, &scanner.GoBLEDeviceCreator{}, logger)
+func discover(timeout time.Duration) (ruuviTags []string, err error) {
+	var d *scanner.Discover
+	d, err = scanner.NewDiscover(device, &scanner.GoBLEScanner{}, &scanner.GoBLEDeviceCreator{}, logger)
 	if err != nil {
-		return nil, err
+		return
 	}
-	defer d.Close()
+	defer func() {
+		closeErr := d.Close()
+		if closeErr != nil {
+			err = errors.Join(err, closeErr)
+		}
+	}()
 	ctx, timeoutCancel := context.WithTimeout(context.Background(), timeout)
 	defer timeoutCancel()
 	ctx, sigIntCancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer sigIntCancel()
-	return d.Discover(ctx)
+	ruuviTags, err = d.Discover(ctx)
+	return
 }

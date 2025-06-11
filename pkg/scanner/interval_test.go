@@ -51,7 +51,10 @@ func TestScanWithInterval(t *testing.T) {
 		Logger:        logger,
 	})
 	require.NoError(t, err)
-	defer scn.Close()
+	defer func() {
+		err := scn.Close()
+		require.NoError(t, err)
+	}()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	errs := make(chan error, 1)
 	go func() {

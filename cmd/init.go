@@ -29,7 +29,9 @@ var initCmd = &cobra.Command{
 		builder.WriteString("device = \"default\"\n\n")
 		builder.WriteString("[ruuvitags]\n")
 		for i, addr := range addrs {
-			builder.WriteString(fmt.Sprintf("\"%s\" = \"RuuviTag %d\"\n", addr, i+1))
+			if _, err := fmt.Fprintf(builder, "\"%s\" = \"RuuviTag %d\"\n", addr, i+1); err != nil {
+				panic(err)
+			}
 		}
 		if outputCfgFile != "" {
 			logger.Info("Writing config to file", "file", outputCfgFile)
