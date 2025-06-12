@@ -9,8 +9,7 @@ type DeviceCreator interface {
 	NewDevice(impl string) (ble.Device, error)
 }
 
-type GoBLEDeviceCreator struct {
-}
+type GoBLEDeviceCreator struct{}
 
 func (c *GoBLEDeviceCreator) NewDevice(impl string) (ble.Device, error) {
 	d, err := dev.NewDevice(impl)

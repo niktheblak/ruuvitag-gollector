@@ -5,9 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	format string
-)
+var format string
 
 var printColumnsCmd = &cobra.Command{
 	Use:          "columns",

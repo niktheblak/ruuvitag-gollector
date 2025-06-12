@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 
 	commonsensor "github.com/niktheblak/ruuvitag-common/pkg/sensor"
-
 	"github.com/niktheblak/ruuvitag-gollector/pkg/dewpoint"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/temperature"
 )

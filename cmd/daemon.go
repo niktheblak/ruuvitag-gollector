@@ -7,10 +7,9 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
 )
 
 var daemonCmd = &cobra.Command{

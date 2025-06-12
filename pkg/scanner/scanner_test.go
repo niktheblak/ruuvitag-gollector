@@ -7,9 +7,8 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
+	"github.com/stretchr/testify/assert"
 )
 
 const (

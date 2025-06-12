@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/go-ble/ble"
-
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 

@@ -12,7 +12,6 @@ import (
 
 	"github.com/go-ble/ble"
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
-
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 

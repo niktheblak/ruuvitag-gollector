@@ -6,9 +6,7 @@ import (
 	"time"
 
 	"github.com/go-ble/ble"
-
 	commonsensor "github.com/niktheblak/ruuvitag-common/pkg/sensor"
-
 	"github.com/niktheblak/ruuvitag-gollector/pkg/dewpoint"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/temperature"

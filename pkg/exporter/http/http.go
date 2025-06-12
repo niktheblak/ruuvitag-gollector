@@ -12,7 +12,6 @@ import (
 
 	"github.com/niktheblak/ruuvitag-common/pkg/columnmap"
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
-
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 

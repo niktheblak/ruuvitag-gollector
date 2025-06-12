@@ -8,14 +8,11 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/spf13/cobra"
-
 	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
+	"github.com/spf13/cobra"
 )
 
-var (
-	scanTimeout time.Duration
-)
+var scanTimeout time.Duration
 
 var scanCmd = &cobra.Command{
 	Use:   "scan",

@@ -7,10 +7,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
 const (
@@ -75,7 +74,7 @@ func initConfig() {
 		fmt.Println("No config file found, using only CLI args and env vars")
 	}
 	logLevelCfg := viper.GetString(logLevelConfigKey)
-	var logLevel = new(slog.LevelVar)
+	logLevel := new(slog.LevelVar)
 	if err := logLevel.UnmarshalText([]byte(logLevelCfg)); err != nil {
 		panic(fmt.Sprintf("invalid log level %s: %v", logLevelCfg, err))
 	}

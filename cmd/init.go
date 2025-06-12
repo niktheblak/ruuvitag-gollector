@@ -35,7 +35,7 @@ var initCmd = &cobra.Command{
 		}
 		if outputCfgFile != "" {
 			logger.Info("Writing config to file", "file", outputCfgFile)
-			if err := os.WriteFile(outputCfgFile, []byte(builder.String()), 0644); err != nil {
+			if err := os.WriteFile(outputCfgFile, []byte(builder.String()), 0o644); err != nil {
 				return err
 			}
 		} else {

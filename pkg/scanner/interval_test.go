@@ -7,10 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
 func TestScanWithInterval(t *testing.T) {

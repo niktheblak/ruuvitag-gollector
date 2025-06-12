@@ -7,8 +7,7 @@ import (
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 )
 
-type mockDevice struct {
-}
+type mockDevice struct{}
 
 func (m mockDevice) AddService(svc *ble.Service) error {
 	return nil
@@ -80,7 +79,7 @@ func NewMockBLEScanner(advertisements ...ble.Advertisement) *mockBLEScanner {
 
 func (m *mockBLEScanner) Scan(ctx context.Context, allowDup bool, h ble.AdvHandler, f ble.AdvFilter) error {
 	if m.current == len(m.advertisements) {
-		//m.current = 0
+		// m.current = 0
 		return nil
 	}
 	h(m.advertisements[m.current])

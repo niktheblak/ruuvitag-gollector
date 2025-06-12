@@ -10,12 +10,11 @@ import (
 
 	"github.com/go-ble/ble"
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
-	"github.com/spf13/cast"
-	"github.com/spf13/viper"
-
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/http"
+	"github.com/spf13/cast"
+	"github.com/spf13/viper"
 )
 
 func createExporters() error {

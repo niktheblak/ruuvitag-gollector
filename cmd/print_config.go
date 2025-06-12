@@ -8,9 +8,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var (
-	output string
-)
+var output string
 
 var printConfigCmd = &cobra.Command{
 	Use:          "config",
