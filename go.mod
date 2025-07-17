@@ -5,7 +5,7 @@ go 1.24
 toolchain go1.24.5
 
 require (
-	cloud.google.com/go/pubsub v1.49.0
+	cloud.google.com/go/pubsub/v2 v2.0.0
 	github.com/JuulLabs-OSS/cbgo v0.0.2 // indirect
 	github.com/aws/aws-sdk-go v1.55.7
 	github.com/eclipse/paho.mqtt.golang v1.5.0
@@ -28,6 +28,7 @@ require (
 )
 
 require (
+	cloud.google.com/go/pubsub v1.49.0
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/niktheblak/ruuvitag-common v1.6.0
 )
