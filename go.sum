@@ -129,6 +129,8 @@ github.com/niktheblak/ruuvitag-common v1.6.0 h1:1KrnUwdvGvqmFVybJalVY+/HmJbwNVle
 github.com/niktheblak/ruuvitag-common v1.6.0/go.mod h1:ywneCObC4zVsFTaNtGM6xCrlrDFsxepoyJCF/89vIZ0=
 github.com/niktheblak/ruuvitag-common v1.7.0 h1:YhbPCTojsjMWColKbJLuumymghZONh5Ng1NXm6XjDi0=
 github.com/niktheblak/ruuvitag-common v1.7.0/go.mod h1:n68v55om7svYDO8tFrntWdXVHHwbVNP4cx2e/t1ddkM=
+github.com/niktheblak/ruuvitag-common v1.7.1 h1:VWGnSn/maSMbgUANNc0ueCFNtASJka2R3OqFcJQg0Ic=
+github.com/niktheblak/ruuvitag-common v1.7.1/go.mod h1:0qZn8wYJ3uzuvATQoZb7TKjXJ0KJiG5Raqv0SZi3zcc=
 github.com/oapi-codegen/runtime v1.1.2 h1:P2+CubHq8fO4Q6fV1tqDBZHCwpVpvPg7oKiYzQgXIyI=
 github.com/oapi-codegen/runtime v1.1.2/go.mod h1:SK9X900oXmPWilYR5/WKPzt3Kqxn/uS/+lbpREv+eCg=
 github.com/pelletier/go-toml/v2 v2.2.4 h1:mye9XuhQ6gvn5h28+VilKrrPoQVanw5PMw/TB0t5Ec4=
