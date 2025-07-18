@@ -10,6 +10,7 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/dewpoint"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/temperature"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/wetbulb"
 )
 
 // Read reads sensor data from advertisement
@@ -23,6 +24,7 @@ func Read(a ble.Advertisement) (sd commonsensor.Data, err error) {
 	sd.Addr = addr
 	sd.Timestamp = time.Now()
 	sd.DewPoint, _ = dewpoint.Calculate(sd.Temperature, temperature.Celsius, sd.Humidity)
+	sd.WetBulb = wetbulb.Calculate(sd.Temperature, sd.Humidity)
 	return
 }
 
