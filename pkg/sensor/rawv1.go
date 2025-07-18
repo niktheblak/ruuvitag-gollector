@@ -46,7 +46,7 @@ func ParseSensorFormat3(data []byte) (sd commonsensor.Data, err error) {
 	if err != nil {
 		return
 	}
-	sd.WetBulb, err = wetbulb.Calculate(sd.Temperature, sd.Humidity)
+	sd.WetBulb, err = wetbulb.Calculate(sd.Temperature, temperature.Celsius, sd.Humidity)
 	if err != nil {
 		return
 	}
