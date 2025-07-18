@@ -9,7 +9,8 @@ WITH (timescaledb.continuous) AS
         LAST(movement_counter, time) as "movement_counter",
         LAST(battery_voltage, time) as "battery_voltage",
         LAST(measurement_number, time) as "measurement_number",
-        AVG(dew_point) as "dew_point"
+        AVG(dew_point) as "dew_point",
+        AVG(wet_bulb) as "wet_bulb"
     FROM ruuvitag
     GROUP BY bucket, name;
 
@@ -29,7 +30,8 @@ WITH (timescaledb.continuous) AS
         LAST(movement_counter, time) as "movement_counter",
         LAST(battery_voltage, time) as "battery_voltage",
         LAST(measurement_number, time) as "measurement_number",
-        AVG(dew_point) as "dew_point"
+        AVG(dew_point) as "dew_point",
+        AVG(wet_bulb) as "wet_bulb"
     FROM ruuvitag
     GROUP BY bucket, name;
 
