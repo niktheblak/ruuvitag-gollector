@@ -23,8 +23,14 @@ func Read(a ble.Advertisement) (sd commonsensor.Data, err error) {
 	}
 	sd.Addr = addr
 	sd.Timestamp = time.Now()
-	sd.DewPoint, _ = dewpoint.Calculate(sd.Temperature, temperature.Celsius, sd.Humidity)
-	sd.WetBulb = wetbulb.Calculate(sd.Temperature, sd.Humidity)
+	sd.DewPoint, err = dewpoint.Calculate(sd.Temperature, temperature.Celsius, sd.Humidity)
+	if err != nil {
+		return
+	}
+	sd.WetBulb, err = wetbulb.Calculate(sd.Temperature, sd.Humidity)
+	if err != nil {
+		return
+	}
 	return
 }
 
