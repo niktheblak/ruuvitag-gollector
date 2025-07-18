@@ -29,7 +29,7 @@ require (
 require (
 	cloud.google.com/go/pubsub v1.49.0
 	github.com/jackc/pgx/v5 v5.7.5
-	github.com/niktheblak/ruuvitag-common v1.6.0
+	github.com/niktheblak/ruuvitag-common v1.7.0
 )
 
 require (
