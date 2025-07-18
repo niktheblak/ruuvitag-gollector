@@ -29,12 +29,12 @@ require (
 require (
 	cloud.google.com/go/pubsub v1.49.0
 	github.com/jackc/pgx/v5 v5.7.5
-	github.com/niktheblak/ruuvitag-common v1.7.0
+	github.com/niktheblak/ruuvitag-common v1.7.1
 )
 
 require (
-	cloud.google.com/go v0.121.3 // indirect
-	cloud.google.com/go/auth v0.16.2 // indirect
+	cloud.google.com/go v0.121.4 // indirect
+	cloud.google.com/go/auth v0.16.3 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.7.0 // indirect
 	cloud.google.com/go/iam v1.5.2 // indirect
