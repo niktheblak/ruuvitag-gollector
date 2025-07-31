@@ -6,7 +6,7 @@ toolchain go1.24.5
 
 require (
 	github.com/JuulLabs-OSS/cbgo v0.0.2 // indirect
-	github.com/aws/aws-sdk-go v1.55.7
+	github.com/aws/aws-sdk-go v1.55.8
 	github.com/eclipse/paho.mqtt.golang v1.5.0
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-ble/ble v0.0.0-20240122180141-8c5522f54333
