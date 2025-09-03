@@ -2,7 +2,7 @@ module github.com/niktheblak/ruuvitag-gollector
 
 go 1.24
 
-toolchain go1.25.0
+toolchain go1.25.1
 
 require (
 	github.com/JuulLabs-OSS/cbgo v0.0.2 // indirect
