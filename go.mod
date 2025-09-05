@@ -1,6 +1,6 @@
 module github.com/niktheblak/ruuvitag-gollector
 
-go 1.24
+go 1.24.0
 
 toolchain go1.25.1
 
@@ -27,7 +27,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/pubsub v1.50.0
+	cloud.google.com/go/pubsub v1.50.1
 	cloud.google.com/go/pubsub/v2 v2.0.0
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/niktheblak/ruuvitag-common v1.7.1
