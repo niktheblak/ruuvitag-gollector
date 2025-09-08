@@ -22,7 +22,7 @@ require (
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/net v0.43.0 // indirect
-	google.golang.org/api v0.248.0
+	google.golang.org/api v0.249.0
 	google.golang.org/genproto v0.0.0-20250818200422-3122310a409c // indirect
 )
 
