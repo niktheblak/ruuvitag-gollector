@@ -11,6 +11,7 @@ CREATE TABLE ruuvitag (
 	movement_counter INTEGER,
 	measurement_number INTEGER,
 	dew_point DOUBLE PRECISION,
+	wet_bulb DOUBLE PRECISION,
 	battery_voltage DOUBLE PRECISION,
     tx_power INTEGER);
 
