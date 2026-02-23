@@ -1,6 +1,6 @@
 module github.com/niktheblak/ruuvitag-gollector
 
-go 1.25
+go 1.25.0
 
 toolchain go1.26.0
 
@@ -22,7 +22,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/net v0.49.0 // indirect
-	google.golang.org/api v0.267.0
+	google.golang.org/api v0.268.0
 	google.golang.org/genproto v0.0.0-20260128011058-8636f8732409 // indirect
 )
 
