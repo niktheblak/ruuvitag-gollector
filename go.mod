@@ -28,7 +28,7 @@ require (
 
 require (
 	cloud.google.com/go/pubsub v1.50.2
-	github.com/jackc/pgx/v5 v5.9.1
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/niktheblak/ruuvitag-common v1.7.1
 )
 
