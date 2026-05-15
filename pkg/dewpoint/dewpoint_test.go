@@ -3,9 +3,10 @@ package dewpoint
 import (
 	"testing"
 
-	"github.com/niktheblak/ruuvitag-gollector/pkg/temperature"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/niktheblak/ruuvitag-gollector/pkg/temperature"
 )
 
 func TestCalculate(t *testing.T) {

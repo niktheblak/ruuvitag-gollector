@@ -7,6 +7,7 @@ import (
 	"log/slog"
 
 	"github.com/go-ble/ble"
+
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 )
 

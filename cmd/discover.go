@@ -7,8 +7,9 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
 	"github.com/spf13/cobra"
+
+	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
 )
 
 var discoverTimeout time.Duration

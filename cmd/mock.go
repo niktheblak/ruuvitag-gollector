@@ -6,8 +6,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 	"github.com/spf13/cobra"
+
+	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 )
 
 var mockCmd = &cobra.Command{

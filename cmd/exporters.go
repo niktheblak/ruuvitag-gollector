@@ -9,12 +9,13 @@ import (
 	"time"
 
 	"github.com/go-ble/ble"
+	"github.com/spf13/cast"
+	"github.com/spf13/viper"
+
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/http"
-	"github.com/spf13/cast"
-	"github.com/spf13/viper"
 )
 
 func createExporters() error {
@@ -126,9 +127,13 @@ func getExporterConfigs() (map[string]map[string]any, error) {
 
 func parseExporterConfig() (map[string]map[string]any, error) {
 	configs := make(map[string]map[string]any)
-	cfgMap, ok := viper.Get("exporters").(map[string]any)
+	raw := viper.Get("exporters")
+	if raw == nil {
+		return configs, nil
+	}
+	cfgMap, ok := raw.(map[string]any)
 	if !ok {
-		return nil, fmt.Errorf("invalid exporters config: %v", viper.Get("exporters"))
+		return nil, fmt.Errorf("invalid exporters config: %v", raw)
 	}
 	for name, cfg := range cfgMap {
 		values, ok := cfg.(map[string]any)
@@ -179,7 +184,7 @@ func parseOldExporterConfig() map[string]map[string]any {
 	}
 	httpCfg, ok := viper.Get("http").(map[string]any)
 	if ok && isEnabled(httpCfg) {
-		configs["http"] = mqttCfg
+		configs["http"] = httpCfg
 	}
 	return configs
 }

@@ -7,9 +7,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
 const (

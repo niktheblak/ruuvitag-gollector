@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 	"github.com/spf13/cobra"
+
+	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 )
 
 var format string
