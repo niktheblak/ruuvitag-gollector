@@ -1,27 +1,52 @@
-# This file contains all available configuration options
-# with their default values (in comments).
-#
-# This file is not a configuration example,
-# it contains the exhaustive configuration with explanations of the options.
-
-# Defines the configuration version.
-# The only possible value is "2".
 version: "2"
 
 linters:
-  # Default set of linters.
-  # The value can be:
-  # - `standard`: https://golangci-lint.run/usage/linters/#enabled-by-default
-  # - `all`: enables all linters by default.
-  # - `none`: disables all linters by default.
-  # - `fast`: enables only linters considered as "fast" (`golangci-lint help linters --json | jq '[ .[] | select(.fast==true) ] | map(.name)'`).
-  # Default: standard
-  default: standard
+  default: none
+  enable:
+    # --- correctness: catches real bugs ---
+    - errcheck
+    - govet
+    - staticcheck
+    - ineffassign
+    - unused
+
+    # --- security ---
+    - gosec
+
+    # --- code quality ---
+    - gocyclo
+    - dupl
+    - misspell
+    - unconvert
+    - prealloc
+
+    # --- Go idioms ---
+    - nilerr
+    - exhaustive
 
 formatters:
-  # Enable specific formatter.
-  # Default: [] (uses standard Go formatting)
   enable:
-    - gci
     - gofmt
     - goimports
+
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/niktheblak/ruuvitag-gollector
+        - github.com/niktheblak/ruuvitag-common
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+
+  dupl:
+    threshold: 100
+
+  gosec:
+    excludes:
+      - G104
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  fix: false
