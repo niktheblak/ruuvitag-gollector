@@ -1,4 +1,52 @@
 version: "2"
 
 linters:
-  default: fast
+  default: none
+  enable:
+    # --- correctness: catches real bugs ---
+    - errcheck
+    - govet
+    - staticcheck
+    - ineffassign
+    - unused
+
+    # --- security ---
+    - gosec
+
+    # --- code quality ---
+    - gocyclo
+    - dupl
+    - misspell
+    - unconvert
+    - prealloc
+
+    # --- Go idioms ---
+    - nilerr
+    - exhaustive
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/niktheblak/ruuvitag-gollector
+        - github.com/niktheblak/ruuvitag-common
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+
+  dupl:
+    threshold: 100
+
+  gosec:
+    excludes:
+      - G104
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  fix: false
