@@ -29,7 +29,7 @@ func init() {
 
 func sendMockMeasurement() error {
 	ts := time.Now()
-	var measurements []sensor.Data
+	measurements := make([]sensor.Data, 0, len(peripherals))
 	for addr, name := range peripherals {
 		measurements = append(measurements, generateMockData(addr, name, ts))
 	}
