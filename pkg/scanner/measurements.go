@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"strings"
 
 	"tinygo.org/x/bluetooth"
 
@@ -34,7 +35,7 @@ func (s *Measurements) scan(ctx context.Context, ch chan sensor.Data) {
 		if !Filter(s.Peripherals, result) {
 			return
 		}
-		addr := result.Address.String()
+		addr := strings.ToUpper(result.Address.String())
 		s.Logger.LogAttrs(ctx, slog.LevelDebug, "Read sensor data from device", slog.String("addr", addr))
 		for _, md := range result.ManufacturerData() {
 			sensorData, err := Read(addr, md.Data)

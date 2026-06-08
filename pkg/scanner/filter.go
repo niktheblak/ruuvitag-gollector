@@ -1,6 +1,8 @@
 package scanner
 
 import (
+	"strings"
+
 	"tinygo.org/x/bluetooth"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
@@ -19,6 +21,7 @@ func Filter(peripherals map[string]string, result bluetooth.ScanResult) bool {
 	if peripherals == nil || len(peripherals) == 0 {
 		return true
 	}
-	_, ok := peripherals[result.Address.String()]
+	addr := strings.ToUpper(result.Address.String())
+	_, ok := peripherals[addr]
 	return ok
 }
