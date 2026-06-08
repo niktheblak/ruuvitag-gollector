@@ -5,16 +5,12 @@ go 1.26
 toolchain go1.26.3
 
 require (
-	github.com/JuulLabs-OSS/cbgo v0.0.2 // indirect
 	github.com/aws/aws-sdk-go v1.55.8
 	github.com/eclipse/paho.mqtt.golang v1.5.1
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-ble/ble v0.0.0-20240122180141-8c5522f54333
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/influxdata/line-protocol v0.0.0-20210922203350-b1ad95c89adf // indirect
-	github.com/mattn/go-isatty v0.0.21 // indirect
-	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
-	github.com/raff/goble v0.0.0-20200327175727-d63360dcfd80 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0
@@ -30,6 +26,7 @@ require (
 	cloud.google.com/go/pubsub v1.50.2
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/niktheblak/ruuvitag-common v1.7.3
+	tinygo.org/x/bluetooth v0.15.0
 )
 
 require (
@@ -58,8 +55,6 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mgutz/logxi v0.0.0-20161027140823-aebf8a7d67ab // indirect
 	github.com/oapi-codegen/runtime v1.4.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.3.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -94,5 +89,4 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	tinygo.org/x/bluetooth v0.15.0 // indirect
 )
