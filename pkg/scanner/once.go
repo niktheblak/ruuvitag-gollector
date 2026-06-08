@@ -13,11 +13,9 @@ func NewOnce(cfg Config) (Scanner, error) {
 	if err := Validate(cfg); err != nil {
 		return nil, err
 	}
-	s := &once{
+	return &once{
 		scanner: newScanner(cfg),
-	}
-	err := s.init(cfg.DeviceName)
-	return s, err
+	}, nil
 }
 
 // Scan scans all registered peripherals once and quits

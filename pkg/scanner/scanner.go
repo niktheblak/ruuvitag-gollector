@@ -10,27 +10,26 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-ble/ble"
+	"tinygo.org/x/bluetooth"
 
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
 type Config struct {
-	Exporters     []exporter.Exporter
-	DeviceName    string
-	BLEScanner    BLEScanner
-	Peripherals   map[string]string
-	DeviceCreator DeviceCreator
-	Logger        *slog.Logger
+	Exporters   []exporter.Exporter
+	Adapter     Adapter
+	BLEScanner  BLEScanner
+	Peripherals map[string]string
+	Logger      *slog.Logger
 }
 
 func DefaultConfig() Config {
+	adapter := bluetooth.DefaultAdapter
 	return Config{
-		DeviceName:    "default",
-		BLEScanner:    new(GoBLEScanner),
-		DeviceCreator: new(GoBLEDeviceCreator),
-		Logger:        slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Adapter:    adapter,
+		BLEScanner: &BluetoothScanner{adapter},
+		Logger:     slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
 }
 
@@ -45,24 +44,27 @@ func Validate(cfg Config) error {
 }
 
 type Scanner interface {
-	io.Closer
 	Scan(ctx context.Context, interval time.Duration) error
 }
 
 type scanner struct {
+	adapter     Adapter
 	exporters   []exporter.Exporter
-	device      ble.Device
 	peripherals map[string]string
-	dev         DeviceCreator
 	meas        *Measurements
 	logger      *slog.Logger
 }
 
 func newScanner(cfg Config) scanner {
+	if len(cfg.Peripherals) > 0 {
+		cfg.Logger.LogAttrs(context.Background(), slog.LevelInfo, "Reading from peripherals", slog.Any("peripherals", cfg.Peripherals))
+	} else {
+		cfg.Logger.Info("Reading from all nearby BLE peripherals")
+	}
 	return scanner{
+		adapter:     cfg.Adapter,
 		exporters:   cfg.Exporters,
 		peripherals: cfg.Peripherals,
-		dev:         cfg.DeviceCreator,
 		logger:      cfg.Logger,
 		meas: &Measurements{
 			BLE:         cfg.BLEScanner,
@@ -70,29 +72,6 @@ func newScanner(cfg Config) scanner {
 			Logger:      cfg.Logger,
 		},
 	}
-}
-
-func (s *scanner) init(device string) error {
-	d, err := s.dev.NewDevice(device)
-	if err != nil {
-		return fmt.Errorf("failed to initialize device %s: %w", device, err)
-	}
-	s.device = d
-	if len(s.peripherals) > 0 {
-		s.logger.LogAttrs(context.TODO(), slog.LevelInfo, "Reading from peripherals", slog.Any("peripherals", s.peripherals))
-	} else {
-		s.logger.Info("Reading from all nearby BLE peripherals")
-	}
-	return nil
-}
-
-func (s *scanner) Close() error {
-	if s.device != nil {
-		err := s.device.Stop()
-		s.device = nil
-		return err
-	}
-	return nil
 }
 
 func (s *scanner) doExport(ctx context.Context, measurements chan sensor.Data) {

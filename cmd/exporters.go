@@ -31,7 +31,7 @@ func createExporters() error {
 	if len(columns) == 0 {
 		columns = sensor.DefaultColumnMap
 	}
-	logger.LogAttrs(context.TODO(), slog.LevelInfo, "Using column mapping", slog.Any("columns", columns))
+	logger.LogAttrs(context.Background(), slog.LevelInfo, "Using column mapping", slog.Any("columns", columns))
 	peripherals = make(map[string]string)
 	for addr, name := range ruuviTags {
 		peripherals[ble.NewAddr(addr).String()] = name
@@ -47,8 +47,6 @@ func createExporters() error {
 		}
 		exporters = append(exporters, exp)
 	}
-	device = viper.GetString(deviceConfigKey)
-	logger.Info("Using device", "device", device)
 	return nil
 }
 

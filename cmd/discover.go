@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"os"
 	"os/signal"
 	"time"
 
 	"github.com/spf13/cobra"
+	"tinygo.org/x/bluetooth"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
 )
@@ -38,17 +38,12 @@ func init() {
 }
 
 func discover(timeout time.Duration) (ruuviTags []string, err error) {
-	var d *scanner.Discover
-	d, err = scanner.NewDiscover(device, &scanner.GoBLEScanner{}, &scanner.GoBLEDeviceCreator{}, logger)
-	if err != nil {
-		return
+	adapter := bluetooth.DefaultAdapter
+	if err := adapter.Enable(); err != nil {
+		return nil, err
 	}
-	defer func() {
-		closeErr := d.Close()
-		if closeErr != nil {
-			err = errors.Join(err, closeErr)
-		}
-	}()
+	scn := &scanner.BluetoothScanner{adapter}
+	d := scanner.NewDiscover(scn, logger)
 	ctx, timeoutCancel := context.WithTimeout(context.Background(), timeout)
 	defer timeoutCancel()
 	ctx, sigIntCancel := signal.NotifyContext(ctx, os.Interrupt)

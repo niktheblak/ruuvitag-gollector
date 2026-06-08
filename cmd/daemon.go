@@ -22,7 +22,6 @@ var daemonCmd = &cobra.Command{
 		}
 		interval := viper.GetDuration("interval")
 		cfg := scanner.DefaultConfig()
-		cfg.DeviceName = device
 		cfg.Peripherals = peripherals
 		cfg.Exporters = exporters
 		cfg.Logger = logger
@@ -39,7 +38,7 @@ var daemonCmd = &cobra.Command{
 		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 		defer cancel()
 		err = scn.Scan(ctx, interval)
-		return errors.Join(err, scn.Close(), closeExporters())
+		return errors.Join(err, closeExporters())
 	},
 }
 

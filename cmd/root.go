@@ -26,7 +26,6 @@ var (
 	logger      *slog.Logger
 	peripherals map[string]string
 	exporters   []exporter.Exporter
-	device      string
 )
 
 var rootCmd = &cobra.Command{
@@ -49,11 +48,9 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file path")
 	rootCmd.PersistentFlags().StringToString("ruuvitags", nil, "RuuviTag addresses and names to use")
 	rootCmd.PersistentFlags().StringToString("columns", nil, "RuuviTag fields to use and their column names")
-	rootCmd.PersistentFlags().String(deviceConfigKey, "", "HCL device to use")
 	rootCmd.PersistentFlags().String(logLevelConfigKey, "info", "Log level")
 	rootCmd.PersistentFlags().String(logFormatConfigKey, "text", "Log level")
 
-	viper.SetDefault(deviceConfigKey, "default")
 	viper.SetDefault(logLevelConfigKey, "info")
 	viper.SetDefault(logFormatConfigKey, "text")
 }
@@ -77,7 +74,8 @@ func initConfig() {
 	logLevelCfg := viper.GetString(logLevelConfigKey)
 	logLevel := new(slog.LevelVar)
 	if err := logLevel.UnmarshalText([]byte(logLevelCfg)); err != nil {
-		panic(fmt.Sprintf("invalid log level %s: %v", logLevelCfg, err))
+		logLevel.Set(slog.LevelError)
+		fmt.Printf("invalid log level %s: %v\n", logLevelCfg, err)
 	}
 	logFormat := viper.GetString(logFormatConfigKey)
 	var logHandler slog.Handler
@@ -87,7 +85,8 @@ func initConfig() {
 	case "json":
 		logHandler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
 	default:
-		panic(fmt.Sprintf("invalid log format: %s", logFormat))
+		logHandler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
+		fmt.Printf("invalid log format: %s\n", logFormat)
 	}
 	logger = slog.New(logHandler)
 }

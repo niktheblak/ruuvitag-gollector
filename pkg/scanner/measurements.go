@@ -6,7 +6,7 @@ import (
 	"io"
 	"log/slog"
 
-	"github.com/go-ble/ble"
+	"tinygo.org/x/bluetooth"
 
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 )
@@ -30,17 +30,22 @@ func (s *Measurements) Channel(ctx context.Context) chan sensor.Data {
 }
 
 func (s *Measurements) scan(ctx context.Context, ch chan sensor.Data) {
-	err := s.BLE.Scan(ctx, true, func(a ble.Advertisement) {
-		addr := a.Addr().String()
-		s.Logger.LogAttrs(ctx, slog.LevelDebug, "Read sensor data from device", slog.String("addr", addr))
-		sensorData, err := Read(a)
-		if err != nil {
-			LogInvalidData(ctx, s.Logger, a.ManufacturerData(), err)
+	err := s.BLE.Scan(ctx, func(result bluetooth.ScanResult) {
+		if !Filter(s.Peripherals, result) {
 			return
 		}
-		sensorData.Name = s.Peripherals[addr]
-		ch <- sensorData
-	}, Filter(s.Peripherals))
+		addr := result.Address.String()
+		s.Logger.LogAttrs(ctx, slog.LevelDebug, "Read sensor data from device", slog.String("addr", addr))
+		for _, md := range result.ManufacturerData() {
+			sensorData, err := Read(addr, md.Data)
+			if err != nil {
+				LogInvalidData(ctx, s.Logger, md.Data, err)
+				return
+			}
+			sensorData.Name = s.Peripherals[addr]
+			ch <- sensorData
+		}
+	})
 	switch {
 	case errors.Is(err, context.Canceled):
 		s.Logger.LogAttrs(ctx, slog.LevelDebug, "Context canceled", slog.Any("error", err))

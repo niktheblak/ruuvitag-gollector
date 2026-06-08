@@ -41,20 +41,12 @@ func TestScanWithInterval(t *testing.T) {
 			manufacturerData: buf.Bytes(),
 		},
 	)
-	device := mockDevice{}
 	scn, err := NewInterval(Config{
 		Exporters:     []exporter.Exporter{exp},
-		DeviceName:    "default",
-		BLEScanner:    bleScanner,
 		Peripherals:   peripherals,
-		DeviceCreator: mockDeviceCreator{device: device},
 		Logger:        logger,
 	})
 	require.NoError(t, err)
-	defer func() {
-		err := scn.Close()
-		require.NoError(t, err)
-	}()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	errs := make(chan error, 1)
 	go func() {

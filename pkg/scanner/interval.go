@@ -15,11 +15,9 @@ func NewInterval(cfg Config) (Scanner, error) {
 	if err := Validate(cfg); err != nil {
 		return nil, err
 	}
-	s := &interval{
+	return &interval{
 		scanner: newScanner(cfg),
-	}
-	err := s.init(cfg.DeviceName)
-	return s, err
+	}, nil
 }
 
 // Scan scans and reports measurements at specified intervals

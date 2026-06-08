@@ -24,7 +24,6 @@ var scanCmd = &cobra.Command{
 			return err
 		}
 		cfg := scanner.DefaultConfig()
-		cfg.DeviceName = device
 		cfg.Peripherals = peripherals
 		cfg.Exporters = exporters
 		cfg.Logger = logger
@@ -46,9 +45,8 @@ var scanCmd = &cobra.Command{
 			return fmt.Errorf("failed to scan: %w", err)
 		}
 		logger.Info("Scan completed")
-		err = scn.Close()
 		logger.Info("Stopping ruuvitag-gollector")
-		return errors.Join(err, closeExporters())
+		return closeExporters()
 	},
 }
 

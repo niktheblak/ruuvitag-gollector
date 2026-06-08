@@ -26,7 +26,6 @@ var initCmd = &cobra.Command{
 		logger.Debug("Discovered RuuviTags", "addrs", addrs)
 		builder := new(strings.Builder)
 		builder.WriteString("interval = \"0m\"\n")
-		builder.WriteString("device = \"default\"\n\n")
 		builder.WriteString("[ruuvitags]\n")
 		for i, addr := range addrs {
 			if _, err := fmt.Fprintf(builder, "\"%s\" = \"RuuviTag %d\"\n", addr, i+1); err != nil {
