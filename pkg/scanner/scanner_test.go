@@ -23,7 +23,7 @@ var (
 		ManufacturerID:      0x9904,
 		DataFormat:          3,
 		Humidity:            120,
-		Temperature:         55,
+		Temperature:         25,
 		TemperatureFraction: 0,
 		Pressure:            1000,
 		AccelerationX:       0,

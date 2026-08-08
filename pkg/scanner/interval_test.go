@@ -71,7 +71,7 @@ func TestScanWithInterval(t *testing.T) {
 	e := exp.events[0]
 	assert.Equal(t, "Backyard", e.Name)
 	assert.Equal(t, testAddr1, e.Addr)
-	assert.Equal(t, 55.0, e.Temperature)
+	assert.Equal(t, 25.0, e.Temperature)
 	assert.Equal(t, 60.0, e.Humidity)
 	assert.Equal(t, 510.0, e.Pressure)
 	assert.Equal(t, 500.0, e.BatteryVoltage)
