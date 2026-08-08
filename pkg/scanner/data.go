@@ -26,11 +26,13 @@ func Read(a ble.Advertisement) (sd commonsensor.Data, err error) {
 	sd.Timestamp = time.Now()
 	sd.DewPoint, err = dewpoint.Calculate(sd.Temperature, temperature.Celsius, sd.Humidity)
 	if err != nil {
-		return
+		// dew point calculation failed, dew point will not be available
+		sd.DewPoint = 0
 	}
 	sd.WetBulb, err = wetbulb.Calculate(sd.Temperature, temperature.Celsius, sd.Humidity)
 	if err != nil {
-		return
+		// web bulb temperature was out of range, wet bulb temperature will not be available
+		sd.WetBulb = 0
 	}
 	return
 }
