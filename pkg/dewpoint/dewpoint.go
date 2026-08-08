@@ -1,6 +1,7 @@
 package dewpoint
 
 import (
+	"errors"
 	"fmt"
 	"math"
 
@@ -10,7 +11,7 @@ import (
 // Temperature constants
 const (
 	MinTemperature = 173.0
-	MaxTemperature = 678.0
+	MaxTemperature = 647.096
 )
 
 // Water saturation vapor pressure coefficients
@@ -37,11 +38,22 @@ const (
 	K5 = 6.7063522e-1
 )
 
+var (
+	ErrInvalidHumidity    = errors.New("invalid humidity")
+	ErrInvalidTemperature = errors.New("invalid temperature")
+)
+
 // Calculate calculates dew point from the given temperature and relative humidity (percent)
 func Calculate(temp float64, unit temperature.Unit, humidity float64) (float64, error) {
+	if math.IsNaN(humidity) || math.IsInf(humidity, 0) || humidity <= 0 || humidity > 100 {
+		return 0, fmt.Errorf("%w: %v", ErrInvalidHumidity, humidity)
+	}
+	if math.IsNaN(temp) || math.IsInf(temp, 0) {
+		return 0, fmt.Errorf("%w: %v", ErrInvalidTemperature, temp)
+	}
 	tempInK := temperature.Convert(temp, unit, temperature.Kelvin)
 	if tempInK < MinTemperature || tempInK > MaxTemperature {
-		return 0, fmt.Errorf("temperature %f %v out of range", temp, unit)
+		return 0, fmt.Errorf("%w: temperature %f %v out of range", ErrInvalidTemperature, temp, unit)
 	}
 	dpInK, err := Solve(pvs, humidity/100.0*pvs(tempInK), tempInK)
 	return temperature.Convert(dpInK, temperature.Kelvin, unit), err
@@ -54,6 +66,8 @@ func pvs(tempInK float64) float64 {
 	return pvsWater(tempInK)
 }
 
+// Saturation pressure over liquid water:
+// IAPWS-IF97, Region 4 saturation-pressure equation.
 func pvsWater(tempInK float64) float64 {
 	th := tempInK + N9/(tempInK-N10)
 	a := (th+N1)*th + N2
@@ -66,6 +80,8 @@ func pvsWater(tempInK float64) float64 {
 	return p * 1e6
 }
 
+// Saturation pressure over ice:
+// Hardy ITS-90 formulation for saturation vapour pressure over ice.
 func pvsIce(tempInK float64) float64 {
 	lnP := K0/tempInK + K1 + (K2+(K3+(K4*tempInK))*tempInK)*tempInK + K5*math.Log(tempInK)
 	return math.Exp(lnP)
