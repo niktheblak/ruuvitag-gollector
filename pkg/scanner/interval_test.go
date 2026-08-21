@@ -27,7 +27,7 @@ func TestScanWithInterval(t *testing.T) {
 	if err := binary.Write(buf, binary.BigEndian, testData); err != nil {
 		t.Fatal(err)
 	}
-	bleScanner := NewMockBLEScanner(
+	adapter := NewMockBLEAdapter(
 		mockAdvertisement{
 			addr:             testAddr1,
 			manufacturerData: buf.Bytes(),
@@ -41,14 +41,12 @@ func TestScanWithInterval(t *testing.T) {
 			manufacturerData: buf.Bytes(),
 		},
 	)
-	device := mockDevice{}
 	scn, err := NewInterval(Config{
-		Exporters:     []exporter.Exporter{exp},
-		DeviceName:    "default",
-		BLEScanner:    bleScanner,
-		Peripherals:   peripherals,
-		DeviceCreator: mockDeviceCreator{device: device},
-		Logger:        logger,
+		Exporters:      []exporter.Exporter{exp},
+		DeviceName:     "default",
+		Peripherals:    peripherals,
+		AdapterFactory: mockAdapterFactory{adapter: adapter},
+		Logger:         logger,
 	})
 	require.NoError(t, err)
 	defer func() {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -30,25 +31,25 @@ var scanCmd = &cobra.Command{
 		cfg.Logger = logger
 		scn, err := scanner.NewOnce(cfg)
 		if err != nil {
-			return err
+			return errors.Join(err, closeExporters())
 		}
 		logger.Info("Scanning once")
 		ctx, timeoutCancel := context.WithTimeout(context.Background(), scanTimeout)
 		defer timeoutCancel()
-		ctx, sigIntCancel := signal.NotifyContext(ctx, os.Interrupt)
+		ctx, sigIntCancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 		defer sigIntCancel()
-		err = scn.Scan(ctx, 0)
+		scanErr := scn.Scan(ctx, 0)
+		closeErr := errors.Join(scn.Close(), closeExporters())
 		switch {
-		case errors.Is(err, context.DeadlineExceeded):
-		case errors.Is(err, context.Canceled):
-		case err == nil:
+		case errors.Is(scanErr, context.DeadlineExceeded):
+		case errors.Is(scanErr, context.Canceled):
+		case scanErr == nil:
 		default:
-			return fmt.Errorf("failed to scan: %w", err)
+			return errors.Join(fmt.Errorf("failed to scan: %w", scanErr), closeErr)
 		}
 		logger.Info("Scan completed")
-		err = scn.Close()
 		logger.Info("Stopping ruuvitag-gollector")
-		return errors.Join(err, closeExporters())
+		return closeErr
 	},
 }
 

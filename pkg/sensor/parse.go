@@ -7,6 +7,9 @@ import (
 	commonsensor "github.com/niktheblak/ruuvitag-common/pkg/sensor"
 )
 
+// RuuviManufacturerID is Ruuvi Innovations' Bluetooth company identifier.
+const RuuviManufacturerID uint16 = 0x0499
+
 func Parse(data []byte) (sensorData commonsensor.Data, err error) {
 	if !IsRuuviTag(data) {
 		err = fmt.Errorf("not a RuuviTag device")

@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -11,16 +12,25 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
+type errorBLEAdapter struct {
+	err error
+}
+
+func (a errorBLEAdapter) Scan(context.Context, AdvertisementHandler) error {
+	return a.err
+}
+
+func (a errorBLEAdapter) Close() error { return nil }
+
 func TestScanContinuously(t *testing.T) {
 	exp := new(mockExporter)
-	device := mockDevice{}
+	adapter := NewMockBLEAdapter(testAdvertisement)
 	scn, err := NewContinuous(Config{
-		Exporters:     []exporter.Exporter{exp},
-		DeviceName:    "default",
-		BLEScanner:    NewMockBLEScanner(testAdvertisement),
-		Peripherals:   peripherals,
-		DeviceCreator: mockDeviceCreator{device},
-		Logger:        logger,
+		Exporters:      []exporter.Exporter{exp},
+		DeviceName:     "default",
+		Peripherals:    peripherals,
+		AdapterFactory: mockAdapterFactory{adapter},
+		Logger:         logger,
 	})
 	require.NoError(t, err)
 	defer func() {
@@ -50,4 +60,20 @@ func TestScanContinuously(t *testing.T) {
 	assert.Equal(t, 60.0, e.Humidity)
 	assert.Equal(t, 510.0, e.Pressure)
 	assert.Equal(t, 500.0, e.BatteryVoltage)
+}
+
+func TestContinuousScanReturnsBluetoothError(t *testing.T) {
+	expected := errors.New("Bluetooth failed")
+	scn, err := NewContinuous(Config{
+		Exporters:      []exporter.Exporter{new(mockExporter)},
+		DeviceName:     "default",
+		Peripherals:    peripherals,
+		AdapterFactory: mockAdapterFactory{adapter: errorBLEAdapter{err: expected}},
+		Logger:         logger,
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, scn.Close()) })
+
+	err = scn.Scan(context.Background(), 0)
+	assert.ErrorIs(t, err, expected)
 }

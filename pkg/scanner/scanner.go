@@ -10,27 +10,23 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-ble/ble"
-
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
 type Config struct {
-	Exporters     []exporter.Exporter
-	DeviceName    string
-	BLEScanner    BLEScanner
-	Peripherals   map[string]string
-	DeviceCreator DeviceCreator
-	Logger        *slog.Logger
+	Exporters      []exporter.Exporter
+	DeviceName     string
+	Peripherals    map[string]string
+	AdapterFactory AdapterFactory
+	Logger         *slog.Logger
 }
 
 func DefaultConfig() Config {
 	return Config{
-		DeviceName:    "default",
-		BLEScanner:    new(GoBLEScanner),
-		DeviceCreator: new(GoBLEDeviceCreator),
-		Logger:        slog.New(slog.NewTextHandler(io.Discard, nil)),
+		DeviceName:     "default",
+		AdapterFactory: new(BlueZAdapterFactory),
+		Logger:         slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
 }
 
@@ -40,6 +36,9 @@ func Validate(cfg Config) error {
 	}
 	if len(cfg.Peripherals) == 0 {
 		return fmt.Errorf("at least one peripheral must be specified")
+	}
+	if cfg.AdapterFactory == nil {
+		return fmt.Errorf("Bluetooth adapter factory must be specified")
 	}
 	return nil
 }
@@ -51,9 +50,9 @@ type Scanner interface {
 
 type scanner struct {
 	exporters   []exporter.Exporter
-	device      ble.Device
+	adapter     BLEAdapter
 	peripherals map[string]string
-	dev         DeviceCreator
+	factory     AdapterFactory
 	meas        *Measurements
 	logger      *slog.Logger
 }
@@ -62,10 +61,9 @@ func newScanner(cfg Config) scanner {
 	return scanner{
 		exporters:   cfg.Exporters,
 		peripherals: cfg.Peripherals,
-		dev:         cfg.DeviceCreator,
+		factory:     cfg.AdapterFactory,
 		logger:      cfg.Logger,
 		meas: &Measurements{
-			BLE:         cfg.BLEScanner,
 			Peripherals: cfg.Peripherals,
 			Logger:      cfg.Logger,
 		},
@@ -73,11 +71,12 @@ func newScanner(cfg Config) scanner {
 }
 
 func (s *scanner) init(device string) error {
-	d, err := s.dev.NewDevice(device)
+	adapter, err := s.factory.NewAdapter(device)
 	if err != nil {
-		return fmt.Errorf("failed to initialize device %s: %w", device, err)
+		return fmt.Errorf("failed to initialize Bluetooth adapter %s: %w", device, err)
 	}
-	s.device = d
+	s.adapter = adapter
+	s.meas.BLE = adapter
 	if len(s.peripherals) > 0 {
 		s.logger.LogAttrs(context.TODO(), slog.LevelInfo, "Reading from peripherals", slog.Any("peripherals", s.peripherals))
 	} else {
@@ -87,15 +86,15 @@ func (s *scanner) init(device string) error {
 }
 
 func (s *scanner) Close() error {
-	if s.device != nil {
-		err := s.device.Stop()
-		s.device = nil
+	if s.adapter != nil {
+		err := s.adapter.Close()
+		s.adapter = nil
 		return err
 	}
 	return nil
 }
 
-func (s *scanner) doExport(ctx context.Context, measurements chan sensor.Data) {
+func (s *scanner) doExport(ctx context.Context, measurements <-chan sensor.Data) {
 	seenPeripherals := make(map[string]bool)
 	for {
 		select {

@@ -13,14 +13,13 @@ import (
 
 func TestScanOnce(t *testing.T) {
 	exp := new(mockExporter)
-	device := mockDevice{}
+	adapter := NewMockBLEAdapter(testAdvertisement)
 	scn, err := NewOnce(Config{
-		Exporters:     []exporter.Exporter{exp},
-		DeviceName:    "default",
-		BLEScanner:    NewMockBLEScanner(testAdvertisement),
-		Peripherals:   peripherals,
-		DeviceCreator: mockDeviceCreator{device},
-		Logger:        logger,
+		Exporters:      []exporter.Exporter{exp},
+		DeviceName:     "default",
+		Peripherals:    peripherals,
+		AdapterFactory: mockAdapterFactory{adapter},
+		Logger:         logger,
 	})
 	require.NoError(t, err)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

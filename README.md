@@ -8,6 +8,9 @@ Supports the RAWv2 format emitted by RuuviTags with 2.x or later firmware.
 
 ## Setup
 
+The collector targets Linux and scans through the BlueZ D-Bus API. Ensure the
+BlueZ service is installed, running, and has access to the Bluetooth adapter.
+
 Compile and install the `ruuvitag-gollector` binary:
 
 ```bash
@@ -83,11 +86,12 @@ tx_power = "tx_power"
 
 ## Running
 
-Now you can try to run it manually (you typically need to run as root to allow the collector
-process access to Bluetooth hardware):
+Now you can try to run it manually. The process must be allowed to use BlueZ on
+the system bus and to power on the selected adapter; running with `sudo` is the
+simplest initial setup:
 
 ```bash
-sudo ruuvitag-gollector collect
+sudo ruuvitag-gollector scan
 ```
 
 To collect values continuously, run:
@@ -168,3 +172,6 @@ pressure = "pressure"
 movement_counter = "movementCounter"
 measurement_number = "measurementNumber"
 ```
+
+`device` may be `default`, a BlueZ adapter name such as `hci0`, or the adapter's
+Bluetooth address. `default` selects the first adapter reported by BlueZ.

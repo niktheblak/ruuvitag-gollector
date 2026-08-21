@@ -26,23 +26,24 @@ func NewContinuous(cfg Config) (Scanner, error) {
 // Scan scans and reports measurements immediately as they are received
 func (s *continuous) Scan(ctx context.Context, _ time.Duration) error {
 	s.logger.Info("Listening for measurements")
-	meas := s.meas.Channel(ctx)
-	s.exportContinuously(ctx, meas)
-	return nil
+	meas, done := s.meas.Channel(ctx)
+	return s.exportContinuously(ctx, meas, done)
 }
 
-func (s *continuous) exportContinuously(ctx context.Context, measurements chan sensor.Data) {
+func (s *continuous) exportContinuously(ctx context.Context, measurements <-chan sensor.Data, done <-chan error) error {
 	for {
 		select {
 		case m, ok := <-measurements:
 			if !ok {
-				return
+				return <-done
 			}
 			if err := s.export(ctx, m); err != nil {
 				s.logger.LogAttrs(ctx, slog.LevelError, "Failed to report measurement", slog.Any("error", err))
 			}
 		case <-ctx.Done():
-			return
+			return <-done
+		case err := <-done:
+			return err
 		}
 	}
 }

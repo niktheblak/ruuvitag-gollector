@@ -5,9 +5,11 @@ import (
 	"errors"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
 )
@@ -39,7 +41,7 @@ func init() {
 
 func discover(timeout time.Duration) (ruuviTags []string, err error) {
 	var d *scanner.Discover
-	d, err = scanner.NewDiscover(device, &scanner.GoBLEScanner{}, &scanner.GoBLEDeviceCreator{}, logger)
+	d, err = scanner.NewDiscover(viper.GetString(deviceConfigKey), &scanner.BlueZAdapterFactory{}, logger)
 	if err != nil {
 		return
 	}
@@ -51,7 +53,7 @@ func discover(timeout time.Duration) (ruuviTags []string, err error) {
 	}()
 	ctx, timeoutCancel := context.WithTimeout(context.Background(), timeout)
 	defer timeoutCancel()
-	ctx, sigIntCancel := signal.NotifyContext(ctx, os.Interrupt)
+	ctx, sigIntCancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer sigIntCancel()
 	ruuviTags, err = d.Discover(ctx)
 	return

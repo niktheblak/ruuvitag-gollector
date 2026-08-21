@@ -5,8 +5,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/go-ble/ble"
-
 	commonsensor "github.com/niktheblak/ruuvitag-common/pkg/sensor"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/dewpoint"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
@@ -15,9 +13,9 @@ import (
 )
 
 // Read reads sensor data from advertisement
-func Read(a ble.Advertisement) (sd commonsensor.Data, err error) {
-	addr := a.Addr().String()
-	data := a.ManufacturerData()
+func Read(a Advertisement) (sd commonsensor.Data, err error) {
+	addr := NormalizeAddress(a.Address)
+	data := a.RawManufacturerData(sensor.RuuviManufacturerID)
 	sd, err = sensor.Parse(data)
 	if err != nil {
 		return

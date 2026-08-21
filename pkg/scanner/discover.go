@@ -9,27 +9,21 @@ import (
 	"maps"
 	"slices"
 	"strings"
-
-	"github.com/go-ble/ble"
-
-	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 
 type Discover struct {
-	ble    BLEScanner
-	dev    DeviceCreator
-	device ble.Device
-	logger *slog.Logger
+	factory AdapterFactory
+	adapter BLEAdapter
+	logger  *slog.Logger
 }
 
-func NewDiscover(device string, ble BLEScanner, dev DeviceCreator, logger *slog.Logger) (*Discover, error) {
+func NewDiscover(device string, factory AdapterFactory, logger *slog.Logger) (*Discover, error) {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 	d := &Discover{
-		ble:    ble,
-		dev:    dev,
-		logger: logger,
+		factory: factory,
+		logger:  logger,
 	}
 	if err := d.init(device); err != nil {
 		return nil, err
@@ -38,24 +32,25 @@ func NewDiscover(device string, ble BLEScanner, dev DeviceCreator, logger *slog.
 }
 
 func (d *Discover) init(device string) error {
-	dev, err := d.dev.NewDevice(device)
+	adapter, err := d.factory.NewAdapter(device)
 	if err != nil {
-		return fmt.Errorf("failed to initialize device %s: %w", device, err)
+		return fmt.Errorf("failed to initialize Bluetooth adapter %s: %w", device, err)
 	}
-	d.device = dev
+	d.adapter = adapter
 	return nil
 }
 
 func (d *Discover) Discover(ctx context.Context) ([]string, error) {
-	ch := make(chan string, 1024)
-	err := d.ble.Scan(ctx, true, func(a ble.Advertisement) {
-		addr := a.Addr().String()
+	addrMap := make(map[string]bool)
+	filter := Filter(nil)
+	err := d.adapter.Scan(ctx, func(a Advertisement) {
+		if !filter(a) {
+			return
+		}
+		addr := NormalizeAddress(a.Address)
 		d.logger.LogAttrs(ctx, slog.LevelDebug, "Read sensor data from device", slog.String("addr", addr))
-		ch <- addr
-	}, func(a ble.Advertisement) bool {
-		return sensor.IsRuuviTag(a.ManufacturerData())
+		addrMap[strings.ToUpper(addr)] = true
 	})
-	close(ch)
 	switch {
 	case errors.Is(err, context.Canceled):
 	case errors.Is(err, context.DeadlineExceeded):
@@ -63,17 +58,13 @@ func (d *Discover) Discover(ctx context.Context) ([]string, error) {
 	default:
 		return nil, err
 	}
-	addrMap := make(map[string]bool)
-	for addr := range ch {
-		addrMap[strings.ToUpper(addr)] = true
-	}
 	return slices.Sorted(maps.Keys(addrMap)), nil
 }
 
 func (d *Discover) Close() error {
-	if d.device != nil {
-		err := d.device.Stop()
-		d.device = nil
+	if d.adapter != nil {
+		err := d.adapter.Close()
+		d.adapter = nil
 		return err
 	}
 	return nil

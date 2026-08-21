@@ -8,7 +8,6 @@ import (
 	"maps"
 	"time"
 
-	"github.com/go-ble/ble"
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/http"
+	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
 )
 
 func createExporters() error {
@@ -34,7 +34,7 @@ func createExporters() error {
 	logger.LogAttrs(context.TODO(), slog.LevelInfo, "Using column mapping", slog.Any("columns", columns))
 	peripherals = make(map[string]string)
 	for addr, name := range ruuviTags {
-		peripherals[ble.NewAddr(addr).String()] = name
+		peripherals[scanner.NormalizeAddress(addr)] = name
 	}
 	exporterConfigs, err := getExporterConfigs()
 	if err != nil {

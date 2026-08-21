@@ -1,20 +1,16 @@
 package scanner
 
-import (
-	"github.com/go-ble/ble"
+import "github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 
-	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
-)
-
-func Filter(peripherals map[string]string) func(ble.Advertisement) bool {
-	return func(a ble.Advertisement) bool {
-		if !sensor.IsRuuviTag(a.ManufacturerData()) {
+func Filter(peripherals map[string]string) AdvertisementFilter {
+	return func(a Advertisement) bool {
+		if !sensor.IsRuuviTag(a.RawManufacturerData(sensor.RuuviManufacturerID)) {
 			return false
 		}
 		if len(peripherals) == 0 {
 			return true
 		}
-		_, ok := peripherals[a.Addr().String()]
+		_, ok := peripherals[NormalizeAddress(a.Address)]
 		return ok
 	}
 }

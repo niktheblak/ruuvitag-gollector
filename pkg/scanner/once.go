@@ -22,7 +22,9 @@ func NewOnce(cfg Config) (Scanner, error) {
 
 // Scan scans all registered peripherals once and quits
 func (s *once) Scan(ctx context.Context, _ time.Duration) error {
-	meas := s.meas.Channel(ctx)
-	s.doExport(ctx, meas)
-	return nil
+	scanCtx, cancel := context.WithCancel(ctx)
+	meas, done := s.meas.Channel(scanCtx)
+	s.doExport(scanCtx, meas)
+	cancel()
+	return <-done
 }

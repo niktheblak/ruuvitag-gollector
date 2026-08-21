@@ -49,7 +49,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file path")
 	rootCmd.PersistentFlags().StringToString("ruuvitags", nil, "RuuviTag addresses and names to use")
 	rootCmd.PersistentFlags().StringToString("columns", nil, "RuuviTag fields to use and their column names")
-	rootCmd.PersistentFlags().String(deviceConfigKey, "", "HCL device to use")
+	rootCmd.PersistentFlags().String(deviceConfigKey, "", "BlueZ adapter to use (default, hciN, or adapter address)")
 	rootCmd.PersistentFlags().String(logLevelConfigKey, "info", "Log level")
 	rootCmd.PersistentFlags().String(logFormatConfigKey, "text", "Log level")
 

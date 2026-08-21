@@ -29,25 +29,31 @@ func (s *interval) Scan(ctx context.Context, scanInterval time.Duration) error {
 	}
 	s.logger.LogAttrs(ctx, slog.LevelInfo, "Scanning measurements", slog.Duration("interval", scanInterval))
 	ticker := time.NewTicker(scanInterval)
-	s.listen(ctx, ticker.C, scanInterval)
+	err := s.listen(ctx, ticker.C, scanInterval)
 	ticker.Stop()
-	return nil
+	return err
 }
 
-func (s *interval) listen(ctx context.Context, ticks <-chan time.Time, scanTimeout time.Duration) {
+func (s *interval) listen(ctx context.Context, ticks <-chan time.Time, scanTimeout time.Duration) error {
 	for {
 		select {
 		case <-ticks:
 			scanCtx, cancel := context.WithTimeout(ctx, scanTimeout)
-			s.doScan(scanCtx)
+			err := s.doScan(scanCtx)
 			cancel()
+			if err != nil {
+				return err
+			}
 		case <-ctx.Done():
-			return
+			return nil
 		}
 	}
 }
 
-func (s *interval) doScan(ctx context.Context) {
-	meas := s.meas.Channel(ctx)
+func (s *interval) doScan(ctx context.Context) error {
+	scanCtx, cancel := context.WithCancel(ctx)
+	meas, done := s.meas.Channel(scanCtx)
 	s.doExport(ctx, meas)
+	cancel()
+	return <-done
 }

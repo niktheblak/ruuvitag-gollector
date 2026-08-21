@@ -2,140 +2,65 @@ package scanner
 
 import (
 	"context"
-
-	"github.com/go-ble/ble"
+	"encoding/binary"
+	"sync"
 
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 )
 
-type mockDevice struct{}
-
-func (m mockDevice) AddService(svc *ble.Service) error {
-	return nil
+type mockAdapterFactory struct {
+	adapter BLEAdapter
 }
 
-func (m mockDevice) RemoveAllServices() error {
-	return nil
+func (m mockAdapterFactory) NewAdapter(string) (BLEAdapter, error) {
+	return m.adapter, nil
 }
 
-func (m mockDevice) SetServices(svcs []*ble.Service) error {
-	return nil
-}
-
-func (m mockDevice) Stop() error {
-	return nil
-}
-
-func (m mockDevice) Advertise(ctx context.Context, adv ble.Advertisement) error {
-	return nil
-}
-
-func (m mockDevice) AdvertiseNameAndServices(ctx context.Context, name string, uuids ...ble.UUID) error {
-	return nil
-}
-
-func (m mockDevice) AdvertiseMfgData(ctx context.Context, id uint16, b []byte) error {
-	return nil
-}
-
-func (m mockDevice) AdvertiseServiceData16(ctx context.Context, id uint16, b []byte) error {
-	return nil
-}
-
-func (m mockDevice) AdvertiseIBeaconData(ctx context.Context, b []byte) error {
-	return nil
-}
-
-func (m mockDevice) AdvertiseIBeacon(ctx context.Context, u ble.UUID, major, minor uint16, pwr int8) error {
-	return nil
-}
-
-func (m mockDevice) Scan(ctx context.Context, allowDup bool, h ble.AdvHandler) error {
-	return nil
-}
-
-func (m mockDevice) Dial(ctx context.Context, a ble.Addr) (ble.Client, error) {
-	return nil, nil
-}
-
-type mockDeviceCreator struct {
-	device ble.Device
-}
-
-func (m mockDeviceCreator) NewDevice(impl string) (ble.Device, error) {
-	return m.device, nil
-}
-
-type mockBLEScanner struct {
-	advertisements []ble.Advertisement
+type mockBLEAdapter struct {
+	advertisements []Advertisement
 	current        int
+	mu             sync.Mutex
 }
 
-func NewMockBLEScanner(advertisements ...ble.Advertisement) *mockBLEScanner {
-	return &mockBLEScanner{
-		advertisements: advertisements,
-		current:        0,
+func NewMockBLEAdapter(advertisements ...mockAdvertisement) *mockBLEAdapter {
+	result := &mockBLEAdapter{}
+	for _, advertisement := range advertisements {
+		result.advertisements = append(result.advertisements, advertisement.advertisement())
 	}
+	return result
 }
 
-func (m *mockBLEScanner) Scan(ctx context.Context, allowDup bool, h ble.AdvHandler, f ble.AdvFilter) error {
-	if m.current == len(m.advertisements) {
-		// m.current = 0
-		return nil
+func (m *mockBLEAdapter) Scan(ctx context.Context, handler AdvertisementHandler) error {
+	m.mu.Lock()
+	if m.current < len(m.advertisements) {
+		advertisement := m.advertisements[m.current]
+		m.current++
+		m.mu.Unlock()
+		handler(advertisement)
+	} else {
+		m.mu.Unlock()
 	}
-	h(m.advertisements[m.current])
-	m.current++
 	<-ctx.Done()
-	return nil
+	return ctx.Err()
 }
+
+func (m *mockBLEAdapter) Close() error { return nil }
 
 type mockAdvertisement struct {
 	manufacturerData []byte
 	addr             string
 }
 
-func (m mockAdvertisement) Addr() ble.Addr {
-	return ble.NewAddr(m.addr)
-}
-
-func (m mockAdvertisement) LocalName() string {
-	return m.addr
-}
-
-func (m mockAdvertisement) ManufacturerData() []byte {
-	return m.manufacturerData
-}
-
-func (m mockAdvertisement) ServiceData() []ble.ServiceData {
-	return nil
-}
-
-func (m mockAdvertisement) Services() []ble.UUID {
-	return nil
-}
-
-func (m mockAdvertisement) OverflowService() []ble.UUID {
-	return nil
-}
-
-func (m mockAdvertisement) TxPowerLevel() int {
-	return 1
-}
-
-func (m mockAdvertisement) Connectable() bool {
-	return false
-}
-
-func (m mockAdvertisement) SolicitedService() []ble.UUID {
-	return nil
-}
-
-func (m mockAdvertisement) RSSI() int {
-	return 0
-}
-
-func (m mockAdvertisement) Address() ble.Addr {
-	return ble.NewAddr(m.addr)
+func (m mockAdvertisement) advertisement() Advertisement {
+	manufacturerData := make(map[uint16][]byte)
+	if len(m.manufacturerData) >= 2 {
+		companyID := binary.LittleEndian.Uint16(m.manufacturerData[:2])
+		manufacturerData[companyID] = append([]byte(nil), m.manufacturerData[2:]...)
+	}
+	return Advertisement{
+		Address:          m.addr,
+		ManufacturerData: manufacturerData,
+	}
 }
 
 type mockExporter struct {

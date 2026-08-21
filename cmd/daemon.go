@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -34,9 +35,9 @@ var daemonCmd = &cobra.Command{
 			scn, err = scanner.NewInterval(cfg)
 		}
 		if err != nil {
-			return err
+			return errors.Join(err, closeExporters())
 		}
-		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer cancel()
 		err = scn.Scan(ctx, interval)
 		return errors.Join(err, scn.Close(), closeExporters())
