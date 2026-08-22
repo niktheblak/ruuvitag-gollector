@@ -33,7 +33,7 @@ func read(a Advertisement) (sd commonsensor.Data, dataFormat uint8, err error) {
 		// dew point calculation failed, dew point will not be available
 		sd.DewPoint = 0
 	}
-	sd.WetBulb, err = wetbulb.Calculate(sd.Temperature, temperature.Celsius, sd.Humidity)
+	sd.WetBulb, err = wetbulb.Calculate(sd.Temperature, temperature.Celsius, sd.Humidity, sd.Pressure)
 	if err != nil {
 		// web bulb temperature was out of range, wet bulb temperature will not be available
 		sd.WetBulb = 0

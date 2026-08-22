@@ -35,5 +35,6 @@ func TestScanOnce(t *testing.T) {
 	assert.Equal(t, 25.0, e.Temperature)
 	assert.Equal(t, 60.0, e.Humidity)
 	assert.Equal(t, 510.0, e.Pressure)
+	assert.InDelta(t, 18.3892, e.WetBulb, 0.002)
 	assert.Equal(t, 500.0, e.BatteryVoltage)
 }
