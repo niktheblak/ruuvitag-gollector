@@ -14,12 +14,18 @@ import (
 
 // Read reads sensor data from advertisement
 func Read(a Advertisement) (sd commonsensor.Data, err error) {
+	sd, _, err = read(a)
+	return
+}
+
+func read(a Advertisement) (sd commonsensor.Data, dataFormat uint8, err error) {
 	addr := NormalizeAddress(a.Address)
 	data := a.RawManufacturerData(sensor.RuuviManufacturerID)
 	sd, err = sensor.Parse(data)
 	if err != nil {
 		return
 	}
+	dataFormat = data[2]
 	sd.Addr = addr
 	sd.Timestamp = time.Now()
 	sd.DewPoint, err = dewpoint.Calculate(sd.Temperature, temperature.Celsius, sd.Humidity)

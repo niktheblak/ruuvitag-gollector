@@ -10,6 +10,11 @@ import (
 // RuuviManufacturerID is Ruuvi Innovations' Bluetooth company identifier.
 const RuuviManufacturerID uint16 = 0x0499
 
+const (
+	DataFormat3ID uint8 = 3
+	DataFormat5ID uint8 = 5
+)
+
 func Parse(data []byte) (sensorData commonsensor.Data, err error) {
 	if !IsRuuviTag(data) {
 		err = fmt.Errorf("not a RuuviTag device")
@@ -17,10 +22,10 @@ func Parse(data []byte) (sensorData commonsensor.Data, err error) {
 	}
 	sensorFormat := data[2]
 	switch sensorFormat {
-	case 3:
+	case DataFormat3ID:
 		sensorData, err = ParseSensorFormat3(data)
 		return
-	case 5:
+	case DataFormat5ID:
 		sensorData, err = ParseSensorFormat5(data)
 		return
 	default:

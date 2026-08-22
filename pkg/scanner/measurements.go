@@ -11,9 +11,10 @@ import (
 )
 
 type Measurements struct {
-	BLE         BLEAdapter
-	Peripherals map[string]string
-	Logger      *slog.Logger
+	BLE          BLEAdapter
+	Peripherals  map[string]string
+	Logger       *slog.Logger
+	deduplicator measurementDeduplicator
 }
 
 // Channel starts scanning and returns the measurements and the terminal scan
@@ -40,9 +41,16 @@ func (s *Measurements) scan(ctx context.Context, ch chan<- commonsensor.Data) er
 		}
 		addr := NormalizeAddress(a.Address)
 		s.Logger.LogAttrs(ctx, slog.LevelDebug, "Read sensor data from device", slog.String("addr", addr))
-		sensorData, err := Read(a)
+		sensorData, dataFormat, err := read(a)
 		if err != nil {
 			LogInvalidData(ctx, s.Logger, a.RawManufacturerData(sensor.RuuviManufacturerID), err)
+			return
+		}
+		if dataFormat == sensor.DataFormat5ID && s.deduplicator.IsDuplicate(addr, uint16(sensorData.MeasurementNumber)) {
+			s.Logger.LogAttrs(ctx, slog.LevelDebug, "Ignoring duplicate measurement",
+				slog.String("addr", addr),
+				slog.Int("measurement_number", sensorData.MeasurementNumber),
+			)
 			return
 		}
 		sensorData.Name = s.Peripherals[addr]
