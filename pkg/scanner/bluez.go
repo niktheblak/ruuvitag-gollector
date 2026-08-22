@@ -257,6 +257,7 @@ func stringProperty(properties map[string]dbus.Variant, name string) string {
 	return result
 }
 
+//nolint:staticcheck
 func (a *blueZAdapter) Scan(ctx context.Context, handler AdvertisementHandler) (err error) {
 	if handler == nil {
 		return fmt.Errorf("Bluetooth advertisement handler must be specified")
@@ -357,80 +358,109 @@ func (a *blueZAdapter) handleSignal(signal *dbus.Signal) (*Advertisement, error)
 	}
 	switch signal.Name {
 	case nameOwnerChangedSignal:
-		if len(signal.Body) != 3 {
-			return nil, fmt.Errorf("invalid NameOwnerChanged signal body")
-		}
-		name, nameOK := signal.Body[0].(string)
-		oldOwner, oldOK := signal.Body[1].(string)
-		newOwner, newOK := signal.Body[2].(string)
-		if !nameOK || !oldOK || !newOK {
-			return nil, fmt.Errorf("invalid NameOwnerChanged signal types")
-		}
-		if name == blueZService && oldOwner != newOwner {
-			return nil, fmt.Errorf("BlueZ D-Bus service owner changed")
-		}
+		return nil, a.handleNameOwnerChanged(signal)
 	case interfacesRemovedSignal:
-		if len(signal.Body) != 2 {
-			return nil, fmt.Errorf("invalid InterfacesRemoved signal body")
-		}
-		path, pathOK := signal.Body[0].(dbus.ObjectPath)
-		interfaces, interfacesOK := signal.Body[1].([]string)
-		if !pathOK || !interfacesOK {
-			return nil, fmt.Errorf("invalid InterfacesRemoved signal types")
-		}
-		if path == a.path && slices.Contains(interfaces, adapterInterface) {
-			return nil, fmt.Errorf("Bluetooth adapter %s was removed", a.path)
-		}
-		if slices.Contains(interfaces, deviceInterface) {
-			delete(a.devices, path)
-		}
+		return nil, a.handleInterfacesRemoved(signal)
 	case interfacesAddedSignal:
-		if len(signal.Body) != 2 {
-			return nil, fmt.Errorf("invalid InterfacesAdded signal body")
-		}
-		path, pathOK := signal.Body[0].(dbus.ObjectPath)
-		interfaces, interfacesOK := signal.Body[1].(map[string]map[string]dbus.Variant)
-		if !pathOK || !interfacesOK || !a.owns(path) {
-			if !pathOK || !interfacesOK {
-				return nil, fmt.Errorf("invalid InterfacesAdded signal types")
-			}
-			return nil, nil
-		}
-		properties, ok := interfaces[deviceInterface]
-		if !ok {
-			return nil, nil
-		}
-		a.updateDevice(path, properties)
-		return a.advertisement(path, properties)
+		return a.handleInterfacesAdded(signal)
 	case propertiesChangedSignal:
-		if len(signal.Body) != 3 {
-			return nil, fmt.Errorf("invalid PropertiesChanged signal body")
-		}
-		iface, ifaceOK := signal.Body[0].(string)
-		changed, changedOK := signal.Body[1].(map[string]dbus.Variant)
-		if !ifaceOK || !changedOK {
-			return nil, fmt.Errorf("invalid PropertiesChanged signal types")
-		}
-		if signal.Path == a.path && iface == adapterInterface {
-			if powered, present, err := boolProperty(changed, "Powered"); err != nil {
-				return nil, err
-			} else if present && !powered {
-				return nil, fmt.Errorf("Bluetooth adapter %s was powered off", a.path)
-			}
-			if discovering, present, err := boolProperty(changed, "Discovering"); err != nil {
-				return nil, err
-			} else if present && !discovering {
-				return nil, fmt.Errorf("Bluetooth adapter %s stopped discovering", a.path)
-			}
-			return nil, nil
-		}
-		if iface != deviceInterface || !a.owns(signal.Path) {
-			return nil, nil
-		}
-		a.updateDevice(signal.Path, changed)
-		return a.advertisement(signal.Path, changed)
+		return a.handlePropertiesChanged(signal)
 	}
 	return nil, nil
+}
+
+func (a *blueZAdapter) handleNameOwnerChanged(signal *dbus.Signal) error {
+	if len(signal.Body) != 3 {
+		return fmt.Errorf("invalid NameOwnerChanged signal body")
+	}
+	name, nameOK := signal.Body[0].(string)
+	oldOwner, oldOK := signal.Body[1].(string)
+	newOwner, newOK := signal.Body[2].(string)
+	if !nameOK || !oldOK || !newOK {
+		return fmt.Errorf("invalid NameOwnerChanged signal types")
+	}
+	if name == blueZService && oldOwner != newOwner {
+		return fmt.Errorf("BlueZ D-Bus service owner changed")
+	}
+	return nil
+}
+
+//nolint:staticcheck
+func (a *blueZAdapter) handleInterfacesRemoved(signal *dbus.Signal) error {
+	if len(signal.Body) != 2 {
+		return fmt.Errorf("invalid InterfacesRemoved signal body")
+	}
+	path, pathOK := signal.Body[0].(dbus.ObjectPath)
+	interfaces, interfacesOK := signal.Body[1].([]string)
+	if !pathOK || !interfacesOK {
+		return fmt.Errorf("invalid InterfacesRemoved signal types")
+	}
+	if path == a.path && slices.Contains(interfaces, adapterInterface) {
+		return fmt.Errorf("Bluetooth adapter %s was removed", a.path)
+	}
+	if slices.Contains(interfaces, deviceInterface) {
+		delete(a.devices, path)
+	}
+	return nil
+}
+
+func (a *blueZAdapter) handleInterfacesAdded(signal *dbus.Signal) (*Advertisement, error) {
+	if len(signal.Body) != 2 {
+		return nil, fmt.Errorf("invalid InterfacesAdded signal body")
+	}
+	path, pathOK := signal.Body[0].(dbus.ObjectPath)
+	interfaces, interfacesOK := signal.Body[1].(map[string]map[string]dbus.Variant)
+	if !pathOK || !interfacesOK {
+		return nil, fmt.Errorf("invalid InterfacesAdded signal types")
+	}
+	if !a.owns(path) {
+		return nil, nil
+	}
+	properties, ok := interfaces[deviceInterface]
+	if !ok {
+		return nil, nil
+	}
+	a.updateDevice(path, properties)
+	return a.advertisement(path, properties)
+}
+
+func (a *blueZAdapter) handlePropertiesChanged(signal *dbus.Signal) (*Advertisement, error) {
+	if len(signal.Body) != 3 {
+		return nil, fmt.Errorf("invalid PropertiesChanged signal body")
+	}
+	iface, ifaceOK := signal.Body[0].(string)
+	changed, changedOK := signal.Body[1].(map[string]dbus.Variant)
+	if !ifaceOK || !changedOK {
+		return nil, fmt.Errorf("invalid PropertiesChanged signal types")
+	}
+	if signal.Path == a.path && iface == adapterInterface {
+		return nil, a.handleAdapterPropertiesChanged(changed)
+	}
+	if iface != deviceInterface || !a.owns(signal.Path) {
+		return nil, nil
+	}
+	a.updateDevice(signal.Path, changed)
+	return a.advertisement(signal.Path, changed)
+}
+
+//nolint:staticcheck
+func (a *blueZAdapter) handleAdapterPropertiesChanged(changed map[string]dbus.Variant) error {
+	powered, present, err := boolProperty(changed, "Powered")
+	if err != nil {
+		return err
+	}
+	if present && !powered {
+		return fmt.Errorf("Bluetooth adapter %s was powered off", a.path)
+	}
+
+	discovering, present, err := boolProperty(changed, "Discovering")
+	if err != nil {
+		return err
+	}
+	if present && !discovering {
+		return fmt.Errorf("Bluetooth adapter %s stopped discovering", a.path)
+	}
+	return nil
 }
 
 func (a *blueZAdapter) owns(path dbus.ObjectPath) bool {

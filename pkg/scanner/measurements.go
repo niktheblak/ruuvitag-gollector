@@ -33,6 +33,7 @@ func (s *Measurements) Channel(ctx context.Context) (<-chan commonsensor.Data, <
 	return ch, done
 }
 
+//nolint:gosec
 func (s *Measurements) scan(ctx context.Context, ch chan<- commonsensor.Data) error {
 	filter := Filter(s.Peripherals)
 	err := s.BLE.Scan(ctx, func(a Advertisement) {

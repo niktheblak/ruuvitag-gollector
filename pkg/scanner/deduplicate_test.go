@@ -6,10 +6,10 @@ import (
 	"encoding/binary"
 	"testing"
 
-	commonsensor "github.com/niktheblak/ruuvitag-common/pkg/sensor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	commonsensor "github.com/niktheblak/ruuvitag-common/pkg/sensor"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/sensor"
 )
 

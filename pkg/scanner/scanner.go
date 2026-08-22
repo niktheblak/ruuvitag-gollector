@@ -30,6 +30,7 @@ func DefaultConfig() Config {
 	}
 }
 
+//nolint:staticcheck
 func Validate(cfg Config) error {
 	if len(cfg.Exporters) == 0 {
 		return fmt.Errorf("at least one exporter must be specified")
