@@ -26,8 +26,10 @@ func (a Advertisement) RawManufacturerData(id uint16) []byte {
 	return data
 }
 
-type AdvertisementHandler func(Advertisement)
-type AdvertisementFilter func(Advertisement) bool
+type (
+	AdvertisementHandler func(Advertisement)
+	AdvertisementFilter  func(Advertisement) bool
+)
 
 // BLEAdapter owns a Bluetooth adapter and its discovery lifecycle.
 type BLEAdapter interface {

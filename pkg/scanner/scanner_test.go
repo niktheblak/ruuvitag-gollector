@@ -3,7 +3,6 @@ package scanner
 import (
 	"bytes"
 	"encoding/binary"
-	"io"
 	"log/slog"
 	"testing"
 
@@ -39,7 +38,7 @@ var (
 )
 
 func init() {
-	logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	logger = slog.New(slog.DiscardHandler)
 	buf := new(bytes.Buffer)
 	if err := binary.Write(buf, binary.BigEndian, testData); err != nil {
 		panic(err)

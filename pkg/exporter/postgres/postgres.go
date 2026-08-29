@@ -9,6 +9,7 @@ import (
 	"log/slog"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/niktheblak/ruuvitag-common/pkg/psql"
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 

@@ -14,7 +14,7 @@ import (
 var mockCmd = &cobra.Command{
 	Use:   "mock",
 	Short: "Send mock data to configured exporters",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		if err := createExporters(); err != nil {
 			return err
 		}

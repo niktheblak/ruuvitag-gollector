@@ -71,7 +71,7 @@ func (m *mockExporter) Name() string {
 	return "Mock"
 }
 
-func (m *mockExporter) Export(ctx context.Context, data sensor.Data) error {
+func (m *mockExporter) Export(_ context.Context, data sensor.Data) error {
 	m.events = append(m.events, data)
 	return nil
 }

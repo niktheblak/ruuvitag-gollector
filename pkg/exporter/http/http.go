@@ -39,7 +39,7 @@ func New(cfg Config) (exporter.Exporter, error) {
 		return nil, fmt.Errorf("columns must be non-empty")
 	}
 	if cfg.Logger == nil {
-		cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+		cfg.Logger = slog.New(slog.DiscardHandler)
 	}
 	cfg.Logger = cfg.Logger.With("exporter", "HTTP")
 	client := &nethttp.Client{

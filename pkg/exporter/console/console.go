@@ -21,7 +21,7 @@ func (e *consoleExporter) Name() string {
 	return e.name
 }
 
-func (e *consoleExporter) Export(ctx context.Context, data sensor.Data) error {
+func (e *consoleExporter) Export(_ context.Context, data sensor.Data) error {
 	j, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
 		return err

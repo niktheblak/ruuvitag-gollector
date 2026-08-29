@@ -7,8 +7,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/niktheblak/ruuvitag-common/pkg/psql"
 	"github.com/spf13/cast"
+
+	"github.com/niktheblak/ruuvitag-common/pkg/psql"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/postgres"

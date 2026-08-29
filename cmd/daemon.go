@@ -17,7 +17,7 @@ import (
 var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "Collect measurements from specified RuuviTags continuously",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		if err := createExporters(); err != nil {
 			return err
 		}

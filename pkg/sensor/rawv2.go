@@ -8,6 +8,8 @@ import (
 )
 
 /*
+DataFormat5 is the RuuviTag RAWv2 (data format 5) payload.
+
 	Payload:
 
 Byte    Value Range			Explanation

@@ -11,9 +11,10 @@ import (
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/domain"
-	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 )
 
 const queryTmpl = `from(bucket:"%s")

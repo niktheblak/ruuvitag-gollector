@@ -26,11 +26,10 @@ func DefaultConfig() Config {
 	return Config{
 		DeviceName:     "default",
 		AdapterFactory: new(BlueZAdapterFactory),
-		Logger:         slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Logger:         slog.New(slog.DiscardHandler),
 	}
 }
 
-//nolint:staticcheck
 func Validate(cfg Config) error {
 	if len(cfg.Exporters) == 0 {
 		return fmt.Errorf("at least one exporter must be specified")

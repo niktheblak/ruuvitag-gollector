@@ -11,9 +11,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
-	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 )
 
 type mockDynamoDBClient struct {

@@ -112,7 +112,7 @@ func TestCalculateRejectsInvalidInput(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := Calculate(test.temperature, test.unit, test.humidity)
-			assert.ErrorIs(t, err, test.wantErr)
+			require.ErrorIs(t, err, test.wantErr)
 			assert.Zero(t, got)
 		})
 	}
@@ -120,7 +120,7 @@ func TestCalculateRejectsInvalidInput(t *testing.T) {
 
 func TestCalculateRejectsResultBelowFormulaRange(t *testing.T) {
 	got, err := Calculate(-40, temperature.Celsius, 0.01)
-	assert.ErrorIs(t, err, ErrDewPointOutOfRange)
+	require.ErrorIs(t, err, ErrDewPointOutOfRange)
 	assert.Zero(t, got)
 }
 
@@ -134,7 +134,7 @@ func TestCalculateAcrossRuuviTemperatureRange(t *testing.T) {
 			targetPressure := humidity / 100 * saturationVaporPressure(tempK)
 			got, err := Calculate(tempC, temperature.Celsius, humidity)
 			if targetPressure < minimumPressure {
-				assert.ErrorIs(t, err, ErrDewPointOutOfRange,
+				require.ErrorIs(t, err, ErrDewPointOutOfRange,
 					"temperature=%v humidity=%v", tempC, humidity)
 				assert.Zero(t, got)
 				continue

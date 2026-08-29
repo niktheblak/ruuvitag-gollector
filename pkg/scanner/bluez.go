@@ -257,7 +257,6 @@ func stringProperty(properties map[string]dbus.Variant, name string) string {
 	return result
 }
 
-//nolint:staticcheck
 func (a *blueZAdapter) Scan(ctx context.Context, handler AdvertisementHandler) (err error) {
 	if handler == nil {
 		return fmt.Errorf("Bluetooth advertisement handler must be specified")
@@ -385,7 +384,6 @@ func (a *blueZAdapter) handleNameOwnerChanged(signal *dbus.Signal) error {
 	return nil
 }
 
-//nolint:staticcheck
 func (a *blueZAdapter) handleInterfacesRemoved(signal *dbus.Signal) error {
 	if len(signal.Body) != 2 {
 		return fmt.Errorf("invalid InterfacesRemoved signal body")
@@ -443,7 +441,6 @@ func (a *blueZAdapter) handlePropertiesChanged(signal *dbus.Signal) (*Advertisem
 	return a.advertisement(signal.Path, changed)
 }
 
-//nolint:staticcheck
 func (a *blueZAdapter) handleAdapterPropertiesChanged(changed map[string]dbus.Variant) error {
 	powered, present, err := boolProperty(changed, "Powered")
 	if err != nil {

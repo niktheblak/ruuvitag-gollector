@@ -19,7 +19,7 @@ var scanTimeout time.Duration
 var scanCmd = &cobra.Command{
 	Use:   "scan",
 	Short: "Scan measurements from all specified RuuviTags once",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		logger.Info("Starting ruuvitag-gollector")
 		if err := createExporters(); err != nil {
 			return err

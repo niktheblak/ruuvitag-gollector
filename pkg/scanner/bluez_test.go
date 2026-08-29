@@ -182,7 +182,7 @@ func TestBlueZScanForwardsDuplicateAdvertisements(t *testing.T) {
 	assert.Equal(t, "le", transport.Value())
 
 	cancel()
-	assert.ErrorIs(t, <-done, context.Canceled)
+	require.ErrorIs(t, <-done, context.Canceled)
 	bus.mu.Lock()
 	assert.Equal(t, 1, bus.startCalls)
 	assert.Equal(t, 1, bus.stopCalls)

@@ -19,7 +19,7 @@ var discoverTimeout time.Duration
 var discoverCmd = &cobra.Command{
 	Use:   "discover",
 	Short: "Discover all nearby RuuviTags",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		logger.Debug("Discovering nearby RuuviTags")
 		addrs, err := discover(discoverTimeout)
 		if err != nil {

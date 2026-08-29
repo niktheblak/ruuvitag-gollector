@@ -3,7 +3,6 @@ package scanner
 import (
 	"context"
 	"errors"
-	"io"
 	"log/slog"
 
 	commonsensor "github.com/niktheblak/ruuvitag-common/pkg/sensor"
@@ -21,7 +20,7 @@ type Measurements struct {
 // result. Callers must cancel ctx when they no longer need measurements.
 func (s *Measurements) Channel(ctx context.Context) (<-chan commonsensor.Data, <-chan error) {
 	if s.Logger == nil {
-		s.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+		s.Logger = slog.New(slog.DiscardHandler)
 	}
 	ch := make(chan commonsensor.Data)
 	done := make(chan error, 1)
@@ -33,7 +32,6 @@ func (s *Measurements) Channel(ctx context.Context) (<-chan commonsensor.Data, <
 	return ch, done
 }
 
-//nolint:gosec
 func (s *Measurements) scan(ctx context.Context, ch chan<- commonsensor.Data) error {
 	filter := Filter(s.Peripherals)
 	err := s.BLE.Scan(ctx, func(a Advertisement) {
@@ -47,7 +45,7 @@ func (s *Measurements) scan(ctx context.Context, ch chan<- commonsensor.Data) er
 			LogInvalidData(ctx, s.Logger, a.RawManufacturerData(sensor.RuuviManufacturerID), err)
 			return
 		}
-		if dataFormat == sensor.DataFormat5ID && s.deduplicator.IsDuplicate(addr, uint16(sensorData.MeasurementNumber)) {
+		if dataFormat == sensor.DataFormat5ID && s.deduplicator.IsDuplicate(addr, uint16(sensorData.MeasurementNumber)) { //nolint:gosec // G115: measurement sequence number is a 16-bit field in the RuuviTag protocol
 			s.Logger.LogAttrs(ctx, slog.LevelDebug, "Ignoring duplicate measurement",
 				slog.String("addr", addr),
 				slog.Int("measurement_number", sensorData.MeasurementNumber),

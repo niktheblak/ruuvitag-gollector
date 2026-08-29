@@ -12,7 +12,7 @@ var printColumnsCmd = &cobra.Command{
 	Use:          "columns",
 	Short:        "Print default RuuviTag column names",
 	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		switch format {
 		case "toml":
 			cmd.Println("[columns]")

@@ -14,7 +14,7 @@ func (e NoOp) Name() string {
 	return e.ReportedName
 }
 
-func (e NoOp) Export(ctx context.Context, data sensor.Data) error {
+func (e NoOp) Export(_ context.Context, _ sensor.Data) error {
 	return nil
 }
 

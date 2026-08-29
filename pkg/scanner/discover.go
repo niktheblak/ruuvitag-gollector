@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"maps"
 	"slices"
@@ -19,7 +18,7 @@ type Discover struct {
 
 func NewDiscover(device string, factory AdapterFactory, logger *slog.Logger) (*Discover, error) {
 	if logger == nil {
-		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+		logger = slog.New(slog.DiscardHandler)
 	}
 	d := &Discover{
 		factory: factory,

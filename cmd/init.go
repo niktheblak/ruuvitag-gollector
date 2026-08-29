@@ -17,7 +17,7 @@ var (
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Discover all nearby RuuviTags and create a configuration file",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		logger.Debug("Discovering nearby RuuviTags")
 		addrs, err := discover(initTimeout)
 		if err != nil {
@@ -35,8 +35,7 @@ var initCmd = &cobra.Command{
 		}
 		if outputCfgFile != "" {
 			logger.Info("Writing config to file", "file", outputCfgFile)
-			//nolint:gosec
-			if err := os.WriteFile(outputCfgFile, []byte(builder.String()), 0644); err != nil { //nolint:gosec
+			if err := os.WriteFile(outputCfgFile, []byte(builder.String()), 0o644); err != nil {
 				return err
 			}
 		} else {
