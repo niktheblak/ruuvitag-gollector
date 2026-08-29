@@ -1,37 +1,150 @@
 version: "2"
 
+run:
+  timeout: 5m
+  tests: true
+
 linters:
   default: none
   enable:
-    # --- correctness: catches real bugs ---
+    # --- correctness ---
     - errcheck
     - govet
-    - staticcheck
+    - staticcheck      # includes gosimple + stylecheck in v2
     - ineffassign
     - unused
+    - errorlint        # errors.Is/As instead of == and type switches
+    - nilerr
+    - bodyclose        # http.Response.Body leaks
+    - noctx            # http requests without context
+    - copyloopvar      # Go ≥1.22: flags now-redundant `v := v`
+    - exhaustive
+    - durationcheck    # time.Duration * time.Duration
+    - makezero
+    - reassign
 
     # --- security ---
     - gosec
 
-    # --- code quality ---
-    - gocyclo
+    # --- quality (tuned, see settings) ---
+    - gocognit         # I prefer this over gocyclo; nested ifs cost more
     - dupl
     - misspell
     - unconvert
+    - unparam
     - prealloc
+    - gocritic
+    - revive
 
-    # --- Go idioms ---
-    - nilerr
-    - exhaustive
+    # --- hygiene ---
+    - nolintlint       # keeps //nolint honest
+    - usetesting       # t.Context(), t.TempDir(), t.Setenv()
+    - testifylint
+    - sloglint
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
+      exclude-functions:
+        - (*bytes.Buffer).Write
+        - (*bytes.Buffer).WriteString
+        - (*strings.Builder).Write
+        - (*strings.Builder).WriteString
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment   # pure noise unless you're chasing cache lines
+        - shadow           # too many false positives on `err`
+
+    staticcheck:
+      checks:
+        - all
+        - -ST1000          # package comment
+        - -ST1003          # initialisms (Id vs ID) — pick per project
+
+    gosec:
+      excludes:
+        - G104   # unhandled errors — errcheck owns this
+        - G304   # file path from variable — fine in CLIs, re-enable for servers
+        - G306   # WriteFile perms; adjust if you actually need 0600
+      confidence: medium
+
+    gocognit:
+      min-complexity: 20
+
+    dupl:
+      threshold: 150
+
+    unparam:
+      check-exported: false
+
+    revive:
+      rules:
+        - name: unused-parameter
+          arguments: [{ allow-regex: "^_" }]
+        - name: exported
+          disabled: true   # unless you ship a public library
+        - name: error-strings
+        - name: error-naming
+        - name: receiver-naming
+        - name: unreachable-code
+        - name: early-return
+        - name: indent-error-flow
+
+    gocritic:
+      enabled-tags: [diagnostic, performance]
+      disabled-checks:
+        - hugeParam        # flags every struct passed by value
+        - rangeValCopy
+
+    testifylint:
+      disable:
+        - float-compare    # tests assert exact decoded values; InDelta would hide precision bugs
+
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+      allow-unused: false
+
+  exclusions:
+    generated: lax
+    presets:
+      - std-error-handling      # Close(), Fprint etc. on writers
+      - common-false-positives
+    rules:
+      # tests: repetition and hard-coded values are fine
+      - path: _test\.go
+        linters: [dupl, gosec, gocognit, unparam, errcheck]
+      # main.go / cmd: os.Exit, Fprintln to stderr etc.
+      - path: cmd/
+        linters: [gocognit]
+      - linters: [gosec]
+        text: "G101"            # "hardcoded credentials" hits every const with 'key' in its name
+      # ST1005: error strings starting with a proper noun (Bluetooth, BlueZ, D-Bus) are fine
+      - linters: [staticcheck]
+        text: "ST1005"
+        source: 'Errorf\("(Bluetooth|BlueZ|D-Bus)'
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+      - .*\.pb\.go$
 
 formatters:
   enable:
-    - gofmt
+    - gofumpt          # strict superset of gofmt
     - goimports
-
   settings:
     goimports:
       local-prefixes:
         - github.com/niktheblak/ruuvitag-gollector
         - github.com/niktheblak/ruuvitag-common
 
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
