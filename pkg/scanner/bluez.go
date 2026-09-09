@@ -257,6 +257,7 @@ func stringProperty(properties map[string]dbus.Variant, name string) string {
 	return result
 }
 
+//nolint:gocognit // Unfortunately BlueZ handler functions tend to be long and complex
 func (a *blueZAdapter) Scan(ctx context.Context, handler AdvertisementHandler) (err error) {
 	if handler == nil {
 		return fmt.Errorf("Bluetooth advertisement handler must be specified")
