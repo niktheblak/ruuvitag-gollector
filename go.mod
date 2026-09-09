@@ -10,7 +10,7 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.5.1
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
-	github.com/jackc/pgx/v5 v5.10.0
+	github.com/jackc/pgx/v5 v5.11.0
 	github.com/niktheblak/ruuvitag-common v1.7.3
 	github.com/spf13/cast v1.10.0
 	github.com/spf13/cobra v1.10.2
