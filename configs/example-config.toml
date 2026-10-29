@@ -10,6 +10,7 @@ device = "default"
 [exporters.influxdb]
 type = "influxdb"
 addr = "https://eu-central-1-1.aws.cloud2.influxdata.com"
+org = "my-org"
 bucket = "ruuvitag"
 measurement = "ruuvitag"
 token = "abc123"
