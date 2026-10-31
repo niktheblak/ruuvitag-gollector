@@ -10,7 +10,7 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.5.1
 	github.com/godbus/dbus/v5 v5.2.4
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
-	github.com/jackc/pgx/v5 v5.11.0
+	github.com/jackc/pgx/v5 v5.12.0
 	github.com/niktheblak/ruuvitag-common v1.7.3
 	github.com/spf13/cast v1.10.0
 	github.com/spf13/cobra v1.10.2
@@ -42,7 +42,7 @@ require (
 	github.com/influxdata/line-protocol v0.0.0-20210922203350-b1ad95c89adf // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/jackc/puddle/v2 v2.2.2 // indirect
+	github.com/jackc/puddle/v2 v2.2.3 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/oapi-codegen/runtime v1.6.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
