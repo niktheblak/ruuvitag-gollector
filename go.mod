@@ -5,7 +5,7 @@ go 1.27
 toolchain go1.27.3
 
 require (
-	cloud.google.com/go/pubsub v1.51.1
+	cloud.google.com/go/pubsub v1.52.0
 	github.com/aws/aws-sdk-go v1.55.8
 	github.com/eclipse/paho.mqtt.golang v1.5.1
 	github.com/godbus/dbus/v5 v5.2.4
