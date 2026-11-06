@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+const DefaultMeasurement = "ruuvitag"
+
 type Config struct {
 	Addr          string
 	Org           string
@@ -21,13 +23,19 @@ type Config struct {
 
 func Validate(cfg Config) error {
 	if cfg.Addr == "" {
-		return fmt.Errorf("InfluxDB host must be specified")
+		return fmt.Errorf("InfluxDB address must be specified")
+	}
+	if cfg.Org == "" {
+		return fmt.Errorf("InfluxDB organization must be specified")
 	}
 	if cfg.Bucket == "" {
-		return fmt.Errorf("bucket must be specified")
+		return fmt.Errorf("InfluxDB bucket must be specified")
 	}
 	if cfg.Token == "" {
-		return fmt.Errorf("token must be specified")
+		return fmt.Errorf("InfluxDB token must be specified")
+	}
+	if len(cfg.Columns) == 0 {
+		return fmt.Errorf("columns must be non-empty")
 	}
 	return nil
 }

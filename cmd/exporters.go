@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"maps"
-	"time"
 
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
@@ -14,7 +13,6 @@ import (
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/console"
-	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/http"
 	"github.com/niktheblak/ruuvitag-gollector/pkg/scanner"
 )
 
@@ -31,6 +29,9 @@ func createExporters() error {
 	if len(columns) == 0 {
 		columns = sensor.DefaultColumnMap
 	}
+	if err := sensor.ValidateColumnMapping(columns); err != nil {
+		return fmt.Errorf("invalid column mapping: %w", err)
+	}
 	logger.LogAttrs(context.TODO(), slog.LevelInfo, "Using column mapping", slog.Any("columns", columns))
 	peripherals = make(map[string]string)
 	for addr, name := range ruuviTags {
@@ -41,9 +42,9 @@ func createExporters() error {
 		return err
 	}
 	for name, cfg := range exporterConfigs {
-		exp, err := createExporter(name, cfg, columns)
+		exp, err := createExporter(name, columns, cfg)
 		if err != nil {
-			return err
+			return errors.Join(err, closeExporters())
 		}
 		exporters = append(exporters, exp)
 	}
@@ -52,7 +53,7 @@ func createExporters() error {
 	return nil
 }
 
-func createExporter(name string, cfg map[string]any, columns map[string]string) (exp exporter.Exporter, err error) {
+func createExporter(name string, columns map[string]string, cfg map[string]any) (exp exporter.Exporter, err error) {
 	logger := logger.With("name", name)
 	rawType, ok := cfg["type"]
 	if !ok {
@@ -68,34 +69,26 @@ func createExporter(name string, cfg map[string]any, columns map[string]string) 
 	logger.Info("Creating exporter")
 	switch tp {
 	case "influxdb":
-		exp, err = createInfluxDBExporter(columns, cfg)
+		exp, err = createInfluxDBExporter(name, columns, cfg)
 	case "console":
 		exp = console.New(name)
 	case "pubsub":
-		exp, err = createPubSubExporter(columns, cfg)
+		exp, err = createPubSubExporter(name, columns, cfg)
 	case "dynamodb":
-		exp, err = createDynamoDBExporter(cfg)
+		exp, err = createDynamoDBExporter(name, columns, cfg)
 	case "sqs":
-		exp, err = createSQSExporter(cfg)
+		exp, err = createSQSExporter(name, columns, cfg)
 	case "postgres":
 		exp, err = createPostgresExporter(name, columns, cfg)
 	case "http":
-		addr := cast.ToString(cfg["addr"])
-		token := cast.ToString(cfg["token"])
-		exp, err = http.New(http.Config{
-			URL:     addr,
-			Token:   token,
-			Timeout: 10 * time.Second,
-			Columns: columns,
-			Logger:  logger,
-		})
+		exp, err = createHTTPExporter(name, columns, cfg)
 	case "mqtt":
-		exp, err = createMQTTExporter(cfg)
+		exp, err = createMQTTExporter(name, columns, cfg)
 	default:
 		err = fmt.Errorf("invalid exporter type: %s", tp)
 	}
 	if err != nil {
-		err = fmt.Errorf("failed to create exporter: %w", err)
+		err = fmt.Errorf("failed to create exporter %s: %w", name, err)
 	}
 	return
 }
@@ -107,6 +100,7 @@ func closeExporters() error {
 			errs = append(errs, err)
 		}
 	}
+	exporters = nil
 	return errors.Join(errs...)
 }
 
@@ -120,6 +114,9 @@ func getExporterConfigs() (map[string]map[string]any, error) {
 		logger.Warn("Using deprecated exporter config. Consult README.md for the new configuration format.")
 	}
 	for k, v := range oldCfg {
+		if _, exists := cfg[k]; exists {
+			return nil, fmt.Errorf("exporter %s is configured both in the exporters table and in the deprecated top-level config", k)
+		}
 		cfg[k] = v
 	}
 	return cfg, nil
@@ -149,44 +146,69 @@ func parseOldExporterConfig() map[string]map[string]any {
 	configs := make(map[string]map[string]any)
 	postgresCfg, ok := viper.Get("postgres").(map[string]any)
 	if ok && isEnabled(postgresCfg) {
-		configs["postgres"] = postgresCfg
+		configs["postgres"] = withType(postgresCfg, "postgres")
 	}
 	influxDBCfg, ok := viper.Get("influxdb").(map[string]any)
 	if ok && isEnabled(influxDBCfg) {
-		configs["influxdb"] = influxDBCfg
+		configs["influxdb"] = withType(influxDBCfg, "influxdb")
 	}
 	dynamoDBCfg, ok := viper.Get("aws.dynamodb").(map[string]any)
 	if ok && isEnabled(dynamoDBCfg) {
-		dynamoDBCfg = maps.Clone(dynamoDBCfg) // defensive copy
+		dynamoDBCfg = withType(dynamoDBCfg, "dynamodb")
 		dynamoDBCfg["access_key_id"] = viper.GetString("aws.access_key_id")
 		dynamoDBCfg["secret_access_key"] = viper.GetString("aws.secret_access_key")
+		dynamoDBCfg["session_token"] = viper.GetString("aws.session_token")
 		dynamoDBCfg["region"] = viper.GetString("aws.region")
 		configs["dynamodb"] = dynamoDBCfg
 	}
 	sqsCfg, ok := viper.Get("aws.sqs").(map[string]any)
 	if ok && isEnabled(sqsCfg) {
-		sqsCfg = maps.Clone(sqsCfg) // defensive copy
+		sqsCfg = withType(sqsCfg, "sqs")
+		delete(sqsCfg, "queue")
+		if queueName := viper.GetString("aws.sqs.queue.name"); queueName != "" {
+			sqsCfg["queue_name"] = queueName
+		}
+		if queueURL := viper.GetString("aws.sqs.queue.url"); queueURL != "" {
+			sqsCfg["queue_url"] = queueURL
+		}
 		sqsCfg["access_key_id"] = viper.GetString("aws.access_key_id")
 		sqsCfg["secret_access_key"] = viper.GetString("aws.secret_access_key")
+		sqsCfg["session_token"] = viper.GetString("aws.session_token")
 		sqsCfg["region"] = viper.GetString("aws.region")
 		configs["sqs"] = sqsCfg
 	}
 	gcpCfg, ok := viper.Get("gcp").(map[string]any)
 	if ok && isEnabled(gcpCfg) {
-		gcpCfg = maps.Clone(gcpCfg) // defensive copy
+		gcpCfg = withType(gcpCfg, "pubsub")
 		gcpCfg["credentials"] = viper.GetString("gcp.credentials")
 		gcpCfg["project"] = viper.GetString("gcp.project")
-		configs["gcp"] = gcpCfg
+		if topic := viper.GetString("gcp.pubsub.topic"); topic != "" {
+			gcpCfg["topic"] = topic
+		}
+		configs["pubsub"] = gcpCfg
 	}
 	mqttCfg, ok := viper.Get("mqtt").(map[string]any)
 	if ok && isEnabled(mqttCfg) {
-		configs["mqtt"] = mqttCfg
+		configs["mqtt"] = withType(mqttCfg, "mqtt")
 	}
 	httpCfg, ok := viper.Get("http").(map[string]any)
 	if ok && isEnabled(httpCfg) {
-		configs["http"] = httpCfg
+		configs["http"] = withType(httpCfg, "http")
+	}
+	if viper.GetBool("console") {
+		configs["console"] = map[string]any{"type": "console"}
 	}
 	return configs
+}
+
+// withType returns a copy of the given deprecated exporter config with the exporter type filled in
+// unless it is already set.
+func withType(cfg map[string]any, tp string) map[string]any {
+	cfg = maps.Clone(cfg) // defensive copy
+	if _, ok := cfg["type"]; !ok {
+		cfg["type"] = tp
+	}
+	return cfg
 }
 
 func isEnabled(cfg map[string]any) bool {
