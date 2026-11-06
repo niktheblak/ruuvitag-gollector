@@ -8,10 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -33,11 +30,10 @@ var testData = sensor.Data{
 }
 
 type mockSQSClient struct {
-	sqsiface.SQSAPI
 	input *sqs.SendMessageInput
 }
 
-func (m *mockSQSClient) SendMessageWithContext(_ aws.Context, input *sqs.SendMessageInput, _ ...request.Option) (*sqs.SendMessageOutput, error) {
+func (m *mockSQSClient) SendMessage(_ context.Context, input *sqs.SendMessageInput, _ ...func(*sqs.Options)) (*sqs.SendMessageOutput, error) {
 	m.input = input
 	return &sqs.SendMessageOutput{}, nil
 }

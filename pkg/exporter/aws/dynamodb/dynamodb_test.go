@@ -8,10 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -33,13 +31,26 @@ var testData = sensor.Data{
 }
 
 type mockDynamoDBClient struct {
-	dynamodbiface.DynamoDBAPI
 	input *dynamodb.PutItemInput
 }
 
-func (m *mockDynamoDBClient) PutItemWithContext(_ aws.Context, input *dynamodb.PutItemInput, _ ...request.Option) (*dynamodb.PutItemOutput, error) {
+func (m *mockDynamoDBClient) PutItem(_ context.Context, input *dynamodb.PutItemInput, _ ...func(*dynamodb.Options)) (*dynamodb.PutItemOutput, error) {
 	m.input = input
 	return &dynamodb.PutItemOutput{}, nil
+}
+
+func stringValue(t *testing.T, item map[string]types.AttributeValue, key string) string {
+	t.Helper()
+	v, ok := item[key].(*types.AttributeValueMemberS)
+	require.True(t, ok, "attribute %s is not a string: %#v", key, item[key])
+	return v.Value
+}
+
+func numberValue(t *testing.T, item map[string]types.AttributeValue, key string) string {
+	t.Helper()
+	v, ok := item[key].(*types.AttributeValueMemberN)
+	require.True(t, ok, "attribute %s is not a number: %#v", key, item[key])
+	return v.Value
 }
 
 func TestExport(t *testing.T) {
@@ -54,10 +65,10 @@ func TestExport(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, mock.input)
 	assert.Equal(t, "test_table", *mock.input.TableName)
-	assert.Equal(t, "CC:CA:7E:52:CC:34", *mock.input.Item["mac"].S)
-	assert.Equal(t, "Backyard", *mock.input.Item["name"].S)
-	assert.Equal(t, "21.5", *mock.input.Item["temperature"].N)
-	assert.Equal(t, "2020-01-01T00:00:00Z", *mock.input.Item["time"].S)
+	assert.Equal(t, "CC:CA:7E:52:CC:34", stringValue(t, mock.input.Item, "mac"))
+	assert.Equal(t, "Backyard", stringValue(t, mock.input.Item, "name"))
+	assert.Equal(t, "21.5", numberValue(t, mock.input.Item, "temperature"))
+	assert.Equal(t, "2020-01-01T00:00:00Z", stringValue(t, mock.input.Item, "time"))
 }
 
 func TestExportCustomColumns(t *testing.T) {
@@ -75,9 +86,9 @@ func TestExportCustomColumns(t *testing.T) {
 	err := exp.Export(context.Background(), testData)
 	require.NoError(t, err)
 	require.NotNil(t, mock.input)
-	assert.Equal(t, "CC:CA:7E:52:CC:34", *mock.input.Item["addr"].S)
-	assert.Equal(t, "21.5", *mock.input.Item["temp"].N)
-	assert.Equal(t, "2020-01-01T00:00:00Z", *mock.input.Item["ts"].S)
+	assert.Equal(t, "CC:CA:7E:52:CC:34", stringValue(t, mock.input.Item, "addr"))
+	assert.Equal(t, "21.5", numberValue(t, mock.input.Item, "temp"))
+	assert.Equal(t, "2020-01-01T00:00:00Z", stringValue(t, mock.input.Item, "ts"))
 	assert.NotContains(t, mock.input.Item, "name")
 	assert.NotContains(t, mock.input.Item, "humidity")
 }

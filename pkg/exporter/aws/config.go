@@ -3,12 +3,13 @@
 package aws
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
-	awssdk "github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
+	awssdk "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 )
 
 // Credentials contains the common AWS connection settings shared by the AWS exporters.
@@ -34,23 +35,20 @@ func (c Credentials) Validate() error {
 	return nil
 }
 
-// NewSession creates an AWS session from the given credentials.
-func NewSession(creds Credentials, logger *slog.Logger) (*session.Session, error) {
+// LoadConfig creates an AWS SDK configuration from the given credentials.
+func LoadConfig(ctx context.Context, creds Credentials, logger *slog.Logger) (awssdk.Config, error) {
 	if err := creds.Validate(); err != nil {
-		return nil, err
+		return awssdk.Config{}, err
 	}
-	cfg := awssdk.NewConfig()
+	var opts []func(*config.LoadOptions) error
 	if creds.Region != "" {
-		cfg = cfg.WithRegion(creds.Region)
+		opts = append(opts, config.WithRegion(creds.Region))
 	}
 	if creds.static() {
 		logger.Debug("Using static AWS credentials")
-		cfg = cfg.WithCredentials(credentials.NewStaticCredentials(creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken))
+		opts = append(opts, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken)))
 	} else {
 		logger.Debug("Using default AWS credential chain")
 	}
-	return session.NewSessionWithOptions(session.Options{
-		Config:            *cfg,
-		SharedConfigState: session.SharedConfigEnable,
-	})
+	return config.LoadDefaultConfig(ctx, opts...)
 }
