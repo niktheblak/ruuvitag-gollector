@@ -3,88 +3,135 @@
 package mqtt
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"log/slog"
+	"os"
 	"strings"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 
+	"github.com/niktheblak/ruuvitag-common/pkg/columnmap"
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
+const (
+	topicPrefix       = "ruuvitag-gollector"
+	disconnectQuiesce = 250 * time.Millisecond
+)
+
 type mqttExporter struct {
-	client    mqtt.Client
-	tlsConfig *tls.Config
+	name    string
+	client  mqtt.Client
+	columns map[string]string
+	logger  *slog.Logger
 }
 
-func New(cfg Config) (exporter.Exporter, error) {
+func New(ctx context.Context, name string, cfg Config) (exporter.Exporter, error) {
+	if err := Validate(cfg); err != nil {
+		return nil, err
+	}
+	if cfg.Logger == nil {
+		cfg.Logger = slog.New(slog.DiscardHandler)
+	}
+	cfg.Logger = cfg.Logger.With("exporter", "MQTT")
+	if cfg.ClientId == "" {
+		cfg.ClientId = DefaultClientID
+	}
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(cfg.Addr)
 	opts.SetClientID(cfg.ClientId)
-	if cfg.Username != "" && cfg.Password != "" {
+	if cfg.Username != "" {
 		opts.SetUsername(cfg.Username)
+	}
+	if cfg.Password != "" {
 		opts.SetPassword(cfg.Password)
 	}
 	opts.SetAutoReconnect(cfg.AutoReconnect)
-	opts.SetMaxReconnectInterval(cfg.ReconnectInterval)
-	tlsConfig, err := newTlsConfig(cfg)
+	if cfg.ReconnectInterval > 0 {
+		opts.SetMaxReconnectInterval(cfg.ReconnectInterval)
+	}
+	tlsConfig, err := newTLSConfig(cfg)
 	if err != nil {
 		return nil, err
 	}
 	if tlsConfig != nil {
 		opts.SetTLSConfig(tlsConfig)
 	}
+	logger := cfg.Logger
+	opts.SetOnConnectHandler(func(_ mqtt.Client) {
+		logger.LogAttrs(context.Background(), slog.LevelInfo, "Connected to MQTT broker", slog.String("addr", cfg.Addr))
+	})
+	opts.SetConnectionLostHandler(func(_ mqtt.Client, err error) {
+		logger.LogAttrs(context.Background(), slog.LevelWarn, "Lost connection to MQTT broker", slog.String("addr", cfg.Addr), slog.Any("error", err))
+	})
+	cfg.Logger.LogAttrs(ctx, slog.LevelInfo, "Connecting to MQTT broker", slog.String("addr", cfg.Addr), slog.String("client_id", cfg.ClientId))
 	client := mqtt.NewClient(opts)
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		return nil, token.Error()
+	if err := wait(ctx, client.Connect()); err != nil {
+		return nil, fmt.Errorf("failed to connect to MQTT broker %s: %w", cfg.Addr, err)
 	}
 	return &mqttExporter{
-		client:    client,
-		tlsConfig: tlsConfig,
+		name:    name,
+		client:  client,
+		columns: cfg.Columns,
+		logger:  cfg.Logger,
 	}, nil
 }
 
-func newTlsConfig(cfg Config) (*tls.Config, error) {
-	if cfg.CaFile != "" {
-		certpool := x509.NewCertPool()
-		ca, err := ioutil.ReadFile(cfg.CaFile)
-		if err != nil {
-			return nil, err
-		}
-		certpool.AppendCertsFromPEM(ca)
-		return &tls.Config{
-			RootCAs: certpool,
-		}, nil
+func newTLSConfig(cfg Config) (*tls.Config, error) {
+	if cfg.CaFile == "" {
+		return nil, nil
 	}
-	return nil, nil
+	ca, err := os.ReadFile(cfg.CaFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read CA file %s: %w", cfg.CaFile, err)
+	}
+	certpool := x509.NewCertPool()
+	if !certpool.AppendCertsFromPEM(ca) {
+		return nil, fmt.Errorf("no valid certificates found in CA file %s", cfg.CaFile)
+	}
+	return &tls.Config{
+		RootCAs: certpool,
+	}, nil
 }
 
-func (m mqttExporter) Name() string {
-	return fmt.Sprintf("MQTT")
+// wait blocks until the token completes or the context is done.
+func wait(ctx context.Context, token mqtt.Token) error {
+	select {
+	case <-token.Done():
+		return token.Error()
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
-func (m mqttExporter) Export(ctx context.Context, data sensor.Data) error {
-	buf := new(bytes.Buffer)
-	enc := json.NewEncoder(buf)
-	err := enc.Encode(data)
+// Topic returns the MQTT topic a measurement from the given tag is published to.
+func Topic(data sensor.Data) string {
+	mac := strings.ReplaceAll(data.Addr, ":", "")
+	return fmt.Sprintf("%s/%s/%s", topicPrefix, data.Name, mac)
+}
+
+func (e *mqttExporter) Name() string {
+	return e.name
+}
+
+func (e *mqttExporter) Export(ctx context.Context, data sensor.Data) error {
+	payload, err := json.Marshal(columnmap.Transform(e.columns, data))
 	if err != nil {
 		return err
 	}
-	mac := strings.Replace(data.Addr, ":", "", -1)
-	topic := fmt.Sprintf("ruuvitag-gollector/%s/%s", data.Name, mac)
-	token := m.client.Publish(topic, 0, false, buf.String())
-	token.Wait()
-	return token.Error()
+	topic := Topic(data)
+	e.logger.LogAttrs(ctx, slog.LevelDebug, "Publishing measurement", slog.String("topic", topic), slog.String("payload", string(payload)))
+	return wait(ctx, e.client.Publish(topic, 0, false, payload))
 }
 
-func (m mqttExporter) Close() error {
-	m.client.Disconnect(0)
+func (e *mqttExporter) Close() error {
+	e.client.Disconnect(uint(disconnectQuiesce / time.Millisecond))
 	return nil
 }

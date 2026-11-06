@@ -3,8 +3,7 @@
 package cmd
 
 import (
-	"fmt"
-	"time"
+	"context"
 
 	"github.com/spf13/cast"
 
@@ -12,18 +11,28 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/mqtt"
 )
 
-func createMQTTExporter(cfg map[string]any) (exporter.Exporter, error) {
-	addr := cast.ToString(cfg["addr"])
-	if addr == "" {
-		return nil, fmt.Errorf("MQTT broker address must be specified")
+func createMQTTExporter(name string, columns map[string]string, cfg map[string]any) (exporter.Exporter, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), exporterInitTimeout)
+	defer cancel()
+	// plain numbers are seconds, strings such as "30s" are parsed as durations
+	reconnectInterval, err := configDuration(cfg["reconnect_interval"])
+	if err != nil {
+		return nil, err
 	}
-	return mqtt.New(mqtt.Config{
-		Addr:              addr,
+	// reconnect automatically unless explicitly disabled
+	autoReconnect := true
+	if v, ok := cfg["auto_reconnect"]; ok && v != nil {
+		autoReconnect = cast.ToBool(v)
+	}
+	return mqtt.New(ctx, name, mqtt.Config{
+		Addr:              cast.ToString(cfg["addr"]),
 		ClientId:          cast.ToString(cfg["client_id"]),
 		Username:          cast.ToString(cfg["username"]),
 		Password:          cast.ToString(cfg["password"]),
 		CaFile:            cast.ToString(cfg["ca_file"]),
-		AutoReconnect:     cast.ToBool(cfg["auto_reconnect"]),
-		ReconnectInterval: time.Duration(cast.ToInt(cfg["reconnect_interval"])) * time.Second,
+		AutoReconnect:     autoReconnect,
+		ReconnectInterval: reconnectInterval,
+		Columns:           columns,
+		Logger:            logger,
 	})
 }

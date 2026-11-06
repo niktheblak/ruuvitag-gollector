@@ -3,9 +3,11 @@
 package influxdb
 
 import (
+	"context"
+
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
 )
 
-func New(_ Config) (exporter.Exporter, error) {
-	return exporter.NoOp{ReportedName: "InfluxDB"}, nil
+func New(_ context.Context, name string, _ Config) (exporter.Exporter, error) {
+	return exporter.NoOp{ReportedName: name}, nil
 }

@@ -5,7 +5,6 @@ package cmd
 import (
 	"context"
 	"log/slog"
-	"time"
 
 	"github.com/spf13/cast"
 
@@ -16,7 +15,7 @@ import (
 )
 
 func createPostgresExporter(name string, columns map[string]string, cfg map[string]any) (exporter.Exporter, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), exporterInitTimeout)
 	defer cancel()
 	psqlInfo, err := psql.CreateConnString(cfg)
 	if err != nil {

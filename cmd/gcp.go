@@ -13,28 +13,21 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/gcp/pubsub"
 )
 
-func createPubSubExporter(columns map[string]string, cfg map[string]any) (exporter.Exporter, error) {
-	ctx := context.Background()
-	project := cast.ToString(cfg["project"])
-	if project == "" {
-		return nil, fmt.Errorf("Google Cloud Platform project must be specified")
-	}
-	topic := cast.ToString(cfg["topic"])
-	if topic == "" {
-		return nil, fmt.Errorf("Google Pub/Sub topic must be specified")
-	}
+func createPubSubExporter(name string, columns map[string]string, cfg map[string]any) (exporter.Exporter, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), exporterInitTimeout)
+	defer cancel()
 	var credentialsJSON []byte
 	credentialsFile := cast.ToString(cfg["credentials"])
-	var err error
 	if credentialsFile != "" {
+		var err error
 		credentialsJSON, err = os.ReadFile(credentialsFile)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read Google credentials file %s: %w", credentialsFile, err)
 		}
 	}
-	return pubsub.New(ctx, pubsub.Config{
-		Project:         project,
-		Topic:           topic,
+	return pubsub.New(ctx, name, pubsub.Config{
+		Project:         cast.ToString(cfg["project"]),
+		Topic:           cast.ToString(cfg["topic"]),
 		CredentialsJSON: credentialsJSON,
 		Columns:         columns,
 		Logger:          logger,

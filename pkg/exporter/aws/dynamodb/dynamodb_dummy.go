@@ -2,8 +2,12 @@
 
 package dynamodb
 
-import "github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
+import (
+	"context"
 
-func New(_ Config) (exporter.Exporter, error) {
-	return exporter.NoOp{ReportedName: "AWS DynamoDB"}, nil
+	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter"
+)
+
+func New(_ context.Context, name string, _ Config) (exporter.Exporter, error) {
+	return exporter.NoOp{ReportedName: name}, nil
 }

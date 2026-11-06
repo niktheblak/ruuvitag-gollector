@@ -3,7 +3,7 @@
 package cmd
 
 import (
-	"fmt"
+	"context"
 	"log/slog"
 
 	"github.com/spf13/cast"
@@ -12,29 +12,33 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/influxdb"
 )
 
-func createInfluxDBExporter(columns map[string]string, cfg map[string]any) (exporter.Exporter, error) {
-	addr := cast.ToString(cfg["addr"])
-	if addr == "" {
-		return nil, fmt.Errorf("InfluxDB address must be specified")
+func createInfluxDBExporter(name string, columns map[string]string, cfg map[string]any) (exporter.Exporter, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), exporterInitTimeout)
+	defer cancel()
+	flushInterval, err := configDuration(cfg["flush_interval"])
+	if err != nil {
+		return nil, err
 	}
 	influxCfg := influxdb.Config{
-		Addr:          addr,
+		Addr:          cast.ToString(cfg["addr"]),
 		Org:           cast.ToString(cfg["org"]),
 		Bucket:        cast.ToString(cfg["bucket"]),
 		Measurement:   cast.ToString(cfg["measurement"]),
 		Token:         cast.ToString(cfg["token"]),
 		Async:         cast.ToBool(cfg["async"]),
 		BatchSize:     cast.ToInt(cfg["batch_size"]),
-		FlushInterval: cast.ToDuration(cfg["flush_interval"]),
+		FlushInterval: flushInterval,
 		Columns:       columns,
 		Logger:        logger,
 	}
-	logger.LogAttrs(
-		nil,
-		slog.LevelInfo,
-		"Connecting to InfluxDB",
-		slog.Any("config", influxCfg),
-		slog.Any("columns", columns),
+	logger.LogAttrs(ctx, slog.LevelInfo, "Connecting to InfluxDB",
+		slog.String("addr", influxCfg.Addr),
+		slog.String("org", influxCfg.Org),
+		slog.String("bucket", influxCfg.Bucket),
+		slog.String("measurement", influxCfg.Measurement),
+		slog.Bool("async", influxCfg.Async),
+		slog.Int("batch_size", influxCfg.BatchSize),
+		slog.Duration("flush_interval", influxCfg.FlushInterval),
 	)
-	return influxdb.New(influxCfg)
+	return influxdb.New(ctx, name, influxCfg)
 }

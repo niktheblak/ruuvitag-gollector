@@ -5,7 +5,6 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -33,7 +32,7 @@ func New(ctx context.Context, name string, cfg Config) (exporter.Exporter, error
 		return nil, fmt.Errorf("columns must be non-empty")
 	}
 	if cfg.Logger == nil {
-		cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+		cfg.Logger = slog.New(slog.DiscardHandler)
 	}
 	cfg.Logger = cfg.Logger.With("exporter", "PostgreSQL")
 	dbpool, err := pgxpool.New(ctx, cfg.ConnString)

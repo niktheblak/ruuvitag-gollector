@@ -59,16 +59,21 @@ The following exporters are supported for sending measurements:
 
 - InfluxDB
 - PostgreSQL (and TimescaleDB)
-- Webhook, meaning a URL that accepts an HTTP POST request with the measurement as JSON in the request body. A non-2xx response is treated as a failed export.
-- AWS DynamoDB
-- AWS SQS (standard and FIFO queues; FIFO messages are grouped per tag)
+- Webhook, meaning a URL that accepts an HTTP POST request with the measurement as JSON in the request body. A non-2xx response is treated as a failed export. The request timeout can be set with `timeout` (default 10 seconds).
+- AWS DynamoDB (one item per measurement with one attribute per enabled column)
+- AWS SQS (standard and FIFO queues; `mac` and `name` are sent as message attributes. FIFO messages are grouped per tag and deduplicated by tag and timestamp)
 - GCP Pub/Sub (`mac` and `name` are sent as message attributes, the rest as the JSON body)
-- MQTT (one message per measurement on topic `ruuvitag-gollector/<name>/<mac without colons>`)
+- MQTT (one message per measurement on topic `ruuvitag-gollector/<name>/<mac without colons>`; `client_id` defaults to `ruuvitag-gollector` and `auto_reconnect` to `true`)
+- Console (`type = "console"`), which prints each measurement as JSON to standard output
 
 All exporters except the console exporter serialize measurements using the
 column names from the `[columns]` table described below. The AWS exporters use
 the configured static credentials when `access_key_id` and `secret_access_key`
 are set and the default AWS credential chain otherwise.
+
+Each exporter is configured as a table under `[exporters]` with a `type` key.
+The table name is the exporter's name, which is used in log messages, so
+several exporters of the same type can be configured under different names.
 
 See the command-line help for the arguments needed by each exporter:
 
@@ -168,7 +173,8 @@ region = "us-east-2"
 
 [exporters.sqs]
 type = "sqs"
-queue.url = "https://us-east-2.queue.amazonaws.com/321667262165/measurements"
+# either queue_url or queue_name must be set
+queue_url = "https://us-east-2.queue.amazonaws.com/321667262165/measurements"
 access_key_id = "MYAWSAKKESSKEY"
 secret_access_key = "my+aws+secret+key"
 region = "us-east-2"
@@ -187,7 +193,9 @@ sslmode = "require"
 type = "http"
 url = "https://my-api.herokuapp.com/receive"
 token = "MyHerokuToken"
-  
+# request timeout, in seconds or as a duration string; default 10 seconds
+timeout = "5s"
+
 [exporters.mqtt]
 type = "mqtt"
 addr = "tcp://localhost:8883"

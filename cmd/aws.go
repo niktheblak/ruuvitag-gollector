@@ -3,7 +3,7 @@
 package cmd
 
 import (
-	"fmt"
+	"context"
 
 	"github.com/spf13/cast"
 
@@ -12,32 +12,31 @@ import (
 	"github.com/niktheblak/ruuvitag-gollector/pkg/exporter/aws/sqs"
 )
 
-func createDynamoDBExporter(cfg map[string]any) (exporter.Exporter, error) {
-	table := cast.ToString(cfg["table"])
-	if table == "" {
-		return nil, fmt.Errorf("DynamoDB table name must be specified")
-	}
-	return dynamodb.New(dynamodb.Config{
-		Table:           table,
+func createDynamoDBExporter(name string, columns map[string]string, cfg map[string]any) (exporter.Exporter, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), exporterInitTimeout)
+	defer cancel()
+	return dynamodb.New(ctx, name, dynamodb.Config{
+		Table:           cast.ToString(cfg["table"]),
 		Region:          cast.ToString(cfg["region"]),
 		AccessKeyID:     cast.ToString(cfg["access_key_id"]),
 		SecretAccessKey: cast.ToString(cfg["secret_access_key"]),
 		SessionToken:    cast.ToString(cfg["session_token"]),
+		Columns:         columns,
+		Logger:          logger,
 	})
 }
 
-func createSQSExporter(cfg map[string]any) (exporter.Exporter, error) {
-	queueName := cast.ToString(cfg["queue.name"])
-	queueURL := cast.ToString(cfg["queue.url"])
-	if queueName == "" && queueURL == "" {
-		return nil, fmt.Errorf("AWS SQS queue name or queue URL must be specified")
-	}
-	return sqs.New(sqs.Config{
-		QueueName:       queueName,
-		QueueURL:        queueURL,
+func createSQSExporter(name string, columns map[string]string, cfg map[string]any) (exporter.Exporter, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), exporterInitTimeout)
+	defer cancel()
+	return sqs.New(ctx, name, sqs.Config{
+		QueueName:       cast.ToString(cfg["queue_name"]),
+		QueueURL:        cast.ToString(cfg["queue_url"]),
 		Region:          cast.ToString(cfg["region"]),
 		AccessKeyID:     cast.ToString(cfg["access_key_id"]),
 		SecretAccessKey: cast.ToString(cfg["secret_access_key"]),
 		SessionToken:    cast.ToString(cfg["session_token"]),
+		Columns:         columns,
+		Logger:          logger,
 	})
 }

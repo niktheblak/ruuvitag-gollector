@@ -54,12 +54,13 @@ func TestExporter(t *testing.T) {
 	})
 	require.NoError(t, err)
 	t.Run("TestReport", func(t *testing.T) {
-		exporter, err := New(Config{
+		exporter, err := New(ctx, "test", Config{
 			Addr:        addr,
 			Org:         org.Name,
 			Token:       *auth.Token,
 			Bucket:      bucket.Name,
 			Measurement: "test",
+			Columns:     sensor.DefaultColumnMap,
 		})
 		require.NoError(t, err)
 		err = exporter.Export(context.Background(), sensor.Data{

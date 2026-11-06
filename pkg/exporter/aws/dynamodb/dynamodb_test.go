@@ -4,6 +4,7 @@ package dynamodb
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -17,39 +18,72 @@ import (
 	"github.com/niktheblak/ruuvitag-common/pkg/sensor"
 )
 
-type mockDynamoDBClient struct {
-	dynamodbiface.DynamoDBAPI
-	t *testing.T
+var testData = sensor.Data{
+	Addr:            "CC:CA:7E:52:CC:34",
+	Name:            "Backyard",
+	Temperature:     21.5,
+	Humidity:        60,
+	Pressure:        1002,
+	BatteryVoltage:  50,
+	AccelerationX:   0,
+	AccelerationY:   0,
+	AccelerationZ:   0,
+	MovementCounter: 1,
+	Timestamp:       time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC),
 }
 
-func (m *mockDynamoDBClient) PutItemWithContext(ctx aws.Context, input *dynamodb.PutItemInput, opts ...request.Option) (*dynamodb.PutItemOutput, error) {
-	assert := assert.New(m.t)
-	assert.Equal("CC:CA:7E:52:CC:34", *input.Item["mac"].S)
-	assert.Equal("Backyard", *input.Item["name"].S)
-	assert.Equal("21.5", *input.Item["temperature"].N)
-	assert.Equal("2020-01-01T00:00:00Z", *input.Item["time"].S)
+type mockDynamoDBClient struct {
+	dynamodbiface.DynamoDBAPI
+	input *dynamodb.PutItemInput
+}
+
+func (m *mockDynamoDBClient) PutItemWithContext(_ aws.Context, input *dynamodb.PutItemInput, _ ...request.Option) (*dynamodb.PutItemOutput, error) {
+	m.input = input
 	return &dynamodb.PutItemOutput{}, nil
 }
 
 func TestExport(t *testing.T) {
+	mock := &mockDynamoDBClient{}
 	exp := &dynamoDBExporter{
-		db:    &mockDynamoDBClient{t: t},
-		table: "test_table",
+		db:      mock,
+		table:   "test_table",
+		columns: sensor.DefaultColumnMap,
+		logger:  slog.New(slog.DiscardHandler),
 	}
-	ctx := context.Background()
-	data := sensor.Data{
-		Addr:            "CC:CA:7E:52:CC:34",
-		Name:            "Backyard",
-		Temperature:     21.5,
-		Humidity:        60,
-		Pressure:        1002,
-		BatteryVoltage:  50,
-		AccelerationX:   0,
-		AccelerationY:   0,
-		AccelerationZ:   0,
-		MovementCounter: 1,
-		Timestamp:       time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC),
-	}
-	err := exp.Export(ctx, data)
+	err := exp.Export(context.Background(), testData)
 	require.NoError(t, err)
+	require.NotNil(t, mock.input)
+	assert.Equal(t, "test_table", *mock.input.TableName)
+	assert.Equal(t, "CC:CA:7E:52:CC:34", *mock.input.Item["mac"].S)
+	assert.Equal(t, "Backyard", *mock.input.Item["name"].S)
+	assert.Equal(t, "21.5", *mock.input.Item["temperature"].N)
+	assert.Equal(t, "2020-01-01T00:00:00Z", *mock.input.Item["time"].S)
+}
+
+func TestExportCustomColumns(t *testing.T) {
+	mock := &mockDynamoDBClient{}
+	exp := &dynamoDBExporter{
+		db:     mock,
+		table:  "test_table",
+		logger: slog.New(slog.DiscardHandler),
+		columns: map[string]string{
+			"time":        "ts",
+			"mac":         "addr",
+			"temperature": "temp",
+		},
+	}
+	err := exp.Export(context.Background(), testData)
+	require.NoError(t, err)
+	require.NotNil(t, mock.input)
+	assert.Equal(t, "CC:CA:7E:52:CC:34", *mock.input.Item["addr"].S)
+	assert.Equal(t, "21.5", *mock.input.Item["temp"].N)
+	assert.Equal(t, "2020-01-01T00:00:00Z", *mock.input.Item["ts"].S)
+	assert.NotContains(t, mock.input.Item, "name")
+	assert.NotContains(t, mock.input.Item, "humidity")
+}
+
+func TestValidate(t *testing.T) {
+	require.Error(t, Validate(Config{Columns: sensor.DefaultColumnMap}))
+	require.Error(t, Validate(Config{Table: "test"}))
+	require.NoError(t, Validate(Config{Table: "test", Columns: sensor.DefaultColumnMap}))
 }

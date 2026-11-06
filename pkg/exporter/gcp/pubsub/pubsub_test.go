@@ -17,10 +17,11 @@ func TestPublish(t *testing.T) {
 	project := os.Getenv("RUUVITAG_GOOGLE_PROJECT")
 	topic := os.Getenv("RUUVITAG_PUBSUB_TOPIC")
 	ctx := context.Background()
-	e, err := New(ctx, Config{
+	e, err := New(ctx, "test", Config{
 		Project:         project,
 		Topic:           topic,
 		CredentialsJSON: nil,
+		Columns:         sensor.DefaultColumnMap,
 	})
 	require.NoError(t, err)
 	defer e.Close()
